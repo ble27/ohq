@@ -1,0 +1,7 @@
+@import url('https://googleapis.com');
+@import "tailwindcss";
+
+@theme {
+  /* Sets Inter as your default font-sans utility */
+  --font-sans: 'Inter', sans-serif;
+}
