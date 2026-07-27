@@ -7,8 +7,10 @@ import './index.css'
 function App() {
   return (
     <>
+      <div className='min-height-screen'>
       <Header/>
       <Body />
+      </div>
     </>
   )
 }

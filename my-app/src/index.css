@@ -5,3 +5,7 @@
   /* Sets Inter as your default font-sans utility */
   --font-sans: 'Inter', sans-serif;
 }
+
+body {
+  height: 2000px;
+}
