@@ -1,0 +1,88 @@
+datasource db {
+    provider = 'postgresql'
+    url = env("DATABASE_URL")
+}
+
+generator client {
+    provider = "prisma-client-js"
+}
+
+// Models
+
+model Course {
+    id          String      @id @default(uuid())
+    code        String      @unique
+    semester    String 
+    isActive    Boolean     @default(true)
+    createdAt   DateTime    @default(now())
+
+    // Relations
+    queues      Queue[]
+}
+
+model Queue {
+    id          String      @default @default(uuid())
+    courseId    String
+    location    String
+    isOpen      Boolean     @default(false)
+    createdAt   DateTime    @default(now())
+    updatedAt   DateTime    @updatedAt
+
+    // Relations
+    course      Course      @relation(fields: [courseId], references: [id], onDelete: Cascade)
+    sessions    OfficeHourSession[]
+}
+
+model User {
+    id          String      @id @default(uuid())
+    email       String
+    name        String?
+    role        Role
+    role        Role        @default(STUDENT)
+
+    // Relations
+    studentSessions     OfficeHourSession[] @relation("StudentRelation) // a user points to multiple sessions
+    taSessions          OfficeHourSession[] @relation("TaRelation")
+}   
+
+model OfficeHourSession {
+  id            String       @id @default(uuid())
+  queueId       String
+
+  // Foreign keys column
+  studentId     String
+  taId          String?      // Nullable until a TA claims the student
+  
+  // State & Concurrency
+  position      Int?         // Current place in line (null if not waiting)
+  status        SessionStatus @default(WAITING)
+  version       Int          @default(0) // Prevents two TAs from claiming the same student
+
+  // Time Tracking Metrics
+  joinedAt      DateTime     @default(now())
+  startedAt     DateTime?    // When the TA begins helping the student
+  endedAt       DateTime?    // When the help session finishes
+
+  // Relations
+  queue         Queue        @relation(fields: [queueId], references: [id], onDelete: Cascade)
+  student       User         @relation("StudentRelation", fields: [studentId], references: [id], onDelete: Cascade) // a session points back to a user
+  ta            User?        @relation("TaRelation", fields: [taId], references: [id], onDelete: SetNull)
+
+  // Fast lookups for real-time state changes
+  @@index([queueId, status, position])
+  @@index([studentId, status])
+}
+
+enum Role {
+    STUDENT
+    TA
+    PROFESSOR
+}
+
+enum SessionsStatus {
+    WAITING
+    HELPING
+    COMPLETED
+    REMOVED
+    LEFT
+}
