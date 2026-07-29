@@ -1,0 +1,11 @@
+import { z } from 'zod';
+import { Role } from '../generated/prisma/enums.js';
+
+export const UserValidatedSchema = z.object({
+  id: z.uuid({ message: 'Invalid ID format' }),
+  email: z.email({ message: 'Invalid email format' }),
+  name: z.string().optional(),
+  role: z.enum([Role.STUDENT, Role.TA, Role.PROFESSOR]),
+});
+
+export type UserInput = z.infer<typeof UserValidatedSchema>;
