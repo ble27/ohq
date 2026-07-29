@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import axios from 'axios'
-
+import { QueueModal } from '../components/QueueModal'
 import type { Queue, QueuesListResponse, QueueResponse } from '@shared/types';
 
 // Props type interface with setter
@@ -12,6 +12,7 @@ interface ClassSelectorProps {
 
 export const ClassSelector: React.FC<ClassSelectorProps> = ({ CSCEClasses, selectedClass, setSelectedClass }) => { 
     const [queue, setQueue] = useState<Queue[]>([]);
+    const [isModalOpen, setModalOpen] = useState(false);
 
     // Prev is the current value of queue, e.g.: [1,2 3,4]
     useEffect(() => {
@@ -47,7 +48,7 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ CSCEClasses, selec
         setQueue([]);
     }
     const joinQueue = () => {
-        return;
+        setModalOpen(true);
     }
   return ( 
     <> 
@@ -94,12 +95,14 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ CSCEClasses, selec
                     <p className='font-semibold text-sm'>Course: {item.courseId}</p>
                     <p className='text-xs text-gray-500'>Location: {item.location}</p>
                      <button 
-                            onClick={joinQueue} 
+                            onClick={joinQueue}
                             className={`font-inter text-md w-auto text-black pointer-events-auto hover:text-blue-500
                                 ${item.isOpen ? 'visible' : 'invisible'}`}
                         > 
                             {item.isOpen && 'Join'}
                         </button> 
+                        {/* Queue Modal  */}
+                       {isModalOpen && <QueueModal queue={item} isModalOpen={isModalOpen} setModalOpen={setModalOpen}/>}
                   </div>
     
                   <span className={`text-xs px-2 py-1 h-fit rounded ${item.isOpen ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>

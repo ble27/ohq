@@ -24,9 +24,6 @@ return (
         </div>
         {isDashboardClass ? <ClassSelector CSCEClasses={CSCEClasses} selectedClass={selectedClass} setSelectedClass={setSelectedClass}/> : null}
         {/* Class selector available at /dashboardc#class */}
-        
-        {/* Queue Modal */}
-        <QueueModal/>
     </div>
     </>
 )
