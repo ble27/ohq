@@ -23,4 +23,5 @@ export const QueueValidationSchema = z.object({
   updatedAt: z.coerce.date().optional()
 });
 
+// Type of QueueValidationSchema
 export type QueueInput = z.infer<typeof QueueValidationSchema>;
