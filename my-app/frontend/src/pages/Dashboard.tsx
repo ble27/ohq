@@ -3,12 +3,12 @@ import { Header } from '../components/Header'
 import { ClassSelector } from '../components/ClassSelector'
 import { Link } from 'react-router-dom'
 import { useLocation } from 'react-router-dom';
-
+import { QueueModal } from '../components/QueueModal';
 export const Dashboard = () => {
     const location = useLocation();
     const isDashboardClass = location.pathname === '/dashboard/class';
 
-    const CSCEClasses: string[] = ['221', '313', '350'];
+    const CSCEClasses: string[] = ['csce-221', 'csce-313', 'csce-350'];
     const [selectedClass, setSelectedClass] = useState(CSCEClasses[0]);
 
 return (
@@ -25,6 +25,8 @@ return (
         {isDashboardClass ? <ClassSelector CSCEClasses={CSCEClasses} selectedClass={selectedClass} setSelectedClass={setSelectedClass}/> : null}
         {/* Class selector available at /dashboardc#class */}
         
+        {/* Queue Modal */}
+        <QueueModal/>
     </div>
     </>
 )
