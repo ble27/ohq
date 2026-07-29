@@ -1,1 +1,0 @@
-import { Schema, model, Document } from 'prisma'

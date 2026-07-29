@@ -1,0 +1,93 @@
+datasource db {
+    provider = "postgresql"
+}
+
+generator client {
+    provider = "prisma-client-js"
+}
+
+// Models
+model Course {
+    id          String      @id @default(uuid())
+    code        String      @unique
+    semester    String 
+    isActive    Boolean     @default(true)
+    createdAt   DateTime    @default(now())
+    
+    // Relations
+    queues      Queue[]
+    tas         CourseTA[]
+}
+
+model Queue {
+    id          String      @id @default(uuid())
+    courseId    String      // foreign key points to a Course
+    taId        String      // foreign key points to a User
+    location    String      
+    isOpen      Boolean     @default(false)
+    createdAt   DateTime    @default(now())
+    updatedAt   DateTime    @updatedAt
+
+    // Relations
+    course      Course      @relation(fields: [courseId], references: [id], onDelete: Cascade)
+    ta          User        @relation(fields: [taId], references: [id], onDelete: Cascade)
+    tickets     QueueTicket[]   
+}
+
+model QueueTicket {
+    id          String          @id @default(uuid())
+    studentId   String          // foreign key
+    queueId     String          // foreign key
+    status      SessionStatus   @default(WAITING)
+    position    Int?
+    joinedAt    DateTime        @default(now())
+    updatedAt   DateTime        @updatedAt
+
+    // Relations
+    student     User            @relation(fields: [studentId], references: [id], onDelete: Cascade)
+    queue       Queue           @relation(fields: [queueId], references: [id], onDelete: Cascade)
+
+    // prevents the same student joining the same queue twice
+    @@unique([queueId, studentId])
+}
+
+// Course TA assignment
+model CourseTA {
+    id          String      @id @default(uuid())
+    courseId    String
+    taId        String
+    createdAt   DateTime    @default(now())
+
+    // Relations
+    course      Course      @relation(fields: [courseId], references: [id], onDelete: Cascade)
+    ta          User        @relation(fields: [taId], references: [id], onDelete: Cascade)
+
+    // unique course-TA assignment
+    @@unique([courseId, taId])
+}
+
+model User {
+    id          String      @id @default(uuid())
+    email       String      @unique
+    name        String?
+    role        Role        @default(STUDENT)
+
+    // Relations
+    taQueues    Queue[]     
+    tickets     QueueTicket[]
+    courseTAs   CourseTA[]
+}   
+
+enum Role {
+    STUDENT
+    TA
+    PROFESSOR
+}
+
+enum SessionStatus {
+    WAITING
+    HELPING
+    COMPLETED
+    REMOVED
+    LEFT
+}
