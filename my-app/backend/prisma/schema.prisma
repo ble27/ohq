@@ -28,7 +28,7 @@ model Queue {
     isOpen      Boolean     @default(false)
     createdAt   DateTime    @default(now())
     updatedAt   DateTime    @updatedAt
-
+    
     // Relations
     course      Course      @relation(fields: [courseId], references: [id], onDelete: Cascade)
     ta          User        @relation(fields: [taId], references: [id], onDelete: Cascade)

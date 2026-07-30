@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import type { Request, Response } from 'express';
-// import { prisma } from '../prisma.js';
+import { prisma } from '../prisma.js';
+
 import type {
     ApiMessageResponse,
     QueueTicket,
@@ -9,7 +10,6 @@ import type {
 } from '../../shared/types.js';
 import { CreateQueueTicketValidationSchema } from '../schemas/queueTicket.schema.js';
 import { ZodError } from 'zod';
-
 const router: Router = Router();
 
 // MOCK: sample queue tickets — swap for prisma.queueTicket.* when DB is ready
@@ -97,6 +97,46 @@ router.get('/', async (_req: Request, res: Response): Promise<void> => {
         } else {
             res.status(500).json({ message: 'An unexpected database error occurred.' });
         }
+    }
+});
+
+// GET /api/queueticket/queues/:id — multiple tickets based on a Queue id
+// NOTE: this must be registered before GET /:id, otherwise Express would
+// match "queues" itself as the :id param on that route instead.
+router.get('/queues/:id', async (req: Request, res: Response): Promise<void> => {
+    try {
+        const queueId = req.params.id;
+        if (!queueId) {
+            res.status(400).json({ message: 'Ticket ID is required' });
+            return;
+        }
+        const queue = await prisma.queue.findUnique({
+            where: { id: queueId },
+            include: { tickets: true },
+        });
+
+        if (!queue) {
+            res.status(404).json({ message: 'No ticket found' });
+            return;
+        }
+
+        const ticketsArray: QueueTicket[] = queue.tickets;
+
+        const body: QueueTicketsListResponse = {
+            tickets: ticketsArray,
+            message: `Tickets from queue ${queueId} successfully fetched`,
+        };
+        res.status(200).json(body);
+    } catch (error: unknown) {
+        if (error instanceof ZodError) {
+            res.status(400).json({ message: 'Invalid input', errors: error.issues });
+            return;
+        }
+        if (error instanceof Error) {
+            res.status(500).json({ message: error.message });
+            return;
+        }
+        res.status(500).json({ message: 'Failed to fetch ticket' });
     }
 });
 
