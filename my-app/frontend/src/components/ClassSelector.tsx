@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import axios from 'axios'
 import { QueueModal } from '../components/QueueModal'
 import type { Queue, QueueTicket, QueuesListResponse, QueueResponse, QueueTicketResponse } from '@shared/types';
-
+import { Button } from './ui/button';
 
 
 // Props type interface with setter
@@ -80,13 +80,15 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ CSCEClasses, selec
   return ( 
     <> 
       {/* Class selector available at /dashboardc#class */} 
-      <div className='flex flex-col pl-8 pt-10 text-md font-md'> 
-        <label htmlFor="csce_choices">CSCE</label> 
-        <div className='flex flex-row mt-2'> 
+      <div className='flex flex-col w-full h-full pl-8 pt-10 text-md font-md'> 
+        <label htmlFor="csce_choices">Select a class</label> 
+
+        {/* Background around search fields */}
+        <div className='flex flex-row mt-2 items-center'> 
           <select 
             name="csce_choices" 
             id="csce_choices" 
-            className='text-lg w-1/3 border-black-200 border-1 shadow-inner rounded-lg p-2' 
+            className='text-lg w-1/3 border-slate-300 border-1 shadow-inner rounded-lg p-2 outline-none' 
             value={selectedClass} 
             onChange={(e) => setSelectedClass(e.target.value)} 
           > 
@@ -94,33 +96,39 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ CSCEClasses, selec
               <option key={index} value={courseNum}>{courseNum}</option> 
             ))} 
           </select> 
-          <button 
+          <Button 
+            variant={'default'}
+            size={'lg'}
             onClick={fetchQueue} 
-            className='ml-5 rounded-lg w-20 bg-black pl-3 pr-3 pt-2 pb-2 pointer-events-auto text-white hover:opacity-90'
+            className='ml-4 mr-2 pointer-events-auto'
           > 
             Enter 
-          </button> 
+          </Button> 
 
-           <button 
+           <Button 
+            variant={'default'}
+            size={'lg'}
             onClick={clearQueue} 
-            className='ml-5 rounded-lg w-20 bg-black pl-3 pr-3 pt-2 pb-2 pointer-events-auto text-white hover:opacity-90'
+            className='pointer-events-auto'
           > 
             Clear
-          </button> 
+          </Button> 
         </div> 
 
-        <div className='mt-8'>
-          <h3 className='text-lg font-bold mb-3'>Active Queue ({queue.length})</h3>
+        <div className='mt-8 h-full w-full'>
+          <h3 className='text-lg font-medium mb-3'>Active Queue ({queue.length})</h3>
           {queue.length === 0 ? (
             <p className='text-gray-500 text-sm'>No active queues loaded. Click "Enter" to fetch.</p>
           ) : (
-            <div className='space-y-2 w-1/2'>
+            // Background around Queue cards
+            <div className='grid grid-cols-1 justify-center md:grid-cols-2 bg-white lg:grid-cols-3 gap-10 w-100 md:w-full h-80 md:h-50 space-y-2 pr-5 '>
               {queue.map((q) => (
-                <div key={q.id} className='p-3 border rounded-lg bg-gray-50 flex justify-between'>
+                // Actual Queue card
+                <div key={q.id} className='relative p-3 border rounded-lg bg-gray-50 flex justify-between border-gray-300 border-1 shadow-inner'>
                   <div>
                     <p className='font-semibold text-sm'>Course: {q.courseId}</p>
                     <p className='text-xs text-gray-500'>Location: {q.location}</p>
-                     <button 
+                     <Button 
                             onClick={async () => {
                               const response = await createTicket(q.id);
                               if (!response) return;                              
@@ -129,11 +137,12 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ CSCEClasses, selec
                               setSelectedQueue(q);
                               setModalOpen(true);
                             }}
-                            className={`font-inter text-md w-auto text-black pointer-events-auto hover:text-blue-500
-                                ${q.isOpen ? 'visible' : 'invisible'}`}
+                            disabled={!q.isOpen}
+                            variant={'ghost'}
+                            className='absolute bottom-2 right-2'
                         > 
                             {q.isOpen && 'Join'}
-                        </button> 
+                        </Button> 
                   </div>
                   <span className={`text-xs px-2 py-1 h-fit rounded ${q.isOpen ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
                     {q.isOpen ? 'Open' : 'Closed'}

@@ -5,33 +5,44 @@ interface QueueTicketProps {
     queueTickets: QueueTicket[]
 }
 
+const formatJoinedAt = (joinedAt: string | Date) => {
+    const date = new Date(joinedAt);
+    if (Number.isNaN(date.getTime())) return String(joinedAt);
+
+    return date.toLocaleTimeString([], {
+        hour: 'numeric',
+        minute: '2-digit',
+    });
+};
+
+const shortId = (id: string) => id.slice(0, 8);
+
 export const QueueTicketComp = ({ queueTickets }: QueueTicketProps) => {
     if (queueTickets.length === 0) return null;
 
     return (
-        <ul className="w-full max-h-60 overflow-y-auto space-y-3 p-1">
+        <ul className="w-full space-y-2 overflow-y-auto">
             {queueTickets.map((qt) => (
                 <li
                     key={qt.id}
-                    className="flex items-center justify-between p-4 bg-white border border-gray-100 rounded-xl shadow-sm hover:shadow-md transition-all duration-200"
+                    className="grid grid-cols-[2.5rem_1fr_auto] items-center gap-3 rounded-lg border border-gray-200 bg-gray-100 px-3 py-2.5"
                 >
-                    <div className="flex flex-col gap-1">
-                        <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                            Joined At
-                        </span>
-                        <span className="text-sm font-medium text-gray-700">
-                            {String(qt.joinedAt)}
-                        </span>
+                    <span className="text-sm font-semibold tabular-nums text-gray-900">
+                        {qt.position != null ? `#${qt.position}` : '—'}
+                    </span>
+
+                    <div className="min-w-0">
+                        <p className="truncate text-sm font-medium text-gray-800">
+                            {shortId(qt.studentId)}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                            Joined {formatJoinedAt(qt.joinedAt)}
+                        </p>
                     </div>
 
-                    <div className="flex flex-col items-end gap-1">
-                        <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                            Position
-                        </span>
-                        <span className="inline-flex items-center justify-center px-3 py-1 text-sm font-bold text-indigo-700 bg-indigo-50 rounded-full min-w-8 text-center">
-                            #{qt.position}
-                        </span>
-                    </div>
+                    <span className="text-[10px] font-medium uppercase tracking-wide text-black">
+                        {qt.status.toLowerCase()}
+                    </span>
                 </li>
             ))}
         </ul>

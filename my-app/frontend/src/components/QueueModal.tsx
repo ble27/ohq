@@ -102,52 +102,55 @@ export const QueueModal = ({ queue, ticket, ticketId, isModalOpen, setModalOpen 
     }, [isModalOpen, queue?.id]);
 
     if (!isModalOpen) return null;
-    
+
     return (
         <div className='fixed inset-0 z-50 flex items-center justify-center p-4'>
-            {/* <!-- 1. Backdrop Overlay (This blurs the background) --> */}
+            {/* Backdrop Overlay */}
             <div onClick={() => setModalOpen(false)} className="fixed inset-0 bg-black/40 backdrop-blur-md"></div>
 
-            {/* <!-- 2. Modal Content Card --> */}
-            <div className="relative max-w-md w-full h-[50vh] bg-white rounded-2xl p-6 shadow-xl z-10">
-                <h3 className="text-xl font-semibold text-gray-900">Test Queue</h3>
+            {/* Modal Content */}
+            <div className="relative z-10 flex h-[55vh] w-full max-w-md flex-col rounded-2xl bg-white p-5 shadow-xl">
+                <div className="shrink-0">
+                    <h3 className="text-lg font-semibold text-gray-900">Queue</h3>
+                    <p className="mt-1 text-xs text-gray-500">Location: {queue?.location}</p>
+                    <p className="mt-0.5 text-xs text-gray-500">
+                        Your position: {curTicket?.position ?? '—'}
+                    </p>
+                </div>
 
-                <p className="mt-2 text-sm text-black">TA's ID: {queue?.taId}</p>
-                <p className="mt-2 text-sm text-black">Location: {queue?.location}</p>
+                {/* Ticket list */}
+                <div className="mt-4 min-h-0 flex-1 overflow-y-auto pr-1">
+                    {tickets.length !== 0 ? (
+                        <QueueTicketComp queueTickets={tickets} />
+                    ) : (
+                        <p className="text-sm text-gray-400">No one in queue yet.</p>
+                    )}
+                </div>
 
-                {/* Real time updates */}
-                <p className="mt-2 text-sm text-black">Your position in queue: {1}</p>
-                <p className="mt-2 text-sm text-black">Estimated wait time: 10 mins</p>
-
-                <div className="absolute bottom-6 right-6 mt-4 flex justify-end">
-                    {/* Queue Ticket Section displaying all the tickets in queue */}
-                    {tickets.length !== 0 ? <QueueTicketComp queueTickets={tickets} /> : null}
-
-                    {/* Leave queue */}
-                    <div className='flex flex-row gap-4'>
-                        <button
-                            onClick={ async () => {
-                                if (curTicket) {
-                                    try {
-                                        deleteTicketById();
-                                        setModalOpen(false);
-                                    }
-                                    catch (error) {
-                                        console.log('Failed to delete ticket', error);
-                                    }
+                {/* Leave / Close — bottom right */}
+                <div className="mt-3 flex shrink-0 justify-end gap-2">
+                    <button
+                        onClick={async () => {
+                            if (curTicket) {
+                                try {
+                                    await deleteTicketById();
+                                    setModalOpen(false);
                                 }
-                            }}
-                            className="px-4 py-2 items-end bg-red-500 text-white rounded-lg text-sm font-medium hover:bg-red-700"
-                        >
-                            Leave
-                        </button>
-                        <button
-                            onClick={() => setModalOpen(false)}
-                            className="px-4 py-2 items-end bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700"
-                        >
-                            Close
-                        </button>
-                    </div>
+                                catch (error) {
+                                    console.log('Failed to delete ticket', error);
+                                }
+                            }
+                        }}
+                        className="rounded-md bg-red-500 px-2.5 py-1 text-xs font-medium text-white hover:bg-red-600"
+                    >
+                        Leave
+                    </button>
+                    <button
+                        onClick={() => setModalOpen(false)}
+                        className="rounded-md bg-blue-800 px-2.5 py-1 text-xs font-medium text-white hover:bg-blue-900"
+                    >
+                        Close
+                    </button>
                 </div>
             </div>
         </div>
