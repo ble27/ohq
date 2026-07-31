@@ -80,7 +80,7 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ CSCEClasses, selec
   return ( 
     <> 
       {/* Class selector available at /dashboardc#class */} 
-      <div className='flex flex-col w-full h-full pl-8 pt-10 text-md font-md'> 
+      <div className='flex flex-col w-full h-full pl-8 pt-10'> 
         <label htmlFor="csce_choices">Select a class</label> 
 
         {/* Background around search fields */}

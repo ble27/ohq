@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { Header } from '../components/Header'
 import { ClassSelector } from '../components/ClassSelector'
+import { Home } from '@/components/Home';
 import { QueueModal } from '../components/QueueModal';
 import { Sidebar } from '../components/Sidebar'
 import { Link } from 'react-router-dom'
@@ -16,10 +17,10 @@ export const Dashboard = () => {
 
 return (
     <>
-    <div className="flex flex-row w-full h-[850px] m-0 p-0">
+    <div className="flex w-screen h-screen m-0 p-0">
         {/* Sidebar */}
         <Sidebar />
-        {isDashboardClass ? <ClassSelector CSCEClasses={CSCEClasses} selectedClass={selectedClass} setSelectedClass={setSelectedClass}/> : null}
+        {isDashboardClass ? <ClassSelector CSCEClasses={CSCEClasses} selectedClass={selectedClass} setSelectedClass={setSelectedClass}/> : <Home />}
         {/* Class selector available at /dashboardc#class */}
     </div>
     </>
