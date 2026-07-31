@@ -18,6 +18,8 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ CSCEClasses, selec
     const [selectedQueue, setSelectedQueue] = useState<Queue | null>(null);
     const [isModalOpen, setModalOpen] = useState(false);
     const [ticket, setTicket] = useState<QueueTicket | null>(null);
+
+    // Just in case later
     const [ticketId, setTicketId] = useState<string>('');
 
     // Pass in queue id of the ticket before even joining the queue
@@ -107,7 +109,6 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ CSCEClasses, selec
           </button> 
         </div> 
 
-        {/* 3. FIXED: Added UI elements to render and verify your state updates */}
         <div className='mt-8'>
           <h3 className='text-lg font-bold mb-3'>Active Queue ({queue.length})</h3>
           {queue.length === 0 ? (

@@ -18,6 +18,7 @@ interface ModalProps {
 
 // Local queue for each instance
 export const QueueModal = ({ queue, ticket, ticketId, isModalOpen, setModalOpen }: ModalProps) => {
+    // All the tickets for each queue
     const [tickets, setTickets] = useState<QueueTicket[]>([]);
     const [curTicket, setCurTicket] = useState<QueueTicket | null>(ticket);
 
@@ -101,7 +102,7 @@ export const QueueModal = ({ queue, ticket, ticketId, isModalOpen, setModalOpen 
     }, [isModalOpen, queue?.id]);
 
     if (!isModalOpen) return null;
-
+    
     return (
         <div className='fixed inset-0 z-50 flex items-center justify-center p-4'>
             {/* <!-- 1. Backdrop Overlay (This blurs the background) --> */}

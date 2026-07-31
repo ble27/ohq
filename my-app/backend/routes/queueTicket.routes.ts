@@ -85,6 +85,7 @@ const mockTickets: QueueTicket[] = [
 ];
 
 // GET /api/queueticket — list all tickets
+// Heavy operation if lots of tickets
 router.get('/', async (_req: Request, res: Response): Promise<void> => {
     try {
         // const tickets = await prisma.queueTicket.findMany();
@@ -114,18 +115,24 @@ router.get('/queues/:queueId', async (req: Request, res: Response): Promise<void
             res.status(400).json({ message: 'Ticket ID is required' });
             return;
         }
-        const queue = await prisma.queue.findUnique({
-            where: { id: queueId },
-            include: { tickets: true },
-        });
+        
+        // const queue = await prisma.queue.findUnique({
+        //     where: { id: queueId },
+        //     include: { tickets: true },
+        // });
 
-        if (!queue) {
-            res.status(404).json({ message: 'No ticket found' });
-            return;
-        }
+        // if (!queue) {
+        //     res.status(404).json({ message: 'No ticket found' });
+        //     return;
+        // }
 
-        const ticketsArray: QueueTicket[] = queue.tickets;
+        // const ticketsArray: QueueTicket[] = queue.tickets;
 
+        const ticketsArray: QueueTicket[] = [];
+        mockTickets.filter((ticket) => {
+            ticketsArray.push(ticket);
+            ticket.queueId = queueId}
+        )
         const body: QueueTicketsListResponse = {
             tickets: ticketsArray,
             message: `Tickets from queue ${queueId} successfully fetched`,
