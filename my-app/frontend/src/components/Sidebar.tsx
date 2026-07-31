@@ -1,17 +1,32 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { LuHouse, LuLibraryBig, LuSettings, LuPanelLeft } from "react-icons/lu";
 
 export const Sidebar = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const userToggled = useRef(false);
+
   const toggleSidebar = () => {
+    userToggled.current = true;
     setIsSidebarOpen(prev => !prev);
   }
+
+  // Run once on mount, event listener continues listening, remove listener on dismount
+  useEffect(() => {
+    const handleResize = () => {
+      // user manually toggled
+      if (userToggled.current) return; 
+      setIsSidebarOpen(window.innerWidth >= 640);
+    }
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   return (
     <>
       <div className={`relative flex flex-col h-screen shadow bg-[#500000] transition-all ease-in-out duration-400 text-white font-semibold 
-      ${isSidebarOpen ? 'w-80' : 'w-18'}`}>
+      ${isSidebarOpen ? 'w-80' : 'w-[72px]'}`}>
         <div className='flex flex-row items-center pl-4 text-xl pt-5 pb-7 pr-2'>
         <span 
           className={`font-medium text-white whitespace-nowrap transition-all duration-200 overflow-hidden cursor-pointer
@@ -28,15 +43,19 @@ export const Sidebar = () => {
         </div>
         
         <ul className='flex text-md flex-col gap-3 pointer-events-auto w-full'> 
-          <Link to='/dashboard/home' className='flex flex-row px-4 py-3 gap-[10px] items-center transition-colors duration-200 hover:bg-black/20 hover:opacity-90 w-full'> 
+          <Link to='/dashboard/home' 
+            className={`flex flex-row px-4 py-3 gap-[10px] items-center transition-colors duration-200 w-full 
+            ${isSidebarOpen ? 'hover:bg-black/20 hover:opacity-90': 'hover:opacity-0 pointer-events-none'}`}> 
               {isSidebarOpen && <LuHouse size={20} color="white" />}
               {isSidebarOpen && <span>Home</span>}
           </Link> 
-          <Link to='/dashboard/class' className='flex flex-row px-4 py-3 gap-[10px] items-center transition-colors duration-200 hover:opacity-90 hover:bg-black/20 w-full'> 
+          <Link to='/dashboard/class' className={`flex flex-row px-4 py-3 gap-[10px] items-center transition-colors duration-200 w-full 
+            ${isSidebarOpen ? 'hover:bg-black/20 hover:opacity-90': 'hover:opacity-0 pointer-events-none'}`}> 
               {isSidebarOpen && <LuLibraryBig size={20} color="white" />}
               {isSidebarOpen && <span>Class</span>}
           </Link> 
-          <div className='flex flex-row px-4 py-3 gap-[10px] items-center transition-colors duration-200 hover:opacity-90 hover:bg-black/20 w-full'>
+          <div className={`flex flex-row px-4 py-3 gap-[10px] items-center transition-colors duration-200 w-full 
+            ${isSidebarOpen ? 'hover:bg-black/20 hover:opacity-90': 'hover:opacity-0 pointer-events-none'}`}>
               {isSidebarOpen && <LuSettings size={20} color="white" />}
               {isSidebarOpen && <span>Settings</span>}
           </div>
