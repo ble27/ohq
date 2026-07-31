@@ -14,13 +14,13 @@ const router: Router = Router();
 // MOCK: sample users — swap for prisma.user.* when DB is ready
 const mockUsers: User[] = [
     {
-        id: '22222222-2222-2222-2222-222222222222',
+        id: '22222222-2222-4222-8222-222222222222',
         email: 'ta@tamu.edu',
         name: 'Alex TA',
         role: 'TA',
     },
     {
-        id: '55555555-5555-5555-5555-555555555555',
+        id: '55555555-5555-4555-8555-555555555555',
         email: 'student@tamu.edu',
         name: 'Sam Student',
         role: 'STUDENT',

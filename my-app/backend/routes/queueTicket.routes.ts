@@ -12,67 +12,71 @@ import { CreateQueueTicketValidationSchema } from '../schemas/queueTicket.schema
 import { ZodError } from 'zod';
 const router: Router = Router();
 
+// Temporary development identity. Replace this with the verified user ID
+// supplied by the authentication middleware when Google OAuth is added.
+const DEV_STUDENT_ID = '55555555-5555-4555-8555-555555555555';
+
 // MOCK: sample queue tickets — swap for prisma.queueTicket.* when DB is ready
 // queueId values align with mockQueues in queue.routes.ts
 const mockTickets: QueueTicket[] = [
     {
-        id: '66666666-6666-6666-6666-666666666666',
-        studentId: '55555555-5555-5555-5555-555555555555',
-        queueId: '11111111-1111-1111-1111-111111111111',
+        id: '66666666-6666-4666-8666-666666666666',
+        studentId: '55555555-5555-4555-8555-555555555555',
+        queueId: '11111111-1111-4111-8111-111111111111',
         status: 'WAITING',
         position: 1,
         joinedAt: '2026-07-29T12:15:00.000Z',
         updatedAt: '2026-07-29T12:15:00.000Z',
     },
     {
-        id: '77777777-7777-7777-7777-777777777777',
-        studentId: '55555555-5555-5555-5555-555555555555',
-        queueId: '11111111-1111-1111-1111-111111111111',
+        id: '77777777-7777-4777-8777-777777777777',
+        studentId: '55555555-5555-4555-8555-555555555555',
+        queueId: '11111111-1111-4111-8111-111111111111',
         status: 'HELPING',
         position: null,
         joinedAt: '2026-07-29T11:00:00.000Z',
         updatedAt: '2026-07-29T12:00:00.000Z',
     },
     {
-        id: '88888888-8888-8888-8888-888888888888',
-        studentId: '99999999-9999-9999-9999-999999999999',
-        queueId: '11111111-1111-1111-1111-111111111111',
+        id: '88888888-8888-4888-8888-888888888888',
+        studentId: '99999999-9999-4999-9999-999999999999',
+        queueId: '11111111-1111-4111-8111-111111111111',
         status: 'WAITING',
         position: 2,
         joinedAt: '2026-07-29T12:20:00.000Z',
         updatedAt: '2026-07-29T12:20:00.000Z',
     },
     {
-        id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
-        studentId: '55555555-5555-5555-5555-555555555555',
-        queueId: '23333333-3333-3333-3333-333333333333',
+        id: 'aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa',
+        studentId: '55555555-5555-4555-8555-555555555555',
+        queueId: '23333333-3333-4333-8333-333333333333',
         status: 'WAITING',
         position: 1,
         joinedAt: '2026-07-28T10:00:00.000Z',
         updatedAt: '2026-07-28T10:00:00.000Z',
     },
     {
-        id: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
-        studentId: '99999999-9999-9999-9999-999999999999',
-        queueId: '13333333-3333-3333-3333-333333333333',
+        id: 'bbbbbbbb-bbbb-4bbb-bbbb-bbbbbbbbbbbb',
+        studentId: '99999999-9999-4999-9999-999999999999',
+        queueId: '13333333-3333-4333-8333-333333333333',
         status: 'COMPLETED',
         position: null,
         joinedAt: '2026-07-28T09:30:00.000Z',
         updatedAt: '2026-07-28T10:15:00.000Z',
     },
     {
-        id: 'cccccccc-cccc-cccc-cccc-cccccccccccc',
-        studentId: '55555555-5555-5555-5555-555555555555',
-        queueId: '33333333-3333-3333-3333-333333333333',
+        id: 'cccccccc-cccc-4ccc-accc-cccccccccccc',
+        studentId: '55555555-5555-4555-8555-555555555555',
+        queueId: '33333333-3333-4333-8333-333333333333',
         status: 'LEFT',
         position: null,
         joinedAt: '2026-07-28T09:05:00.000Z',
         updatedAt: '2026-07-28T09:45:00.000Z',
     },
     {
-        id: 'dddddddd-dddd-dddd-dddd-dddddddddddd',
-        studentId: '99999999-9999-9999-9999-999999999999',
-        queueId: '33333333-3333-3333-3333-333333333333',
+        id: 'dddddddd-dddd-4ddd-addd-dddddddddddd',
+        studentId: '99999999-9999-4999-9999-999999999999',
+        queueId: '33333333-3333-4333-8333-333333333333',
         status: 'REMOVED',
         position: null,
         joinedAt: '2026-07-28T09:10:00.000Z',
@@ -103,9 +107,9 @@ router.get('/', async (_req: Request, res: Response): Promise<void> => {
 // GET /api/queueticket/queues/:id — multiple tickets based on a Queue id
 // NOTE: this must be registered before GET /:id, otherwise Express would
 // match "queues" itself as the :id param on that route instead.
-router.get('/queues/:id', async (req: Request, res: Response): Promise<void> => {
+router.get('/queues/:queueId', async (req: Request, res: Response): Promise<void> => {
     try {
-        const queueId = req.params.id;
+        const queueId = req.params.queueId;
         if (!queueId) {
             res.status(400).json({ message: 'Ticket ID is required' });
             return;
@@ -140,35 +144,37 @@ router.get('/queues/:id', async (req: Request, res: Response): Promise<void> => 
     }
 });
 
-// GET /api/queueticket/:id — single ticket
-router.get('/:id', async (req: Request, res: Response): Promise<void> => {
+// GET /api/queueticket/:queueTicketId — single ticket
+router.get('/:queueTicketId', async (req: Request, res: Response): Promise<void> => {
     try {
-        const ticketId = req.params.id;
-        if (!ticketId) {
-            res.status(400).json({ message: 'Ticket ID is required' });
+        const queueTicketId = req.params.queueTicketId;
+        // no id or no queue id flag
+        if (!queueTicketId) {
+            res.status(404).json({ message: 'Missing required parameter'})
             return;
         }
 
         // const ticket = await prisma.queueTicket.findUnique({
-        //     where: { id: ticketId },
+        //     where: { studentId, queueId },
         // });
         // if (!ticket) {
         //     res.status(404).json({ message: 'No ticket found' });
         //     return;
         // }
-
-        const ticket = mockTickets.find((t) => t.id === ticketId);
+        
+        const ticket = mockTickets.find((t) => t.id == queueTicketId);
         if (!ticket) {
             res.status(404).json({ message: 'No ticket found' });
             return;
         }
-
+        // Only know the ticket id after successful fetching
         const body: QueueTicketResponse = {
             ticket,
-            message: `Ticket ${ticketId} successfully fetched`,
+            message: `Ticket ${ticket.id} successfully fetched`,
         };
         res.status(200).json(body);
-    } catch (error: unknown) {
+    } 
+    catch (error: unknown) {
         if (error instanceof ZodError) {
             res.status(400).json({ message: 'Invalid input', errors: error.issues });
             return;
@@ -184,12 +190,16 @@ router.get('/:id', async (req: Request, res: Response): Promise<void> => {
 // POST /api/queueticket — create ticket
 router.post('/', async (req: Request, res: Response): Promise<void> => {
     try {
-        const validatedTicket = CreateQueueTicketValidationSchema.parse(req.body);
+        // The server owns student identity; never trust a client-supplied user ID.
+        const validatedTicket = CreateQueueTicketValidationSchema.parse({
+            ...req.body,
+            studentId: DEV_STUDENT_ID,
+        });
 
         // const newTicket = await prisma.queueTicket.create({ data: validatedTicket });
 
         const newTicket: QueueTicket = {
-            id: 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee',
+            id: 'eeeeeeee-eeee-4eee-aeee-eeeeeeeeeeee',
             ...validatedTicket,
             position: validatedTicket.position ?? null,
             joinedAt: new Date().toISOString(),
@@ -215,9 +225,9 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
 });
 
 // PATCH /api/queueticket/:id — update status (e.g. WAITING -> HELPING)
-router.patch('/:id', async (req: Request, res: Response): Promise<void> => {
+router.patch('/:queueTicketId', async (req: Request, res: Response): Promise<void> => {
     try {
-        const ticketId = req.params.id;
+        const ticketId = req.params.queueTicketId;
         if (!ticketId) {
             res.status(400).json({ message: 'Ticket ID is required' });
             return;
@@ -267,9 +277,9 @@ router.patch('/:id', async (req: Request, res: Response): Promise<void> => {
 });
 
 // DELETE /api/queueticket/:id
-router.delete('/:id', async (req: Request, res: Response): Promise<void> => {
+router.delete('/:queueTicketId', async (req: Request, res: Response): Promise<void> => {
     try {
-        const ticketId = req.params.id;
+        const ticketId = req.params.queueTicketId;
         if (!ticketId) {
             res.status(400).json({ message: 'Ticket ID is required' });
             return;

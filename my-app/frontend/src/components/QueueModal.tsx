@@ -9,38 +9,27 @@ import { QueueTicketComp } from './QueueTicketComp';
 import axios from 'axios'
 
 interface ModalProps {
-    // hasClickedJoin?: boolean | null
-    // queueJoinedId?: string | null
-    // The current queue
-    queue: Queue
-    // The list of tickets for this queue
-    // queueTickets: QueueTicket[]
+    queue: Queue | null
+    ticket: QueueTicket | null
+    ticketId: string | null
     isModalOpen: boolean;
     setModalOpen: (value: boolean) => void;
 }
 
 // Local queue for each instance
-export const QueueModal = ({ queue, isModalOpen, setModalOpen }: ModalProps) => {
+export const QueueModal = ({ queue, ticket, ticketId, isModalOpen, setModalOpen }: ModalProps) => {
     const [tickets, setTickets] = useState<QueueTicket[]>([]);
+    const [curTicket, setCurTicket] = useState<QueueTicket | null>(ticket);
 
-    // const curQueue = queues.find((q: Queue) => q.id === queueJoinedId);
-
-    const createTicket = async () => {
+    const deleteTicketById = async () => {
         try {
-            await axios.post('/api/queueticket', { queueId: queue.id, status: 'WAITING' });
-            console.log('Successfully created a new ticket');
-        }
-        catch (error) {
-            console.log(`Failed to create a ticket ${error}`);
-        }
-    }
-
-    // Need current ticket id
-    const deleteTicketById = async (ticketId: string) => {
-        try {
-            const response = await axios.patch(`/api/queueticket/${ticketId}`, { status: 'LEFT' });
+            if (!curTicket) {      
+                console.log('No ticket available to delete');
+                return;
+            }
+            const response = await axios.patch(`/api/queueticket/${curTicket.id}`, { status: 'LEFT' });
             if (response.status !== 200) {
-                console.log('Failed to delete ticket id')
+                console.log(`Failed to delete ticket ${curTicket.id}`);
                 return;
             }
         }
@@ -49,35 +38,67 @@ export const QueueModal = ({ queue, isModalOpen, setModalOpen }: ModalProps) => 
         }
     }
 
-    // Fetch tickets by Queue Id whenever the modal is active
-    const fetchTicketByQueueId = async (queueId: string) => {
+    // Fetch multiple tickets by queue id
+    const fetchMultipleTicketsById = async (queueId: string) => {
         try {
-            // Returns a QueueTicketsListResponse
+            // Extract from a QueueTicketsListResponse
             const response = await axios.get<QueueTicketsListResponse>(`/api/queueticket/queues/${queueId}`);
+            if (response.status !== 200) {
+                console.log('Failed to fetch multiple tickets by id')
+                return;
+            }
             const queueTickets: QueueTicket[] = response.data.tickets;
+
+            // Update state
             setTickets((prevTickets) => [...prevTickets, ...queueTickets]);
+            
+            return queueTickets;
         }
         catch (error) {
             console.error('Failed to fetch tickets', error);
         }
     }
 
-    const addTicketByQueueId = async (queueId: string, queueTicketId: string) => {
+    // Fetch single ticket by ticket id passed from prop
+    const fetchSingleTicketById = async (ticketId: string) => {
         try {
-            const { data: ticketData } = await axios.get<QueueTicketResponse>(`/api/queueticket/${queueTicketId}`);
-            // Add to current queue ticket state
-            setTickets((prevTickets) => [...prevTickets, ticketData.ticket]);
+            if (!ticketId) {
+                console.log('Missing required student and queue ID parameters');
+                return;
+            }
+
+            const response  = await axios.get<QueueTicketResponse>(`/api/queueticket/${ticketId}`);
+            if (response.status !== 200) {
+                console.log('Failed to fetch ticket by id');
+                return;
+            }
+            const queueTicket: QueueTicket = response.data.ticket;
+            setCurTicket(queueTicket);
+
+            // Return the actual ticket
+            return queueTicket;
         }
         catch (error) {
-            console.log(`Failed to add a ticket ${queueTicketId} to queue ${queueId}`, error);
+            console.error(`Failed to fetch ticket with id ${ticketId}`, error);
         }
     }
 
-    // Load this queue's tickets whenever the modal is opened for a queue
+    // Load this queue's tickets whenever the modal is opened for a queue (Optimize later)
     useEffect(() => {
-        if (!isModalOpen) return;
-        fetchTicketByQueueId(queue.id);
-    }, [isModalOpen, queue.id]);
+        if (!isModalOpen || !queue) return;
+        
+        // Mount: component loaded into DOM
+        let isMounted = true;
+        const loadTicketsData = async () => {
+            if (isMounted) {
+                await fetchMultipleTicketsById(queue?.id);  
+            }
+        }
+        loadTicketsData();
+
+        // Clean up to prevent memory leak
+        return () => { isMounted = false; } 
+    }, [isModalOpen, queue?.id]);
 
     if (!isModalOpen) return null;
 
@@ -90,8 +111,8 @@ export const QueueModal = ({ queue, isModalOpen, setModalOpen }: ModalProps) => 
             <div className="relative max-w-md w-full h-[50vh] bg-white rounded-2xl p-6 shadow-xl z-10">
                 <h3 className="text-xl font-semibold text-gray-900">Test Queue</h3>
 
-                <p className="mt-2 text-sm text-black">TA's ID: {queue.taId}</p>
-                <p className="mt-2 text-sm text-black">Location: {queue.location}</p>
+                <p className="mt-2 text-sm text-black">TA's ID: {queue?.taId}</p>
+                <p className="mt-2 text-sm text-black">Location: {queue?.location}</p>
 
                 {/* Real time updates */}
                 <p className="mt-2 text-sm text-black">Your position in queue: {1}</p>
@@ -104,9 +125,17 @@ export const QueueModal = ({ queue, isModalOpen, setModalOpen }: ModalProps) => 
                     {/* Leave queue */}
                     <div className='flex flex-row gap-4'>
                         <button
-                            onClick={() => setModalOpen(false)}
-                            // TODO: also call deleteTicketById(myTicketId) once the current
-                            // user's ticket id is tracked, so leaving actually removes it
+                            onClick={ async () => {
+                                if (curTicket) {
+                                    try {
+                                        deleteTicketById();
+                                        setModalOpen(false);
+                                    }
+                                    catch (error) {
+                                        console.log('Failed to delete ticket', error);
+                                    }
+                                }
+                            }}
                             className="px-4 py-2 items-end bg-red-500 text-white rounded-lg text-sm font-medium hover:bg-red-700"
                         >
                             Leave

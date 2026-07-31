@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react'
 import axios from 'axios'
 import { QueueModal } from '../components/QueueModal'
-import type { Queue, QueuesListResponse, QueueResponse } from '@shared/types';
+import type { Queue, QueueTicket, QueuesListResponse, QueueResponse, QueueTicketResponse } from '@shared/types';
+
+
 
 // Props type interface with setter
 interface ClassSelectorProps { 
@@ -12,7 +14,33 @@ interface ClassSelectorProps {
 
 export const ClassSelector: React.FC<ClassSelectorProps> = ({ CSCEClasses, selectedClass, setSelectedClass }) => { 
     const [queue, setQueue] = useState<Queue[]>([]);
+    // Load a modal only for selected queue
+    const [selectedQueue, setSelectedQueue] = useState<Queue | null>(null);
     const [isModalOpen, setModalOpen] = useState(false);
+    const [ticket, setTicket] = useState<QueueTicket | null>(null);
+    const [ticketId, setTicketId] = useState<string>('');
+
+    // Pass in queue id of the ticket before even joining the queue
+    const createTicket = async (queueId: string) =>  {
+        try {
+            // res: data: payload
+            const response = await axios.post<QueueTicketResponse>('/api/queueticket', { queueId, status: 'WAITING' });
+            console.log('Successfully created a new ticket');
+
+            // Need to return ticket and ticket id to pass into QueueModal
+            const ticket: QueueTicket = response.data.ticket;
+            const ticketId: string = ticket.id;
+            console.log(`My current ticket id ${ticketId}`);
+
+            setTicket(ticket);
+            setTicketId(ticketId);
+            
+            return {ticket, ticketId};
+        }
+        catch (error) {
+            console.log(`Failed to create a ticket ${error}`);
+        }
+    }
 
     // Prev is the current value of queue, e.g.: [1,2 3,4]
     useEffect(() => {
@@ -46,9 +74,6 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ CSCEClasses, selec
     };
     const clearQueue = () => {
         setQueue([]);
-    }
-    const joinQueue = () => {
-        setModalOpen(true);
     }
   return ( 
     <> 
@@ -89,29 +114,33 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ CSCEClasses, selec
             <p className='text-gray-500 text-sm'>No active queues loaded. Click "Enter" to fetch.</p>
           ) : (
             <div className='space-y-2 w-1/2'>
-              {queue.map((item) => (
-                <div key={item.id} className='p-3 border rounded-lg bg-gray-50 flex justify-between'>
+              {queue.map((q) => (
+                <div key={q.id} className='p-3 border rounded-lg bg-gray-50 flex justify-between'>
                   <div>
-                    <p className='font-semibold text-sm'>Course: {item.courseId}</p>
-                    <p className='text-xs text-gray-500'>Location: {item.location}</p>
+                    <p className='font-semibold text-sm'>Course: {q.courseId}</p>
+                    <p className='text-xs text-gray-500'>Location: {q.location}</p>
                      <button 
-                            onClick={joinQueue}
+                            onClick={async () => {
+                              const response = await createTicket(q.id);
+                              if (!response) return;                              
+
+                              // Update selected queue
+                              setSelectedQueue(q);
+                              setModalOpen(true);
+                            }}
                             className={`font-inter text-md w-auto text-black pointer-events-auto hover:text-blue-500
-                                ${item.isOpen ? 'visible' : 'invisible'}`}
+                                ${q.isOpen ? 'visible' : 'invisible'}`}
                         > 
-                            {item.isOpen && 'Join'}
+                            {q.isOpen && 'Join'}
                         </button> 
-                        {/* Queue Modal  */}
-                       {isModalOpen && <QueueModal queue={item} isModalOpen={isModalOpen} setModalOpen={setModalOpen}/>}
                   </div>
-    
-                  <span className={`text-xs px-2 py-1 h-fit rounded ${item.isOpen ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                    {item.isOpen ? 'Open' : 'Closed'}
+                  <span className={`text-xs px-2 py-1 h-fit rounded ${q.isOpen ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                    {q.isOpen ? 'Open' : 'Closed'}
                   </span>
-                  
-                   
                 </div>
               ))}
+              {/* Render a modal for each selected queue and when isModalOpen  */}
+              {isModalOpen && <QueueModal queue={selectedQueue} ticket={ticket} ticketId={ticketId} isModalOpen={isModalOpen} setModalOpen={setModalOpen}/>}
             </div>
           )}
         </div>

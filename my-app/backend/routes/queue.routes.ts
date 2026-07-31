@@ -15,36 +15,36 @@ const router: Router = Router();
 // MOCK: sample queues — swap these for prisma.queue.* when DB is ready
 const mockQueues: Queue[] = [
     {
-        id: '11111111-1111-1111-1111-111111111111',
+        id: '11111111-1111-4111-8111-111111111111',
         courseId: 'csce-221',
-        taId: '22222222-2222-2222-2222-222222222222',
+        taId: '22222222-2222-4222-8222-222222222222',
         location: 'ZACH 310',
         isOpen: true,
         createdAt: '2026-07-29T12:00:00.000Z',
         updatedAt: '2026-07-29T12:30:00.000Z',
     },
     {
-        id: '33333333-3333-3333-3333-333333333333',
+        id: '33333333-3333-4333-8333-333333333333',
         courseId: 'csce-313',
-        taId: '22222222-2222-2222-2222-222222222222',
+        taId: '22222222-2222-4222-8222-222222222222',
         location: 'HRBB 113',
         isOpen: false,
         createdAt: '2026-07-28T09:00:00.000Z',
         updatedAt: '2026-07-28T18:00:00.000Z',
     },
     {
-        id: '13333333-3333-3333-3333-333333333333',
+        id: '13333333-3333-4333-8333-333333333333',
         courseId: 'csce-313',
-        taId: '22222222-2222-2222-2222-222222222222',
+        taId: '22222222-2222-4222-8222-222222222222',
         location: 'HRBB 113',
         isOpen: true,
         createdAt: '2026-07-28T09:00:00.000Z',
         updatedAt: '2026-07-28T18:00:00.000Z',
     },
     {
-        id: '23333333-3333-3333-3333-333333333333',
+        id: '23333333-3333-4333-8333-333333333333',
         courseId: 'csce-221',
-        taId: '22222222-2222-2222-2222-222222222222',
+        taId: '22222222-2222-4222-8222-222222222222',
         location: 'HRBB 111',
         isOpen: true,
         createdAt: '2026-07-28T09:00:00.000Z',
@@ -114,7 +114,7 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
         // const newQueue = await prisma.queue.create({ data: validatedQueue });
 
         const newQueue: Queue = {
-            id: '44444444-4444-4444-4444-444444444444',
+            id: '44444444-4444-4444-8444-444444444444',
             ...validatedQueue,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
