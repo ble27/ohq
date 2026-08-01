@@ -2,31 +2,52 @@ import React, { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { LuHouse, LuLibraryBig, LuSettings, LuPanelLeft } from "react-icons/lu";
 
-export const Sidebar = () => {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const userToggled = useRef(false);
+export const MOBILE_BREAKPOINT = 640;
 
+interface SideBarProps {
+  isSidebarOpen: boolean
+  setIsSidebarOpen: (value: boolean) => void
+}
+
+export const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }: SideBarProps ) => {
+  const [isDesktop, setIsDesktop] = useState(() => window.innerWidth >= MOBILE_BREAKPOINT);
+  const userToggled = useRef(false);
+  
   const toggleSidebar = () => {
     userToggled.current = true;
-    setIsSidebarOpen(prev => !prev);
+    setIsSidebarOpen(!isSidebarOpen);
   }
 
-  // Run once on mount, event listener continues listening, remove listener on dismount
+  // Sync open/closed with viewport; always collapse below breakpoint
   useEffect(() => {
     const handleResize = () => {
-      // user manually toggled
-      if (userToggled.current) return; 
-      setIsSidebarOpen(window.innerWidth >= 640);
+      const desktop = window.innerWidth >= MOBILE_BREAKPOINT;
+      setIsDesktop(desktop);
+      if (!desktop) {
+        setIsSidebarOpen(false);
+        userToggled.current = false;
+        return;
+      }
+      // Desktop: reopen unless the user manually collapsed
+      if (!userToggled.current) {
+        setIsSidebarOpen(true);
+      }
     }
     handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  }, [setIsSidebarOpen]);
+
+  const sidebarWidth = isSidebarOpen ? 'w-60' : 'w-[72px]';
+  // Mobile: spacer stays 72px so expand overlays home without shifting it.
+  // Desktop: spacer matches sidebar so content is pushed.
+  const spacerWidth = isDesktop ? sidebarWidth : 'w-[72px]';
 
   return (
     <>
-      <div className={`relative flex flex-col h-screen shadow bg-[#500000] transition-all ease-in-out duration-400 text-white font-semibold 
-      ${isSidebarOpen ? 'w-80' : 'w-[72px]'}`}>
+      {/* Spacer keeps main content offset; on mobile it never grows with expand */}
+      <div className={`shrink-0 transition-all ease-in-out duration-400 ${spacerWidth}`} aria-hidden />
+      <div className={`fixed top-0 left-0 z-40 flex flex-col h-screen shadow bg-[#500000] transition-all ease-in-out duration-400 text-white font-semibold ${sidebarWidth}`}>
         <div className='flex flex-row items-center pl-4 text-xl pt-5 pb-7 pr-2'>
         <span 
           className={`font-medium text-white whitespace-nowrap transition-all duration-200 overflow-hidden cursor-pointer
