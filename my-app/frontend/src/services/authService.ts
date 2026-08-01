@@ -54,3 +54,12 @@ export const signOut = async () => {
         throw new Error((error as Error).message);
     }
 }
+
+// Fetch user from backend 
+// Used in AuthContextProvider.tsx to set the user state
+export const getMe = async () => {
+    const response = await axios.get(`/api/auth/me`, {
+        withCredentials: true,
+    });
+    return response.data.user ?? null;
+}

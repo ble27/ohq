@@ -6,7 +6,8 @@ export default defineConfig({
   migrations: {
     path: "prisma/migrations",
   },
+  // Prisma 7 CLI uses this for migrate/introspect — use DIRECT_URL (not pooler)
   datasource: {
-    url: env("DATABASE_URL"),
+    url: env("DIRECT_URL"),
   },
 });

@@ -1,12 +1,11 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 import type { User } from '@supabase/supabase-js';
-import { supabase } from '../services/supabase';
-import { type Session } from '@supabase/supabase-js'
+import { getMe } from '../services/authService';
 
 interface AuthContextValue {
-  session: Session | null;
   user: User | null;
   loading: boolean;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -20,30 +19,27 @@ export const useAuth = () => {
 };
 
 export const AuthContextProvider = ({ children }: { children: ReactNode }) => {
-  const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Run once on mount
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+  const refreshUser = useCallback(async () => {
+    try {
+      const currentUser = await getMe();
+      setUser(currentUser);
+    } catch {
+      setUser(null);
+    } finally {
       setLoading(false);
-    });
-
-    // Key: Persistent event handler to listen for Auth state changes to update states
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
+    }
   }, []);
 
+  // Load user from httpOnly auth cookie on mount
+  useEffect(() => {
+    refreshUser();
+  }, [refreshUser]);
+
   return (
-    <AuthContext.Provider value={{ session, user, loading }}>
+    <AuthContext.Provider value={{ user, loading, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

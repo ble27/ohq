@@ -1,31 +1,14 @@
 import { Router } from 'express';
 import type { Request, Response } from 'express';
-// import { prisma } from '../prisma.js';
+import { prisma } from '../prisma.js';
 import type {
     ApiMessageResponse,
-    User,
     UserResponse,
 } from '../../shared/types.js';
 import { ZodError } from 'zod';
 import { UserValidatedSchema } from '../schemas/user.schema.js';
 
 const router: Router = Router();
-
-// MOCK: sample users — swap for prisma.user.* when DB is ready
-const mockUsers: User[] = [
-    {
-        id: '22222222-2222-4222-8222-222222222222',
-        email: 'ta@tamu.edu',
-        name: 'Alex TA',
-        role: 'TA',
-    },
-    {
-        id: '55555555-5555-4555-8555-555555555555',
-        email: 'student@tamu.edu',
-        name: 'Sam Student',
-        role: 'STUDENT',
-    },
-];
 
 // GET /api/users/:id
 router.get('/:id', async (req: Request, res: Response): Promise<void> => {
@@ -36,18 +19,13 @@ router.get('/:id', async (req: Request, res: Response): Promise<void> => {
             return;
         }
 
-        // const user = await prisma.user.findUnique({
-        //     where: { id: userId },
-        // });
-        // if (!user) {
-        //     res.status(404).json({ message: 'No user found' });
-        //     return;
-        // }
-
-        const user = mockUsers.find((u) => u.id === userId) ?? {
-            ...mockUsers[0]!,
-            id: userId,
-        };
+        const user = await prisma.user.findUnique({
+            where: { id: userId },
+        });
+        if (!user) {
+            res.status(404).json({ message: 'No user found' });
+            return;
+        }
 
         const body: UserResponse = {
             user,
@@ -68,32 +46,27 @@ router.get('/:id', async (req: Request, res: Response): Promise<void> => {
 });
 
 // POST /api/users
+// Prefer creating profiles via /api/auth/signup (id = auth.users.id).
+// This endpoint still requires the caller to pass the Supabase auth user id.
 router.post('/', async (req: Request, res: Response): Promise<void> => {
     try {
         const validatedUser = UserValidatedSchema.parse(req.body);
 
-        // const existingUser = await prisma.user.findUnique({
-        //     where: { id: validatedUser.id },
-        // });
-        // if (existingUser) {
-        //     res.status(409).json({ message: 'User already exists' });
-        //     return;
-        // }
-        // const newUser = await prisma.user.create({
-        //     data: {
-        //         id: validatedUser.id,
-        //         email: validatedUser.email,
-        //         role: validatedUser.role,
-        //         name: validatedUser.name ?? null,
-        //     },
-        // });
-
-        const newUser: User = {
-            id: validatedUser.id,
-            email: validatedUser.email,
-            role: validatedUser.role,
-            name: validatedUser.name ?? null,
-        };
+        const existingUser = await prisma.user.findUnique({
+            where: { id: validatedUser.id },
+        });
+        if (existingUser) {
+            res.status(409).json({ message: 'User already exists' });
+            return;
+        }
+        const newUser = await prisma.user.create({
+            data: {
+                id: validatedUser.id, // must be Supabase auth.users.id
+                email: validatedUser.email,
+                role: validatedUser.role,
+                name: validatedUser.name ?? null,
+            },
+        });
 
         const body: UserResponse = { user: newUser, message: 'User created' };
         res.status(201).json(body);
@@ -119,16 +92,16 @@ router.delete('/:id', async (req: Request, res: Response): Promise<void> => {
             return;
         }
 
-        // const user = await prisma.user.findUnique({
-        //     where: { id: userId },
-        // });
-        // if (!user) {
-        //     res.status(404).json({ message: 'User cannot be deleted due to not found' });
-        //     return;
-        // }
-        // await prisma.user.delete({
-        //     where: { id: userId },
-        // });
+        const user = await prisma.user.findUnique({
+            where: { id: userId },
+        });
+        if (!user) {
+            res.status(404).json({ message: 'User cannot be deleted due to not found' });
+            return;
+        }
+        await prisma.user.delete({
+            where: { id: userId },
+        });
 
         const body: ApiMessageResponse = {
             message: `User ${userId} successfully deleted`,

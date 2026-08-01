@@ -217,8 +217,11 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
             ticket: newTicket,
             message: 'Ticket created',
         };
+        // Send a ticket to the client
         res.status(201).json(body);
-    } catch (error: unknown) {
+    }
+    // If the ticket creation fails, send an error response
+    catch (error: unknown) {
         if (error instanceof ZodError) {
             res.status(400).json({ message: 'Invalid input', errors: error.issues });
             return;

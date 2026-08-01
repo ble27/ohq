@@ -9,7 +9,7 @@ export const Signin = () => {
     const [password, setPassword] = useState("");
     const [submitting, setSubmitting] = useState(false);
     const navigate = useNavigate();
-    const { user, loading } = useAuth();
+    const { user, loading, refreshUser } = useAuth();
 
     useEffect(() => {
         if (!loading && user) {
@@ -22,6 +22,7 @@ export const Signin = () => {
         setSubmitting(true);
         try {
             await signIn(email, password);
+            await refreshUser();
             navigate("/dashboard/home");
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : "Sign in failed";

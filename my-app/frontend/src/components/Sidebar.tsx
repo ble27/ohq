@@ -15,7 +15,7 @@ interface SideBarProps {
 export const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }: SideBarProps ) => {
   const [isDesktop, setIsDesktop] = useState(() => window.innerWidth >= MOBILE_BREAKPOINT);
   const [error, setError] = useState('');
-  const { user, loading } = useAuth();
+  const { user, loading, refreshUser } = useAuth();
   const userToggled = useRef(false);
   const navigate = useNavigate();
 
@@ -53,8 +53,8 @@ export const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }: SideBarProps ) => {
   const handleSignout = async () => {
     try {
       await signOut();
+      await refreshUser();
       navigate('/');
-      return ({success: true, message: 'Successfully signed out'});
     }
     catch(err: any) {
       setError(err);
@@ -111,15 +111,17 @@ export const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }: SideBarProps ) => {
             ${isSidebarOpen ? ' justify-start pl-4' : 'justify-center pl-2'}`}
           >
           {/* PFP placeholder */}
-          <div className='w-9 h-9 rounded-full bg-gray-50 border-none shrink-0'></div>
+          <div className='w-9 h-9 rounded-full text-white font-bold bg-black/60 border-none shrink-0 flex items-center justify-center'>
+            {user?.email?.charAt(0).toUpperCase() ?? ''}
+          </div>
 
           {/* Account name and status */}
           <div className='flex flex-col overflow-hidden'>
-            <div className={`font-normal text-xs whitespace-nowrap transition-all duration-200 ${isSidebarOpen ? 'opacity-100 max-w-[160px]' : 'opacity-0 max-w-0 pl-0'}`}>
-              {user?.email}
+            <div className={`font-normal text-white text-xs whitespace-nowrap transition-all duration-200 ${isSidebarOpen ? 'opacity-100 max-w-[160px]' : 'opacity-0 max-w-0 pl-0'}`}>
+              {user?.email ?? ''}
             </div> 
-            <div className={`font-normal text-xs text-gray-50/50 whitespace-nowrap transition-all duration-200 ${isSidebarOpen ? 'opacity-100 max-w-[160px]' : 'opacity-0 max-w-0 pl-0'}`}>
-              {user?.role}
+            <div className={`font-normal text-white text-xs text-gray-50/50 whitespace-nowrap transition-all duration-200 ${isSidebarOpen ? 'opacity-100 max-w-[160px]' : 'opacity-0 max-w-0 pl-0'}`}>
+              {user?.id ?? ''}
             </div> 
           </div>          
         </div>

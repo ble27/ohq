@@ -130,10 +130,11 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ CSCEClasses, selec
                     <p className='text-xs text-gray-500'>Location: {q.location}</p>
                      <Button 
                             onClick={async () => {
+                              // Create a ticket for the selected queue
                               const response = await createTicket(q.id);
                               if (!response) return;                              
 
-                              // Update selected queue
+                              // Update selected queue and open the modal
                               setSelectedQueue(q);
                               setModalOpen(true);
                             }}

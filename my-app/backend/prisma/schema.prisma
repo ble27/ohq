@@ -1,10 +1,10 @@
-datasource db {
-    provider = "postgresql"
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
 }
 
-generator client {
-    provider = "prisma-client"
-    output   = "../generated/prisma"
+datasource db {
+  provider = "postgresql"
 }
 
 // Models
@@ -23,7 +23,7 @@ model Course {
 model Queue {
     id          String      @id @default(uuid())
     courseId    String      // foreign key points to a Course
-    taId        String      // foreign key points to a User
+    taId        String      @db.Uuid // foreign key = auth.users / User.id
     location    String      
     isOpen      Boolean     @default(false)
     createdAt   DateTime    @default(now())
@@ -37,7 +37,7 @@ model Queue {
 
 model QueueTicket {
     id          String          @id @default(uuid())
-    studentId   String          // foreign key
+    studentId   String          @db.Uuid // foreign key = auth.users / User.id
     queueId     String          // foreign key
     status      SessionStatus   @default(WAITING)
     position    Int?
@@ -56,7 +56,7 @@ model QueueTicket {
 model CourseTA {
     id          String      @id @default(uuid())
     courseId    String
-    taId        String
+    taId        String      @db.Uuid // foreign key = auth.users / User.id
     createdAt   DateTime    @default(now())
 
     // Relations
@@ -67,8 +67,9 @@ model CourseTA {
     @@unique([courseId, taId])
 }
 
+// id MUST match auth.users.id from Supabase Auth (no @default — Auth is source of truth)
 model User {
-    id          String      @id @default(uuid())
+    id          String      @id @db.Uuid
     email       String      @unique
     name        String?     
     role        Role        @default(STUDENT)
