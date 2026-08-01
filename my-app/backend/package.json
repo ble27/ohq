@@ -12,6 +12,8 @@
  "dependencies": {
   "@prisma/adapter-pg": "^7.9.1",
   "@prisma/client": "^7.9.1",
+  "@supabase/supabase-js": "^2.111.0",
+  "cookie-parser": "^1.4.7",
   "dotenv": "^17.4.2",
   "express": "^4.19.2",
   "pg": "^8.22.0",

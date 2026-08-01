@@ -1,53 +1,56 @@
-import { supabase } from "./supabase"
+import axios from 'axios'
 
-// Handle signin, signup, signout
+// API calls to backend @/api/auth/ for authentication
 
 export const signIn = async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signInWithPassword({
+    try {
+        const response = await axios.post(`/api/auth/signin`, {
         email, 
         password
-    })
-    if (error) {
-        throw error;
+    }, {
+        // Tell axios to send cookies with the request
+        withCredentials: true,
+    });
+        if (response.status === 200) {
+            return response.data;
+        } else {
+            throw new Error(response.data.message);
+        }
+    } catch (error) {
+        throw new Error((error as Error).message);
     }
-    // Remove later. Just for debugging purposes.
-    console.log(data);
-    return data;
 }
 
 export const signUp = async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signUp({
-        email,
-        password
-    })
-    if (error) {
-        throw error;
+    try {
+        const response = await axios.post(`/api/auth/signup`, {
+            email,
+            password
+        }, {
+            withCredentials: true,
+        });
+        if (response.status === 200) {
+            return response.data;
+        } else {
+            throw new Error(response.data.message);
+        }
+    } catch (error) {
+        throw new Error((error as Error).message);
     }
-    // Remove later. Just for debugging purposes.
-    console.log(data);
-    return data;
 }
 
 export const signOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-        throw error;
+    try {
+        const response = await axios.post(`/api/auth/signout`, {
+        }, {
+            withCredentials: true,
+        });
+        if (response.status === 200) {
+            return response.data.message;
+        } else {
+            throw new Error(response.data.message);
+        }
+    } catch (error) {  
+        throw new Error((error as Error).message);
     }
-    return true;
-}
-
-export const getUser = async () => {
-    const { data, error } = await supabase.auth.getUser();
-    if (error) {
-        throw error;
-    }
-    return data;
-}
-
-export const getSession = async () => {
-    const { data, error } = await supabase.auth.getSession();
-    if (error) {
-        throw error;
-    }
-    return data;
 }
