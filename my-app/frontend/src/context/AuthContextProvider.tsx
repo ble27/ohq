@@ -28,6 +28,7 @@ export const AuthContextProvider = ({ children }: { children: ReactNode }) => {
       setLoading(false);
     });
 
+    // Key: Persistent event handler to listen for Auth state changes to update states
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
       setLoading(false);

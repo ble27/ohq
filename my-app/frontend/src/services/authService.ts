@@ -10,6 +10,8 @@ export const signIn = async (email: string, password: string) => {
     if (error) {
         throw error;
     }
+    // Remove later. Just for debugging purposes.
+    console.log(data);
     return data;
 }
 
@@ -21,6 +23,8 @@ export const signUp = async (email: string, password: string) => {
     if (error) {
         throw error;
     }
+    // Remove later. Just for debugging purposes.
+    console.log(data);
     return data;
 }
 

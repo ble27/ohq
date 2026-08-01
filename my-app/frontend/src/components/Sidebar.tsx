@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Link } from 'react-router-dom'
-import { LuHouse, LuLibraryBig, LuSettings, LuPanelLeft } from "react-icons/lu";
+import { useNavigate, Link } from 'react-router-dom'
+import { LuHouse, LuLibraryBig, LuSettings, LuPanelLeft, LuLogOut } from "react-icons/lu";
+import { signOut } from '@/services/authService';
+import { useAuth } from '@/context/AuthContextProvider';
+
 
 export const MOBILE_BREAKPOINT = 640;
 
@@ -11,8 +14,11 @@ interface SideBarProps {
 
 export const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }: SideBarProps ) => {
   const [isDesktop, setIsDesktop] = useState(() => window.innerWidth >= MOBILE_BREAKPOINT);
+  const [error, setError] = useState('');
+  const { user, loading } = useAuth();
   const userToggled = useRef(false);
-  
+  const navigate = useNavigate();
+
   const toggleSidebar = () => {
     userToggled.current = true;
     setIsSidebarOpen(!isSidebarOpen);
@@ -43,6 +49,18 @@ export const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }: SideBarProps ) => {
   // Desktop: spacer matches sidebar so content is pushed.
   const spacerWidth = isDesktop ? sidebarWidth : 'w-[72px]';
 
+
+  const handleSignout = async () => {
+    try {
+      await signOut();
+      navigate('/');
+      return ({success: true, message: 'Successfully signed out'});
+    }
+    catch(err: any) {
+      setError(err);
+      console.log(err);
+    } 
+  }
   return (
     <>
       {/* Spacer keeps main content offset; on mobile it never grows with expand */}
@@ -81,7 +99,12 @@ export const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }: SideBarProps ) => {
               {isSidebarOpen && <span>Settings</span>}
           </div>
         </ul> 
-        
+        <div className={`flex flex-row absolute bottom-25 px-4 py-3 gap-[10px] items-center transition-colors duration-200 w-full 
+            ${isSidebarOpen ? 'hover:bg-black/20 hover:opacity-90': 'hover:opacity-80 justify-center'}`}
+            onClick={handleSignout}>
+              <LuLogOut size={20} color="white"/>
+              {isSidebarOpen && <span>Signout</span>}
+          </div>
         {/* Account and settings */}
         <div 
           className={`flex flex-row absolute bottom-0 left-0 h-20 w-full gap-2 border-t border-gray-50/20 items-center transition-all duration-200
@@ -92,11 +115,11 @@ export const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }: SideBarProps ) => {
 
           {/* Account name and status */}
           <div className='flex flex-col overflow-hidden'>
-            <div className={`font-normal text-sm whitespace-nowrap transition-all duration-200 ${isSidebarOpen ? 'opacity-100 max-w-[160px]' : 'opacity-0 max-w-0 pl-0'}`}>
-              Your Name
+            <div className={`font-normal text-xs whitespace-nowrap transition-all duration-200 ${isSidebarOpen ? 'opacity-100 max-w-[160px]' : 'opacity-0 max-w-0 pl-0'}`}>
+              {user?.email}
             </div> 
             <div className={`font-normal text-xs text-gray-50/50 whitespace-nowrap transition-all duration-200 ${isSidebarOpen ? 'opacity-100 max-w-[160px]' : 'opacity-0 max-w-0 pl-0'}`}>
-              Account Status
+              {user?.role}
             </div> 
           </div>          
         </div>
