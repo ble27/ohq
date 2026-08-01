@@ -15,7 +15,10 @@ export const Header = () => {
             <Link to='/' className='font-sans text-base text-gray-500 focus:opacity-90'> docs </Link> 
             <Link to='/' className='font-sans text-base text-gray-500 focus:opacity-90'> source </Link> 
         </div> 
-        <div className='flex justify-end w-1/3'>placeholder</div>
+        <div className='flex text-sm absolute right-2 gap-2 pr-3'>
+          <Link to='/signin' className='bg-black text-white transition-colors duration-300 ease-in-out rounded-full px-3 py-2 hover:opacity-80'>Log In</Link>
+          <Link to='/signup' className='px-3 py-2 rounded-full transition-colors duration-300 ease-in-out hover:opacity-80 hover:bg-gray-300/50'>Sign Up</Link>
+        </div>
         {/* <div className="w-[105px] hidden sm:block"></div>  */}
       </nav>
    
