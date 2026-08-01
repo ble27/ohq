@@ -11,7 +11,7 @@ import { Server } from 'socket.io';
 import http from 'http';
 
 // Service helpers
-import { updatePosition, updateCompletedAndLeft, removeSupported } from './services/queueTicket.services.js';
+import { listActiveTickets } from './services/queue.services.js';
 
 const app = express();
 const PORT: number = Number(process.env.PORT) || 3000;
@@ -32,30 +32,19 @@ io.on('connection', (socket: any) => {
   socket.on('disconnect', () => {
     console.log(`User disconnected: ${socket.id}`);
   });
-  // Join a specific course
-  socket.on('join-queue', (queueId: string) => {
+  // Join a specific queue room (DB join should happen via API + joinQueue service)
+  socket.on('join-queue', async (queueId: string) => {
     socket.join(queueId);
-    
-    // Update position of all users in the queue
-    io.to(queueId).emit('user-joined', socket.id);
-    updatePosition(queueId);
-
-    console.log(`User ${socket.id} joined ${queueId}`);
+    const tickets = await listActiveTickets(queueId);
+    io.to(queueId).emit('queue-updated', tickets);
+    console.log(`User ${socket.id} joined room ${queueId}`);
   });
-  socket.on('leave-queue', (queueId: string) => {
+  socket.on('leave-queue', async (queueId: string) => {
     socket.leave(queueId);
-
-    // Update position of all users in the queue
-    io.to(queueId).emit('user-left', socket.id);
-    updatePosition(queueId);
-    updateCompletedAndLeft(queueId);
-    
-    console.log(`User ${socket.id} left ${queueId}`);
+    const tickets = await listActiveTickets(queueId);
+    io.to(queueId).emit('queue-updated', tickets);
+    console.log(`User ${socket.id} left room ${queueId}`);
   });
-});
-
-io.on('disconnect', (socket: any) => {
-  console.log(`User disconnected: ${socket.id}`);
 });
 
 app.use(express.json());
@@ -67,6 +56,6 @@ app.use('/api/queues', authMiddleware, queueRouter);
 app.use('/api/queueticket/', authMiddleware, queueTicketRouter);
 app.use('/api/users', authMiddleware, userRouter);
 
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`Server is runnning on port ${PORT}`);
 });

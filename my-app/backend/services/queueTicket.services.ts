@@ -1,66 +1,53 @@
-import { prisma } from "../prisma.js";
-import type { QueueTicket } from "@prisma/client";
+import { prisma } from '../prisma.js';
+import type { QueueTicket } from '../generated/prisma/client.js';
+import { SessionStatus } from '../generated/prisma/enums.js';
 
-// Services layer perform actual DB work 
-// QueueTicket helpers to determine position and general logic
+/**
+ * Re-number WAITING tickets by joinedAt (1..n).
+ * Empty waiting list is success — returns [].
+ */
+export const updatePosition = async (queueId: string): Promise<QueueTicket[]> => {
+  const tickets = await prisma.queueTicket.findMany({
+    where: {
+      queueId,
+      status: SessionStatus.WAITING,
+    },
+    orderBy: { joinedAt: 'asc' },
+  });
 
-export const updatePosition = async (queueId: string) => {
-    try {
-        const tickets: QueueTicket[] = await prisma.queueTicket.findMany({
-            where: {
-                queueId, 
-                status: 'WAITING'
-            }, 
-            // Order by earliest to latest
-            orderBy: {
-                joinedAt: 'asc'
-            }
-        })
-        if (tickets.length === 0) {
-            const msg = 'No tickets found for this queue'
-            console.log(msg);
-            return {success: false, message: msg};
-        }
-        // Perform db level update
-        const updatePromises = tickets.map((t, index) => {
-            const newPosition = index + 1;
-            t.position = newPosition;
+  if (tickets.length === 0) {
+    return [];
+  }
 
-            return prisma.queueTicket.update({
-                where: { id: t.id }, 
-                data: { position: newPosition}
-            });
-        }); 
-        
-        // Run the DB updates as a transction for safety
-        await prisma.$transaction(updatePromises);
+  const updated = await prisma.$transaction(
+    tickets.map((ticket, index) =>
+      prisma.queueTicket.update({
+        where: { id: ticket.id },
+        data: { position: index + 1 },
+      })
+    )
+  );
 
-        return tickets;
-    }
-    catch (error) {
-        console.log('Unable to fetch or update tickets in DB', error);
-        return { success: false, message: 'Database error occurred' };
-    }
-}
+  return updated;
+};
 
-// Can be used later, but don't delete off of database records to compute important metrics
-export const removeSupported = async (queueId: string) => {
-    const response = await prisma.queueTicket.deleteMany({
-        where: { queueId: queueId, 
-            status: {
-                in: ['COMPLETED','LEFT','REMOVED','HELPING']
-            }, 
-        }
-    })   
-    return response; 
-}
-
-export const updateCompletedAndLeft = async (queueId: string) => {
-    const response = await prisma.queueTicket.updateMany({
-        where: { queueId: queueId, 
-            status: { in: ['COMPLETED', 'LEFT'] } 
-        }, 
-        data: { updatedAt: new Date() }
-    })
-    return response;
-}
+/**
+ * Soft-clear finished tickets' positions only (keeps rows for metrics).
+ * Prefer status transitions via leave/complete/remove instead of deleting.
+ */
+export const clearInactivePositions = async (queueId: string) => {
+  return prisma.queueTicket.updateMany({
+    where: {
+      queueId,
+      status: {
+        in: [
+          SessionStatus.COMPLETED,
+          SessionStatus.LEFT,
+          SessionStatus.REMOVED,
+        ],
+      },
+      position: { not: null },
+    },
+    data: { position: null },
+  });
+};
