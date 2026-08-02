@@ -6,12 +6,15 @@ import { healthRouter } from './routes/health.routes.js';
 import { userRouter } from './routes/user.routes.js';
 import { queueTicketRouter } from './routes/queueTicket.routes.js';
 import { authRouter } from './routes/auth.routes.js';
-import authMiddleware from './middlewares/auth.js';
-import { Server } from 'socket.io';
+import authMiddleware from './middlewares/auth.middlware.js';
+import { Server, Socket } from 'socket.io';
 import http from 'http';
+import { socketMiddleware } from './middlewares/socket.middleware.js';
 
-// Service helpers
+// Socket Services helpers
 import { listActiveTickets } from './services/queue.services.js';
+import { joinQueue, leaveQueue, startHelping, completeTicket } from './services/queue.services.js';
+import { findQueueIdByTicketId } from './services/queueTicket.services.js';
 
 const app = express();
 const PORT: number = Number(process.env.PORT) || 3000;
@@ -27,23 +30,55 @@ const io = new Server(server, {
 })
 
 // IO = web socket server, socket = client
-io.on('connection', (socket: any) => {
-  console.log(`User connected: ${socket.id}`);
-  socket.on('disconnect', () => {
-    console.log(`User disconnected: ${socket.id}`);
+io.use(socketMiddleware);
+io.on('connection', async (socket: Socket) => {
+  const userId = (socket as any).user?.id;
+  
+  console.log(`User connected: ${userId}`);
+  
+  // Client side wants to disconnect -> must send queue id to server
+  socket.on('disconnect', async () => {
+    socket.disconnect();
   });
-  // Join a specific queue room (DB join should happen via API + joinQueue service)
+
+  // Join queue
   socket.on('join-queue', async (queueId: string) => {
     socket.join(queueId);
+
+    await joinQueue(queueId, userId);
     const tickets = await listActiveTickets(queueId);
+
     io.to(queueId).emit('queue-updated', tickets);
     console.log(`User ${socket.id} joined room ${queueId}`);
   });
+
+  // Leave queue
   socket.on('leave-queue', async (queueId: string) => {
     socket.leave(queueId);
+
+    await leaveQueue(queueId, userId);
     const tickets = await listActiveTickets(queueId);
+
     io.to(queueId).emit('queue-updated', tickets);
     console.log(`User ${socket.id} left room ${queueId}`);
+  });
+
+  // Need ticket id and expect ticket id
+  socket.on('start-helping', async (ticketId: string) => {
+    await startHelping(ticketId);
+    
+    const queueId = await findQueueIdByTicketId(ticketId);
+    const tickets = await listActiveTickets(queueId);
+    
+    io.to(queueId).emit('queue-updated', tickets);
+    console.log(`User ${userId} started helping in room ${queueId}`);
+  });
+
+  // Expect ticket id
+  socket.on('complete-ticket', async (ticketId: string) => {
+    await completeTicket(ticketId);
+    const queueId = await findQueueIdByTicketId(ticketId);
+    io.to(queueId).emit('ticket-completed', ticketId, userId);
   });
 });
 

@@ -51,3 +51,12 @@ export const clearInactivePositions = async (queueId: string) => {
     data: { position: null },
   });
 };
+
+// Find queue id by ticket id
+export const findQueueIdByTicketId = async (ticketId: string): Promise<string> => {
+  const ticket = await prisma.queueTicket.findUnique({ where: { id: ticketId } });
+  if (!ticket) {
+    throw new Error('Ticket not found');
+  }
+  return ticket.queueId;
+};

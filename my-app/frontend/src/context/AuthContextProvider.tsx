@@ -21,7 +21,7 @@ export const useAuth = () => {
 export const AuthContextProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-
+  
   const refreshUser = useCallback(async () => {
     try {
       const currentUser = await getMe();

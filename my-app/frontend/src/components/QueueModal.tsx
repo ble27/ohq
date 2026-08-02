@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react'
 import type { Queue, QueueTicket, QueueTicketResponse, QueueTicketsListResponse } from '../../../shared/types'
 import { QueueTicketComp } from './QueueTicketComp';
 import axios from 'axios'
+import { useSocket } from '@/context/SocketProvider';
 
 interface ModalProps {
     queue: Queue | null
@@ -21,6 +22,8 @@ export const QueueModal = ({ queue, ticket, ticketId, isModalOpen, setModalOpen 
     // All the tickets for each queue
     const [tickets, setTickets] = useState<QueueTicket[]>([]);
     const [curTicket, setCurTicket] = useState<QueueTicket | null>(ticket);
+
+    const socket = useSocket();
 
     const deleteTicketById = async () => {
         try {
@@ -88,6 +91,8 @@ export const QueueModal = ({ queue, ticket, ticketId, isModalOpen, setModalOpen 
     useEffect(() => {
         if (!isModalOpen || !queue) return;
         
+        socket?.emit('join-queue', queue.id);
+
         // Mount: component loaded into DOM
         let isMounted = true;
         const loadTicketsData = async () => {
@@ -107,14 +112,15 @@ export const QueueModal = ({ queue, ticket, ticketId, isModalOpen, setModalOpen 
         <div className='fixed inset-0 z-50 flex items-center justify-center p-4'>
             {/* Backdrop Overlay */}
             <div onClick={() => setModalOpen(false)} className="fixed inset-0 bg-black/40 backdrop-blur-md"></div>
-
+            
             {/* Modal Content */}
             <div className="relative z-10 flex h-[55vh] w-full max-w-md flex-col rounded-2xl bg-white p-5 shadow-xl">
                 <div className="shrink-0">
                     <h3 className="text-lg font-semibold text-gray-900">Queue</h3>
                     <p className="mt-1 text-xs text-gray-500">Location: {queue?.location}</p>
                     <p className="mt-0.5 text-xs text-gray-500">
-                        Your position: {curTicket?.position ?? '—'}
+                        {/* Joining a queue auto updaets positition  */}
+                        Your position: {curTicket ? curTicket.position ?? '—' : '—'}
                     </p>
                 </div>
 
@@ -127,7 +133,7 @@ export const QueueModal = ({ queue, ticket, ticketId, isModalOpen, setModalOpen 
                     )}
                 </div>
 
-                {/* Leave / Close — bottom right */}
+                {/* Leaving disconnects the socket connection */}
                 <div className="mt-3 flex shrink-0 justify-end gap-2">
                     <button
                         onClick={async () => {
@@ -135,6 +141,7 @@ export const QueueModal = ({ queue, ticket, ticketId, isModalOpen, setModalOpen 
                                 try {
                                     await deleteTicketById();
                                     setModalOpen(false);
+                                    socket?.emit('leave-queue', queue?.id);
                                 }
                                 catch (error) {
                                     console.log('Failed to delete ticket', error);
@@ -145,6 +152,7 @@ export const QueueModal = ({ queue, ticket, ticketId, isModalOpen, setModalOpen 
                     >
                         Leave
                     </button>
+                    {/* Closing doesn't leave the queue */}
                     <button
                         onClick={() => setModalOpen(false)}
                         className="rounded-md bg-blue-800 px-2.5 py-1 text-xs font-medium text-white hover:bg-blue-900"
