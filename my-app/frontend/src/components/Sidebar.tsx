@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { LuHouse, LuLibraryBig, LuSettings, LuPanelLeft, LuLogOut } from "react-icons/lu";
+import { LuHouse, LuLibraryBig, LuSettings, LuPanelLeft, LuLogOut, LuPackage } from "react-icons/lu";
 import { signOut } from '@/services/authService';
 import { useAuth } from '@/context/AuthContextProvider';
 
@@ -14,14 +14,19 @@ interface SideBarProps {
 
 export const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }: SideBarProps ) => {
   const [isDesktop, setIsDesktop] = useState(() => window.innerWidth >= MOBILE_BREAKPOINT);
-  const [error, setError] = useState('');
-  const { user, loading, refreshUser } = useAuth();
+  const { user, refreshUser } = useAuth();
   const userToggled = useRef(false);
   const navigate = useNavigate();
 
   const toggleSidebar = () => {
     userToggled.current = true;
     setIsSidebarOpen(!isSidebarOpen);
+  }
+
+  const handleNavigation = () => {
+    if (window.innerWidth < MOBILE_BREAKPOINT) {
+      setIsSidebarOpen(false);
+    }
   }
 
   // Sync open/closed with viewport; always collapse below breakpoint
@@ -56,8 +61,7 @@ export const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }: SideBarProps ) => {
       await refreshUser();
       navigate('/');
     }
-    catch(err: any) {
-      setError(err);
+    catch(err: unknown) {
       console.log(err);
     } 
   }
@@ -83,22 +87,33 @@ export const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }: SideBarProps ) => {
         
         <ul className='flex text-md flex-col gap-3 pointer-events-auto w-full'> 
           <Link to='/dashboard/home' 
+            onClick={handleNavigation}
             className={`flex flex-row px-4 py-3 gap-[10px] items-center transition-colors duration-200 w-full 
             ${isSidebarOpen ? 'hover:bg-black/20 hover:opacity-90': 'hover:opacity-0 pointer-events-none'}`}> 
               {isSidebarOpen && <LuHouse size={20} color="white" />}
               {isSidebarOpen && <span>Home</span>}
           </Link> 
-          <Link to='/dashboard/class' className={`flex flex-row px-4 py-3 gap-[10px] items-center transition-colors duration-200 w-full 
+          <Link to='/dashboard/class' onClick={handleNavigation} className={`flex flex-row px-4 py-3 gap-[10px] items-center transition-colors duration-200 w-full
             ${isSidebarOpen ? 'hover:bg-black/20 hover:opacity-90': 'hover:opacity-0 pointer-events-none'}`}> 
               {isSidebarOpen && <LuLibraryBig size={20} color="white" />}
               {isSidebarOpen && <span>Class</span>}
           </Link> 
+
+          <Link to='/dashboard/queuemanager' onClick={handleNavigation} className={`flex flex-row px-4 py-3 gap-[10px] items-center transition-colors duration-200 w-full
+            ${isSidebarOpen ? 'hover:bg-black/20 hover:opacity-90': 'hover:opacity-0 pointer-events-none'}`}>
+              {isSidebarOpen && <LuPackage size={20} color="white" />}
+              {isSidebarOpen && <span>Queue Manager</span>}
+          </Link>
+
           <div className={`flex flex-row px-4 py-3 gap-[10px] items-center transition-colors duration-200 w-full 
             ${isSidebarOpen ? 'hover:bg-black/20 hover:opacity-90': 'hover:opacity-0 pointer-events-none'}`}>
               {isSidebarOpen && <LuSettings size={20} color="white" />}
               {isSidebarOpen && <span>Settings</span>}
           </div>
         </ul> 
+
+
+
         <div className={`flex flex-row absolute bottom-25 px-4 py-3 gap-[10px] items-center transition-colors duration-200 w-full 
             ${isSidebarOpen ? 'hover:bg-black/20 hover:opacity-90': 'hover:opacity-80 justify-center'}`}
             onClick={handleSignout}>

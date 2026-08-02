@@ -4,10 +4,7 @@ import { z } from 'zod';
 export const QueueValidationSchema = z.object({
     id: z.uuid({ message: 'Invalid ID format' }),
 
-    courseId: z
-        .string()
-        .min(7, { message: 'Course ID must be at least 7 characters' })
-        .max(20, { message: 'Course ID cannot exceed 20 characters' }),
+    courseId: z.uuid({ message: 'Invalid course ID format' }),
 
     taId: z.uuid({ message: 'Invalid TA ID format' }),
 

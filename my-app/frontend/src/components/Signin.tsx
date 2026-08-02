@@ -21,14 +21,9 @@ export const Signin = () => {
         setError("");
         setSubmitting(true);
         try {
-            const response = await signIn(email, password);
+            await signIn(email, password);
             await refreshUser();
             navigate("/dashboard/home");
-
-            // After sucessful signin, connect to socket, and send access token to server socket
-            // signIn returns { data: { user, session }, user: appUser }
-            const accessToken = response.data.session.access_token;
-            
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : "Sign in failed";
             setError(message);

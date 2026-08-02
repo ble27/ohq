@@ -63,7 +63,27 @@ router.get('/:id', async (req: Request, res: Response): Promise<void> => {
 // POST /api/queues — create queue
 router.post('/', async (req: Request, res: Response): Promise<void> => {
     try {
-        const validatedQueue = CreateQueueValidationSchema.parse(req.body);
+        const requestedCourse = req.body?.courseId;
+        const course = typeof requestedCourse === 'string'
+            ? await prisma.course.findFirst({
+                where: {
+                    isActive: true,
+                    OR: [
+                        { id: requestedCourse },
+                        { code: { equals: requestedCourse.trim(), mode: 'insensitive' } },
+                    ],
+                },
+            })
+            : null;
+        if (!course) {
+            res.status(400).json({ message: 'Select or enter a valid active course' });
+            return;
+        }
+
+        const validatedQueue = CreateQueueValidationSchema.parse({
+            ...req.body,
+            courseId: course.id,
+        });
         const newQueue = await prisma.queue.create({ data: validatedQueue });
 
         console.log(`[QUEUE] Successfully created queue object: ${JSON.stringify(newQueue, null, 2)}`)

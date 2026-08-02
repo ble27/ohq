@@ -24,9 +24,12 @@ export const Signup = () => {
             await signUp(email, password);
             navigate('/dashboard/home');
 
-        } catch(error: any) {
-            setError(error);
+        } catch(error: unknown) {
+            const message = error instanceof Error ? error.message : 'Sign up failed';
+            setError(message);
             console.log(`Failed to signup ${error}`);
+        } finally {
+            setSubmitting(false);
         }
     }
 

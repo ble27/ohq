@@ -17,7 +17,8 @@ export const signIn = async (email: string, password: string) => {
             throw new Error(response.data.message);
         }
     } catch (error) {
-        throw new Error((error as Error).message);
+        const message = error instanceof Error ? error.message : 'Sign in failed';
+        throw new Error(message, { cause: error });
     }
 }
 
@@ -35,7 +36,8 @@ export const signUp = async (email: string, password: string) => {
             throw new Error(response.data.message);
         }
     } catch (error) {
-        throw new Error((error as Error).message);
+        const message = error instanceof Error ? error.message : 'Sign up failed';
+        throw new Error(message, { cause: error });
     }
 }
 
@@ -51,14 +53,16 @@ export const signOut = async () => {
             throw new Error(response.data.message);
         }
     } catch (error) {  
-        throw new Error((error as Error).message);
+        const message = error instanceof Error ? error.message : 'Sign out failed';
+        throw new Error(message, { cause: error });
     }
 }
 
-// Fetch user from backend 
+// Fetch user from backend in auth.routes.ts
 // Used in AuthContextProvider.tsx to set the user state
 export const getMe = async () => {
     const response = await axios.get(`/api/auth/me`, {
+        // Browser sends cookie cookie to server here
         withCredentials: true,
     });
     return response.data.user ?? null;

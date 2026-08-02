@@ -1,14 +1,11 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import type { QueueTicket } from '@shared/types'
 
-interface HomeProps {
-    isSidebarOpen: boolean
-    setIsSidebarOpen: (value: boolean) => void
-}
 export const Home = () => {
-    const [tickets, setTickets] = useState<QueueTicket | null>(null);
+    const [tickets] = useState<QueueTicket | null>(null);
+    const [currentDate] = useState(() => new Date());
 
-    const readableDate = new Date(Date.now()).toLocaleString('en-US', {
+    const readableDate = currentDate.toLocaleString('en-US', {
         dateStyle: 'medium',
         timeStyle: 'short',
       });

@@ -1,5 +1,4 @@
 import { createContext, useState, useEffect, useContext, type ReactNode } from 'react'
-import { supabase } from '@/services/supabase';
 import { io, type Socket } from 'socket.io-client'
 import { useAuth } from './AuthContextProvider';
 
@@ -11,8 +10,7 @@ export function SocketProvider ({ children }: { children: ReactNode } ) {
 
     useEffect(() => {
         // Only connect socket if user is signed in
-        if (loading || user) {
-            setSocket(null);
+        if (loading || !user) {
             return;
         }
 
@@ -22,6 +20,8 @@ export function SocketProvider ({ children }: { children: ReactNode } ) {
             { withCredentials: true },
         );
 
+        // The socket instance is the external resource synchronized by this effect.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setSocket(instance);
 
         // Cleanup socket
@@ -32,10 +32,11 @@ export function SocketProvider ({ children }: { children: ReactNode } ) {
     }, [user, loading]); 
 
     return (
-        <SocketContext.Provider value={socket}>
+        <SocketContext.Provider value={user ? socket : null}>
             { children }
         </SocketContext.Provider>
     )
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useSocket = () => useContext(SocketContext);

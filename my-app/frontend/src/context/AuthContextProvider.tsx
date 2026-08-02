@@ -10,6 +10,7 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
@@ -22,6 +23,7 @@ export const AuthContextProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   
+  // Call getMe() to fetch current user state
   const refreshUser = useCallback(async () => {
     try {
       const currentUser = await getMe();
@@ -35,6 +37,7 @@ export const AuthContextProvider = ({ children }: { children: ReactNode }) => {
 
   // Load user from httpOnly auth cookie on mount
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     refreshUser();
   }, [refreshUser]);
 

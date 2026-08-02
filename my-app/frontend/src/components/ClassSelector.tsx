@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import axios from 'axios'
 import { QueueModal } from '../components/QueueModal'
-import type { Queue, QueueTicket, QueuesListResponse, QueueResponse, QueueTicketResponse } from '@shared/types';
+import type { Queue, QueueTicket, QueuesListResponse, QueueTicketResponse } from '@shared/types';
 import { Button } from './ui/button';
 
 
@@ -18,9 +18,7 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ CSCEClasses, selec
     const [selectedQueue, setSelectedQueue] = useState<Queue | null>(null);
     const [isModalOpen, setModalOpen] = useState(false);
     const [ticket, setTicket] = useState<QueueTicket | null>(null);
-
-    // Just in case later
-    const [ticketId, setTicketId] = useState<string>('');
+    const visibleQueues = queue.filter((item) => item.courseId === selectedClass);
 
     // Pass in queue id of the ticket before even joining the queue
     const createTicket = async (queueId: string) =>  {
@@ -35,19 +33,12 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ CSCEClasses, selec
             console.log(`My current ticket id ${ticketId}`);
 
             setTicket(ticket);
-            setTicketId(ticketId);
-            
             return {ticket, ticketId};
         }
         catch (error) {
             console.log(`Failed to create a ticket ${error}`);
         }
     }
-
-    // Prev is the current value of queue, e.g.: [1,2 3,4]
-    useEffect(() => {
-        setQueue((prev) => prev.filter((q) => q.courseId === selectedClass || selectedClass === null));
-    }, [selectedClass]);
 
     const fetchQueue = async (): Promise<void> => { 
         try { 
@@ -57,8 +48,7 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ CSCEClasses, selec
                 // Extract new items that do not exist in the current queue and match the new course idea
                 const uniqueNewItems = response.data.queues.filter(
                     (newItem) =>
-                        !prevQueue.some((prevItem) => prevItem.id === newItem.id) &&
-                        (selectedClass === null || newItem.courseId === selectedClass)
+                        !prevQueue.some((prevItem) => prevItem.id === newItem.id)
                 );
  
                 // Return original array if no new unique items exist
@@ -116,13 +106,13 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ CSCEClasses, selec
         </div> 
 
         <div className='mt-8 h-full w-full'>
-          <h3 className='text-lg font-medium mb-3'>Active Queue ({queue.length})</h3>
-          {queue.length === 0 ? (
+          <h3 className='text-lg font-medium mb-3'>Active Queue ({visibleQueues.length})</h3>
+          {visibleQueues.length === 0 ? (
             <p className='text-gray-500 text-sm'>No active queues loaded. Click "Enter" to fetch.</p>
           ) : (
             // Background around Queue cards
             <div className='grid grid-cols-1 justify-center md:grid-cols-2 bg-white lg:grid-cols-3 gap-10 w-100 md:w-full h-80 md:h-50 space-y-2 pr-5 '>
-              {queue.map((q) => (
+              {visibleQueues.map((q) => (
                 // Actual Queue card
                 <div key={q.id} className='relative p-3 border rounded-lg bg-gray-50 flex justify-between border-gray-300 border-1 shadow-inner'>
                   <div>
@@ -151,7 +141,7 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ CSCEClasses, selec
                 </div>
               ))}
               {/* Render a modal for each selected queue and when isModalOpen  */}
-              {isModalOpen && <QueueModal queue={selectedQueue} ticket={ticket} ticketId={ticketId} isModalOpen={isModalOpen} setModalOpen={setModalOpen}/>}
+              {isModalOpen && <QueueModal queue={selectedQueue} ticket={ticket} isModalOpen={isModalOpen} setModalOpen={setModalOpen}/>}
             </div>
           )}
         </div>

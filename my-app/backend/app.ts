@@ -6,7 +6,8 @@ import { healthRouter } from './routes/health.routes.js';
 import { userRouter } from './routes/user.routes.js';
 import { queueTicketRouter } from './routes/queueTicket.routes.js';
 import { authRouter } from './routes/auth.routes.js';
-import authMiddleware from './middlewares/auth.middlware.js';
+import { courseRouter } from './routes/course.routes.js';
+import authMiddleware from './middlewares/auth.middleware.js';
 import { Server, Socket } from 'socket.io';
 import http from 'http';
 import { socketMiddleware } from './middlewares/socket.middleware.js';
@@ -66,7 +67,7 @@ io.on('connection', async (socket: Socket) => {
   // Need ticket id and expect ticket id
   socket.on('start-helping', async (ticketId: string) => {
     await startHelping(ticketId);
-    
+
     const queueId = await findQueueIdByTicketId(ticketId);
     const tickets = await listActiveTickets(queueId);
     
@@ -87,6 +88,7 @@ app.use(cookieParser());
 app.use(healthRouter);
 
 app.use('/api/auth', authRouter);
+app.use('/api/courses', authMiddleware, courseRouter);
 app.use('/api/queues', authMiddleware, queueRouter);
 app.use('/api/queueticket/', authMiddleware, queueTicketRouter);
 app.use('/api/users', authMiddleware, userRouter);

@@ -4,7 +4,7 @@
 // a Join creates a QueueTicket into the current queue
 
 import { useEffect, useState } from 'react'
-import type { Queue, QueueTicket, QueueTicketResponse, QueueTicketsListResponse } from '../../../shared/types'
+import type { Queue, QueueTicket, QueueTicketsListResponse } from '../../../shared/types'
 import { QueueTicketComp } from './QueueTicketComp';
 import axios from 'axios'
 import { useSocket } from '@/context/SocketProvider';
@@ -12,16 +12,15 @@ import { useSocket } from '@/context/SocketProvider';
 interface ModalProps {
     queue: Queue | null
     ticket: QueueTicket | null
-    ticketId: string | null
     isModalOpen: boolean;
     setModalOpen: (value: boolean) => void;
 }
 
 // Local queue for each instance
-export const QueueModal = ({ queue, ticket, ticketId, isModalOpen, setModalOpen }: ModalProps) => {
+export const QueueModal = ({ queue, ticket, isModalOpen, setModalOpen }: ModalProps) => {
     // All the tickets for each queue
     const [tickets, setTickets] = useState<QueueTicket[]>([]);
-    const [curTicket, setCurTicket] = useState<QueueTicket | null>(ticket);
+    const [curTicket] = useState<QueueTicket | null>(ticket);
 
     const socket = useSocket();
 
@@ -63,30 +62,6 @@ export const QueueModal = ({ queue, ticket, ticketId, isModalOpen, setModalOpen 
         }
     }
 
-    // Fetch single ticket by ticket id passed from prop
-    const fetchSingleTicketById = async (ticketId: string) => {
-        try {
-            if (!ticketId) {
-                console.log('Missing required student and queue ID parameters');
-                return;
-            }
-
-            const response  = await axios.get<QueueTicketResponse>(`/api/queueticket/${ticketId}`);
-            if (response.status !== 200) {
-                console.log('Failed to fetch ticket by id');
-                return;
-            }
-            const queueTicket: QueueTicket = response.data.ticket;
-            setCurTicket(queueTicket);
-
-            // Return the actual ticket
-            return queueTicket;
-        }
-        catch (error) {
-            console.error(`Failed to fetch ticket with id ${ticketId}`, error);
-        }
-    }
-
     // Load this queue's tickets whenever the modal is opened for a queue (Optimize later)
     useEffect(() => {
         if (!isModalOpen || !queue) return;
@@ -104,7 +79,7 @@ export const QueueModal = ({ queue, ticket, ticketId, isModalOpen, setModalOpen 
 
         // Clean up to prevent memory leak
         return () => { isMounted = false; } 
-    }, [isModalOpen, queue?.id]);
+    }, [isModalOpen, queue, socket]);
 
     if (!isModalOpen) return null;
 

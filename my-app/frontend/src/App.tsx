@@ -24,10 +24,12 @@ function App() {
             />
             <Route path='/signin' element={<Signin />} />
             <Route path='signup' element={<Signup />} />
+
             {/* Dashboard routes */}
             <Route path='/dashboard' element={<Dashboard />} />
             <Route path='/dashboard/home' element={<Dashboard />} />
             <Route path='/dashboard/class' element={<Dashboard />} />
+            <Route path='/dashboard/queuemanager' element={<Dashboard />} />
           </Routes>
         </BrowserRouter>
       </SocketProvider>

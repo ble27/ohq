@@ -103,6 +103,7 @@ router.post('/signin', async (req: Request, res: Response) => {
 });
 
 router.get('/me', async (req: Request, res: Response) => {
+    // Look in frontend @ src/routes/auth.routes.ts for withCredentials, where cookie is sent along with
     const accessToken = req.cookies?.access_token;
     if (!accessToken) {
         return res.status(401).json({ user: null });
