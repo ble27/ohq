@@ -13,6 +13,7 @@ import type {
 
 import { CreateQueueTicketValidationSchema } from '../schemas/queueTicket.schema.js';
 import { ZodError } from 'zod';
+import type { Session } from 'inspector/promises';
 const router: Router = Router();
 
 // GET /api/queueticket — list all tickets
@@ -120,11 +121,14 @@ router.get('/:queueTicketId', async (req: Request, res: Response): Promise<void>
 // POST /api/queueticket — create ticket
 router.post('/', async (req: Request, res: Response): Promise<void> => {
     try {
+        // The request body was attached from middleware with user
+        const studentId = (req as any).user.id;
+
         // The server owns student identity; never trust a client-supplied user ID.
         const validatedTicket = CreateQueueTicketValidationSchema.parse({
-            ...req.body, id: req.body.studentId, updatedAt: req.body.updatedAt, joinedAt: req.body.joinedAt
+            ...req.body, studentId
         });
-        const { queueId, studentId } = validatedTicket;
+        const { queueId } = validatedTicket;
 
         // Ticket id, joinedAt, updatedAt are set by the server
         // Call joinQueue service to create the ticket
@@ -136,6 +140,8 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
             ticket: newTicket,
             message: 'SUCCESS',
         };
+        console.log('Successfully created a new ticket');
+        console.log(JSON.stringify(body.ticket));
         res.status(201).json(body);
     }
     catch (error: unknown) {
@@ -147,6 +153,7 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
             res.status(500).json({ message: error.message });
             return;
         }
+        console.log('Failed to create a new ticket');
         res.status(500).json({ message: 'Failed to create ticket' });
     }
 });
@@ -160,16 +167,21 @@ router.patch('/:queueTicketId', async (req: Request, res: Response): Promise<voi
             return;
         }
 
+        // Check the status of the request
+        const status = req.body.status as SessionStatus;
+
         // Call startHelping service to update the ticket status
-        const updatedTicket = await startHelping(ticketId);
+        // const updatedTicket = await startHelping(ticketId);
 
-        console.log(`[QUEUE TICKET] Successfully updated ticket object: ${JSON.stringify(updatedTicket, null, 2)}`)
+        const response = await prisma.queueTicket.update({
+            where: { id: ticketId },
+            data: {status: status} 
+        })
+        
+        const updatedTicketStatus = response.status;
 
-        const body: QueueTicketResponse = {
-            ticket: updatedTicket,
-            message: 'SUCCESS',
-        };
-        res.status(200).json(body);
+        console.log(`[QUEUE TICKET] Successfully updated ticket status to: ${JSON.stringify(updatedTicketStatus, null, 2)}`)
+        res.status(200);
     }
      catch (error: unknown) {
         if (error instanceof ZodError) {

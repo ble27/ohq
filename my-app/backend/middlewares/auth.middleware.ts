@@ -14,6 +14,8 @@ export default async function authMiddleware (req: Request, res: Response, next:
     if (error) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
+
+    // Attach the authenticated user to the request body before sending to the actual API route
     (req as any).user = data.user;
     next();
   } catch (error) {

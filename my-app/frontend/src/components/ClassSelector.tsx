@@ -48,7 +48,11 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ CSCEClasses, selec
             // selected class = course code
             const courseId = (await axios.get(`/api/courses/${selectedClass}`)).data.courseId;
             const response = await axios.get<QueuesListResponse>(`/api/queues/course/${courseId}`); 
-
+            if (response.data.queues.length === 0) {
+              setQueue([]);
+              console.log('No active queues found');
+              return;
+            }
             const activeQueuesList: Queue[] = response.data.queues;
             setQueue((prevQueue) => {
                 // Extract new items that do not exist in the current queue and match the new course idea
@@ -125,6 +129,8 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ CSCEClasses, selec
                   <div>
                     <p className='font-semibold text-sm'>Course: {q.courseId}</p>
                     <p className='text-xs text-gray-500'>Location: {q.location}</p>
+
+                    {/* Join queue */}
                      <Button 
                             onClick={async () => {
                               // Create a ticket for the selected queue
