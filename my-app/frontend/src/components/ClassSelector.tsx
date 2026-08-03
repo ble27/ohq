@@ -18,7 +18,9 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ CSCEClasses, selec
     const [selectedQueue, setSelectedQueue] = useState<Queue | null>(null);
     const [isModalOpen, setModalOpen] = useState(false);
     const [ticket, setTicket] = useState<QueueTicket | null>(null);
-    const visibleQueues = queue.filter((item) => item.courseId === selectedClass);
+
+    // Visible queues that will be displayed (will refresh every time queue changes)
+    const visibleQueues = queue;
 
     // Pass in queue id of the ticket before even joining the queue
     const createTicket = async (queueId: string) =>  {
@@ -40,13 +42,17 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ CSCEClasses, selec
         }
     }
 
+    // fetch queues are not currently fetching the correct selected class
     const fetchQueue = async (): Promise<void> => { 
         try { 
-            const response = await axios.get<QueuesListResponse>('/api/queues'); 
-            
+            // selected class = course code
+            const courseId = (await axios.get(`/api/courses/${selectedClass}`)).data.courseId;
+            const response = await axios.get<QueuesListResponse>(`/api/queues/course/${courseId}`); 
+
+            const activeQueuesList: Queue[] = response.data.queues;
             setQueue((prevQueue) => {
                 // Extract new items that do not exist in the current queue and match the new course idea
-                const uniqueNewItems = response.data.queues.filter(
+                const uniqueNewItems = activeQueuesList.filter(
                     (newItem) =>
                         !prevQueue.some((prevItem) => prevItem.id === newItem.id)
                 );
@@ -89,6 +95,7 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ CSCEClasses, selec
           <Button 
             variant={'default'}
             size={'lg'}
+            // Fetch should only fetch active and selected queues, not queues that are closed
             onClick={fetchQueue} 
             className='ml-4 mr-2 pointer-events-auto'
           > 

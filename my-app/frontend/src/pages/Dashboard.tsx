@@ -26,7 +26,10 @@ export const Dashboard = () => {
     // Sidebar remains open when above mobile breakpoint
     const [isSidebarOpen, setIsSidebarOpen] = useState(() => window.innerWidth >= MOBILE_BREAKPOINT);
     const CSCEClasses: string[] = ['csce-221', 'csce-313', 'csce-350'];
+   
+    // Class currently being selected
     const [selectedClass, setSelectedClass] = useState(CSCEClasses[0]);
+    const [selectedClassId, setSelectedClassId] = useState('');
     const [createdQueues, setCreatedQueues] = useState<Queue[]>([]);
     const [courses, setCourses] = useState<Course[]>([]);
     const [isLoadingQueues, setIsLoadingQueues] = useState(true);
@@ -97,7 +100,7 @@ return (
         {/* Sidebar */}
         <Sidebar isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen}/>
         <div className="flex-1 min-w-0 overflow-y-auto">
-            {isDashboardClass && <ClassSelector CSCEClasses={CSCEClasses} selectedClass={selectedClass} setSelectedClass={setSelectedClass}/>}
+            {isDashboardClass && <ClassSelector CSCEClasses={CSCEClasses} selectedClass={selectedClass} setSelectedClass={setSelectedClass} selectedClassId={selectedClassId}/>}
             {isDashboardHome && <Home />}
             {isDashboardQueueManager && (
                 <QueueManager

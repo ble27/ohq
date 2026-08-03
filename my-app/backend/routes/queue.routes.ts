@@ -60,6 +60,27 @@ router.get('/:id', async (req: Request, res: Response): Promise<void> => {
     }
 });
 
+// GET /api/queues/:courseId select all queues based on courseId != course code
+router.get('/course/:courseId', async (req: Request, res: Response): Promise<void> => { 
+    try { 
+      const courseId = req.params.courseId as string; 
+      const activeQueues = await prisma.queue.findMany({ 
+        where: { courseId, isOpen: true } 
+    });
+    const body: QueuesListResponse = {
+        queues: activeQueues,
+        message: 'SUCCESS'
+    }
+    console.log('Sent active queues from /api/queues/course/:courseId');
+    console.log(JSON.stringify(body.queues));
+    res.status(200).json(body);
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to fetch queues' });
+      console.log('Failed to send active queues from /api/queues/course/:courseId');
+    }
+    
+});
+
 // POST /api/queues — create queue
 router.post('/', async (req: Request, res: Response): Promise<void> => {
     try {
