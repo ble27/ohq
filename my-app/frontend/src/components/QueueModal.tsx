@@ -5,7 +5,7 @@
 
 import { useEffect, useState } from 'react'
 import type { Queue, QueueTicket, QueueTicketsListResponse } from '../../../shared/types'
-import { QueueTicketComp } from './QueueTicketComp';
+import { QueueTicketModal } from './QueueTicketModal';
 import axios from 'axios'
 import { useSocket } from '@/context/SocketProvider';
 
@@ -111,7 +111,7 @@ export const QueueModal = ({
                 {/* Ticket list */}
                 <div className="mt-4 min-h-0 flex-1 overflow-y-auto pr-1">
                     {tickets.length !== 0 ? (
-                        <QueueTicketComp queueTickets={tickets} />
+                        <QueueTicketModal queueTickets={tickets} />
                     ) : (
                         <p className="text-sm text-gray-400">No one in queue yet.</p>
                     )}

@@ -43,7 +43,7 @@ router.get('/queues/:queueId', async (req: Request, res: Response): Promise<void
     try {
         const queueId = req.params.queueId;
         if (!queueId) {
-            res.status(400).json({ message: 'Ticket ID is required' });
+            res.status(400).json({ message: 'Queue ID is required' });
             return;
         }
         
@@ -116,6 +116,47 @@ router.get('/:queueTicketId', async (req: Request, res: Response): Promise<void>
         res.status(500).json({ message: 'Failed to fetch ticket' });
     }
 });
+
+// GET /api/queueticket/user/:studentId — single ticket
+router.get('/user/:studentId', async (req: Request, res: Response): Promise<void> => {
+    try {
+        const studentId = req.params.studentId;
+        // no id or no queue id flag
+        if (!studentId) {
+            res.status(404).json({ message: 'Missing required parameter'})
+            return;
+        }
+
+        const tickets = await prisma.queueTicket.findMany({
+            where: { studentId },
+        });
+
+        if (!tickets) {
+            res.status(404).json({ message: 'No ticket found' });
+            return;
+        }
+
+        console.log(`[QUEUE TICKET] Successfully sent ticket objects: ${JSON.stringify(tickets, null, 2)}`)
+        const body: QueueTicketsListResponse = {
+            tickets,
+            message: `Tickets successfully sent to ${studentId}`
+        };
+        console.log(`Tickets successfully sent to ${studentId}`);
+        res.status(200).json(body);
+    } 
+    catch (error: unknown) {
+        if (error instanceof ZodError) {
+            res.status(400).json({ message: 'Invalid input', errors: error.issues });
+            return;
+        }
+        if (error instanceof Error) {
+            res.status(500).json({ message: error.message });
+            return;
+        }
+        res.status(500).json({ message: 'Failed to fetch tickets' });
+    }
+});
+
 
 // POST /api/queueticket — create ticket
 // router.post('/', async (req: Request, res: Response): Promise<void> => {
