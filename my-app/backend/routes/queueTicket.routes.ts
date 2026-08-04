@@ -268,6 +268,7 @@ router.patch('/:queueTicketId', async (req: Request, res: Response): Promise<voi
             return;
         }
 
+        // Call queue service to leave the queue after successfully fetching the ticket
         const updatedTicket = await leaveQueue(existingTicket.queueId, studentId);
         const body: QueueTicketResponse = {
             ticket: updatedTicket,

@@ -10,11 +10,13 @@ import axios from 'axios'
 import { useSocket } from '@/context/SocketProvider';
 
 interface ModalProps {
-    queue: Queue | null
+    queue: Queue
     ticket: QueueTicket | null
     isModalOpen: boolean;
     isViewingQueue: boolean;
+    joinedQueueIds: Set<string>
     setModalOpen: (value: boolean) => void;
+    onLeaveQueue: (queueId: string) => void;
 }
 
 // Local queue for each instance
@@ -23,11 +25,13 @@ export const QueueModal = ({
     ticket,
     isModalOpen,
     isViewingQueue,
+    joinedQueueIds,
     setModalOpen,
+    onLeaveQueue,
 }: ModalProps) => {
     // All the tickets for each queue
     const [tickets, setTickets] = useState<QueueTicket[]>([]);
-    const [curTicket] = useState<QueueTicket | null>(ticket);
+    const curTicket = ticket;
 
     const socket = useSocket();
 
@@ -37,7 +41,9 @@ export const QueueModal = ({
                 console.log('No ticket available to delete');
                 return;
             }
-            const response = await axios.patch(`/api/queueticket/${curTicket.id}`, { status: 'LEFT' });
+            const response = await axios.delete(`/api/queueticket/${curTicket.id}`);
+            // previouslly call patch
+            // const response = await axios.patch(`/api/queueticket/${curTicket.id}`, { status: 'LEFT' });
             if (response.status !== 200) {
                 console.log(`Failed to delete ticket ${curTicket.id}`);
                 return;
@@ -91,6 +97,8 @@ export const QueueModal = ({
 
     if (!isModalOpen) return null;
 
+    const hasJoined = joinedQueueIds.has(queue.id);
+
     return (
         <div className='fixed inset-0 z-50 flex items-center justify-center p-4'>
             {/* Backdrop Overlay */}
@@ -100,7 +108,7 @@ export const QueueModal = ({
             <div className="relative z-10 flex h-[55vh] w-full max-w-md flex-col rounded-2xl bg-white p-5 shadow-xl">
                 <div className="shrink-0">
                     <h3 className="text-lg font-semibold text-gray-900">Queue</h3>
-                    <p className="mt-1 text-xs text-gray-500">Location: {queue?.location}</p>
+                    <p className="mt-1 text-xs text-gray-500">Location: {queue.location}</p>
                     {!isViewingQueue && (
                         <p className="mt-0.5 text-xs text-gray-500">
                             Your position: {curTicket ? curTicket.position ?? '—' : '—'}
@@ -119,20 +127,21 @@ export const QueueModal = ({
 
                 {/* Leaving disconnects the socket connection */}
                 <div className="mt-3 flex shrink-0 justify-end gap-2">
-                    {!isViewingQueue && (
+                    {/* Show Leave when the user has already joined this queue (join or view) */}
+                    {hasJoined && (
                         <button
                             onClick={async () => {
-                                if (curTicket) {
-                                    try {
-                                        await deleteTicketById();
-                                        if (queue) {
-                                            socket?.emit('refresh-queue', queue.id);
-                                        }
-                                        setModalOpen(false);
-                                    }
-                                    catch (error) {
-                                        console.log('Failed to delete ticket', error);
-                                    }
+                                if (!curTicket) {
+                                    console.log('No ticket available to delete');
+                                    return;
+                                }
+                                try {
+                                    await deleteTicketById();
+                                    socket?.emit('refresh-queue', queue.id);
+                                    onLeaveQueue(queue.id);
+                                }
+                                catch (error) {
+                                    console.log('Failed to delete ticket', error);
                                 }
                             }}
                             className="rounded-md bg-red-500 px-2.5 py-1 text-xs font-medium text-white hover:bg-red-600"

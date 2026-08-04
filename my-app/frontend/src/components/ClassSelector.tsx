@@ -1,9 +1,11 @@
 import React, { useState } from 'react'
 import axios from 'axios'
 import { QueueModal } from '../components/QueueModal'
-import type { Queue, QueueTicket, QueuesListResponse, QueueTicketResponse } from '@shared/types';
+import type { Queue, QueueTicket, QueuesListResponse, QueueTicketResponse, QueueTicketsListResponse } from '@shared/types';
 import { Button } from './ui/button';
+import { useAuth } from '@/context/AuthContextProvider';
 
+const ACTIVE_TICKET_STATUSES = new Set(['WAITING', 'HELPING']);
 
 // Props type interface with setter
 interface ClassSelectorProps { 
@@ -13,15 +15,45 @@ interface ClassSelectorProps {
 }
 
 export const ClassSelector: React.FC<ClassSelectorProps> = ({ CSCEClasses, selectedClass, setSelectedClass }) => { 
+    const { user } = useAuth();
     const [queue, setQueue] = useState<Queue[]>([]);
     // Load a modal only for selected queue
     const [selectedQueue, setSelectedQueue] = useState<Queue | null>(null);
     const [isModalOpen, setModalOpen] = useState(false);
     const [ticket, setTicket] = useState<QueueTicket | null>(null);
     const [isViewingQueue, setIsViewingQueue] = useState(false);
+    const [joinedQueueIds, setJoinedQueueIds] = useState<Set<string>>(() => new Set());
+    const [myTicketsByQueueId, setMyTicketsByQueueId] = useState<Map<string, QueueTicket>>(
+        () => new Map(),
+    );
 
     // Visible queues that will be displayed (will refresh every time queue changes)
     const visibleQueues = queue;
+
+    // Membership must come from the server — client Set alone is lost on remount / Clear+Enter.
+    const syncJoinedQueuesFromServer = async () => {
+        if (!user?.id) return;
+
+        const response = await axios.get<QueueTicketsListResponse>(
+            `/api/queueticket/user/${user.id}`,
+        );
+        const activeTickets = response.data.tickets.filter((t) =>
+            ACTIVE_TICKET_STATUSES.has(t.status),
+        );
+
+        // Connect the queue id to the current ticket the user owns
+        const nextMap = new Map(activeTickets.map((t) => [t.queueId, t]));
+        setMyTicketsByQueueId(nextMap);
+        setJoinedQueueIds(new Set(nextMap.keys()));
+        setTicket((prev) => {
+            if (prev) {
+                // check if prev is in the newly refreshed map
+                const refreshed = nextMap.get(prev.queueId);
+                if (refreshed) return refreshed;
+            }
+            return null;
+        });
+    };
 
     // Pass in queue id of the ticket before even joining the queue
     const createTicket = async (queueId: string) =>  {
@@ -36,7 +68,9 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ CSCEClasses, selec
             const ticketId: string = ticket.id;
             console.log(`My current ticket id ${ticketId}`);
 
+            // Update ticket
             setTicket(ticket);
+            setMyTicketsByQueueId((prev) => new Map(prev).set(queueId, ticket));
             return {ticket, ticketId};
         }
         catch (error) {
@@ -53,6 +87,7 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ CSCEClasses, selec
             if (response.data.queues.length === 0) {
               setQueue([]);
               console.log('No active queues found');
+              await syncJoinedQueuesFromServer();
               return;
             }
             const activeQueuesList: Queue[] = response.data.queues;
@@ -68,6 +103,8 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ CSCEClasses, selec
                 return [...prevQueue, ...uniqueNewItems];
 
             });
+            // Rebuild Join/View from DB so Enter doesn't show Join after an existing membership
+            await syncJoinedQueuesFromServer();
         } 
         catch (error) { 
             if (axios.isAxiosError(error)) { 
@@ -82,6 +119,17 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ CSCEClasses, selec
       const response = await axios.delete(`/api/queueticket/queues/${queueId}`);
       if (response.status === 200) {
         console.log(`SUCCESSFULLY deleted all tickets from ${queueId}`);
+        setJoinedQueueIds((prev) => {
+          const next = new Set(prev);
+          next.delete(queueId);
+          return next;
+        });
+        setMyTicketsByQueueId((prev) => {
+          const next = new Map(prev);
+          next.delete(queueId);
+          return next;
+        });
+        setTicket((prev) => (prev?.queueId === queueId ? null : prev));
         return;
       }
       console.log(`FAILED to delete all tickets from ${queueId}`);
@@ -96,10 +144,8 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ CSCEClasses, selec
       const response = await createTicket(selectedQueue.id);
       if (!response) return;
 
-      const joinButton = document.getElementsByClassName("join-btn")[0] as HTMLButtonElement;
-      if (joinButton) {
-          joinButton.disabled = true;
-      }
+      // Add joined queue ids
+      setJoinedQueueIds((prev) => new Set(prev).add(selectedQueue.id));
 
       setIsViewingQueue(false);
       setSelectedQueue(selectedQueue);
@@ -107,10 +153,26 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ CSCEClasses, selec
     }
 
     const handleViewQueue = (selectedQueue: Queue) => {
-      setTicket(null);
+      // Restore this queue's ticket so Leave works after a refetch
+      setTicket(myTicketsByQueueId.get(selectedQueue.id) ?? null);
       setIsViewingQueue(true);
       setSelectedQueue(selectedQueue);
       setModalOpen(true);
+    }
+
+    const handleLeaveQueue = (queueId: string) => {
+      setJoinedQueueIds((prev) => {
+        const next = new Set(prev);
+        next.delete(queueId);
+        return next;
+      });
+      setMyTicketsByQueueId((prev) => {
+        const next = new Map(prev);
+        next.delete(queueId);
+        return next;
+      });
+      setTicket(null);
+      setModalOpen(false);
     }
 
   return ( 
@@ -167,18 +229,25 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ CSCEClasses, selec
                     <p className='text-xs text-gray-500'>Location: {q.location}</p>
 
                     <div className='absolute bottom-2 right-2 flex flex-row gap-2'>
+                      
                       {/* Join queue */}
-                      <Button
-                            onClick={() => void handleJoinQueue(q)}
-                            disabled={!q.isOpen}
-                            variant='default'
-                            className={'join-btn'}
+                      {
+                        // Only display if the queue hasn't been joined
+                        !joinedQueueIds.has(q.id) &&
+                         <Button
+                         onClick={() => void handleJoinQueue(q)}
+                         disabled={!q.isOpen}
+                         variant='default'
+                         className={'join-btn'}
                         >
-                            Join
+                          Join
                         </Button>
+                      }
+                     
 
                         {/* View a queue modal button */}
                         <Button
+                          // Pass the ticket along when viewing the queue
                             onClick={() => handleViewQueue(q)}
                             variant='outline'
                         >
@@ -200,13 +269,15 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ CSCEClasses, selec
                 </div>
               ))}
               {/* Render a modal for each selected queue and when isModalOpen  */}
-              {isModalOpen && (
+              {isModalOpen && selectedQueue && (
                 <QueueModal
                   queue={selectedQueue}
                   ticket={ticket}
                   isModalOpen={isModalOpen}
                   isViewingQueue={isViewingQueue}
+                  joinedQueueIds={joinedQueueIds}
                   setModalOpen={setModalOpen}
+                  onLeaveQueue={handleLeaveQueue}
                 />
               )}
             </div>
