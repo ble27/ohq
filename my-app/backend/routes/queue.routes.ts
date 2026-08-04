@@ -48,7 +48,7 @@ router.get('/:id', async (req: Request, res: Response): Promise<void> => {
             return;
         }        
         const body: QueueResponse = { queue, message: 'SUCCESS' };
-        console.log(`[QUEUE] Successfully sent queue object: ${JSON.stringify(body.queue, null, 2)}`)
+        console.log(`[QUEUE] Successfully sent queue object`);
         res.status(200).json(body);
     }
      catch (error: unknown) {
@@ -107,7 +107,7 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
         });
         const newQueue = await prisma.queue.create({ data: validatedQueue });
 
-        console.log(`[QUEUE] Successfully created queue object: ${JSON.stringify(newQueue, null, 2)}`)
+        console.log(`[QUEUE] Successfully created queue object`);
 
         const body: QueueResponse = { queue: newQueue, message: 'SUCCESS' };
         res.status(201).json(body);

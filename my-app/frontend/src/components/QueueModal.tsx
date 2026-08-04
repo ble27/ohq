@@ -13,11 +13,18 @@ interface ModalProps {
     queue: Queue | null
     ticket: QueueTicket | null
     isModalOpen: boolean;
+    isViewingQueue: boolean;
     setModalOpen: (value: boolean) => void;
 }
 
 // Local queue for each instance
-export const QueueModal = ({ queue, ticket, isModalOpen, setModalOpen }: ModalProps) => {
+export const QueueModal = ({
+    queue,
+    ticket,
+    isModalOpen,
+    isViewingQueue,
+    setModalOpen,
+}: ModalProps) => {
     // All the tickets for each queue
     const [tickets, setTickets] = useState<QueueTicket[]>([]);
     const [curTicket] = useState<QueueTicket | null>(ticket);
@@ -41,44 +48,45 @@ export const QueueModal = ({ queue, ticket, isModalOpen, setModalOpen }: ModalPr
         }
     }
 
-    // Fetch multiple tickets by queue id
-    const fetchMultipleTicketsById = async (queueId: string) => {
-        try {
-            // Extract from a QueueTicketsListResponse
-            const response = await axios.get<QueueTicketsListResponse>(`/api/queueticket/queues/${queueId}`);
-            if (response.status !== 200) {
-                console.log('Failed to fetch multiple tickets by id')
-                return;
-            }
-            const queueTickets: QueueTicket[] = response.data.tickets;
-
-            // Update state
-            setTickets((prevTickets) => [...prevTickets, ...queueTickets]);
-            
-            return queueTickets;
-        }
-        catch (error) {
-            console.error('Failed to fetch tickets', error);
-        }
-    }
-
-    // Load this queue's tickets whenever the modal is opened for a queue (Optimize later)
+    // Load the current list and subscribe to future updates for this queue.
     useEffect(() => {
         if (!isModalOpen || !queue) return;
-        
-        socket?.emit('join-queue', queue.id);
 
-        // Mount: component loaded into DOM
-        let isMounted = true;
-        const loadTicketsData = async () => {
-            if (isMounted) {
-                await fetchMultipleTicketsById(queue?.id);  
+        const queueId = queue.id;
+        let cancelled = false;
+        const handleQueueUpdate = (updatedTickets: QueueTicket[]) => {
+            if (!cancelled) {
+                setTickets(updatedTickets);
             }
-        }
-        loadTicketsData();
+        };
+        const handleQueueError = (error: { event: string; message: string }) => {
+            console.error(`Queue socket error during ${error.event}: ${error.message}`);
+        };
 
-        // Clean up to prevent memory leak
-        return () => { isMounted = false; } 
+        socket?.on('queue-updated', handleQueueUpdate);
+        socket?.on('queue-error', handleQueueError);
+        socket?.emit('watch-queue', queueId);
+
+        const loadTickets = async () => {
+            try {
+                const response = await axios.get<QueueTicketsListResponse>(
+                    `/api/queueticket/queues/${queueId}`,
+                );
+                if (!cancelled) {
+                    setTickets(response.data.tickets);
+                }
+            } catch (error) {
+                console.error('Failed to fetch tickets', error);
+            }
+        };
+        void loadTickets();
+
+        return () => {
+            cancelled = true;
+            socket?.emit('unwatch-queue', queueId);
+            socket?.off('queue-updated', handleQueueUpdate);
+            socket?.off('queue-error', handleQueueError);
+        };
     }, [isModalOpen, queue, socket]);
 
     if (!isModalOpen) return null;
@@ -93,10 +101,11 @@ export const QueueModal = ({ queue, ticket, isModalOpen, setModalOpen }: ModalPr
                 <div className="shrink-0">
                     <h3 className="text-lg font-semibold text-gray-900">Queue</h3>
                     <p className="mt-1 text-xs text-gray-500">Location: {queue?.location}</p>
-                    <p className="mt-0.5 text-xs text-gray-500">
-                        {/* Joining a queue auto updaets positition  */}
-                        Your position: {curTicket ? curTicket.position ?? '—' : '—'}
-                    </p>
+                    {!isViewingQueue && (
+                        <p className="mt-0.5 text-xs text-gray-500">
+                            Your position: {curTicket ? curTicket.position ?? '—' : '—'}
+                        </p>
+                    )}
                 </div>
 
                 {/* Ticket list */}
@@ -110,23 +119,27 @@ export const QueueModal = ({ queue, ticket, isModalOpen, setModalOpen }: ModalPr
 
                 {/* Leaving disconnects the socket connection */}
                 <div className="mt-3 flex shrink-0 justify-end gap-2">
-                    <button
-                        onClick={async () => {
-                            if (curTicket) {
-                                try {
-                                    await deleteTicketById();
-                                    setModalOpen(false);
-                                    socket?.emit('leave-queue', queue?.id);
+                    {!isViewingQueue && (
+                        <button
+                            onClick={async () => {
+                                if (curTicket) {
+                                    try {
+                                        await deleteTicketById();
+                                        if (queue) {
+                                            socket?.emit('refresh-queue', queue.id);
+                                        }
+                                        setModalOpen(false);
+                                    }
+                                    catch (error) {
+                                        console.log('Failed to delete ticket', error);
+                                    }
                                 }
-                                catch (error) {
-                                    console.log('Failed to delete ticket', error);
-                                }
-                            }
-                        }}
-                        className="rounded-md bg-red-500 px-2.5 py-1 text-xs font-medium text-white hover:bg-red-600"
-                    >
-                        Leave
-                    </button>
+                            }}
+                            className="rounded-md bg-red-500 px-2.5 py-1 text-xs font-medium text-white hover:bg-red-600"
+                        >
+                            Leave
+                        </button>
+                    )}
                     {/* Closing doesn't leave the queue */}
                     <button
                         onClick={() => setModalOpen(false)}

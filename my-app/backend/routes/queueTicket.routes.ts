@@ -2,7 +2,7 @@ import { Router } from 'express';
 import type { Request, Response } from 'express';
 import { prisma } from '../prisma.js';
 import { SessionStatus } from '@prisma/client';
-import { joinQueue, leaveQueue, listActiveTickets, startHelping } from '../services/queue.services.js';
+import { joinQueue, leaveQueue } from '../services/queue.services.js';
 
 import type {
     ApiMessageResponse,
@@ -13,7 +13,6 @@ import type {
 
 import { CreateQueueTicketValidationSchema } from '../schemas/queueTicket.schema.js';
 import { ZodError } from 'zod';
-import type { Session } from 'inspector/promises';
 const router: Router = Router();
 
 // GET /api/queueticket — list all tickets
@@ -66,7 +65,7 @@ router.get('/queues/:queueId', async (req: Request, res: Response): Promise<void
             message: `Tickets from queue ${queueId} successfully fetched`,
         };
         res.status(200).json(body);
-    } 
+    }
     catch (error: unknown) {
         if (error instanceof ZodError) {
             res.status(400).json({ message: 'Invalid input', errors: error.issues });
@@ -119,16 +118,57 @@ router.get('/:queueTicketId', async (req: Request, res: Response): Promise<void>
 });
 
 // POST /api/queueticket — create ticket
-router.post('/', async (req: Request, res: Response): Promise<void> => {
+// router.post('/', async (req: Request, res: Response): Promise<void> => {
+//     try {
+//         // The request body was attached from middleware with user
+//         const studentId = (req as any).user.id;
+
+//         // The server owns student identity; never trust a client-supplied user ID.
+//         const validatedTicket = CreateQueueTicketValidationSchema.parse({
+//             ...req.body, studentId
+//         });
+//         const { queueId } = validatedTicket;
+
+//         // Ticket id, joinedAt, updatedAt are set by the server
+//         // Call joinQueue service to create the ticket
+//         const newTicket = await joinQueue(queueId, studentId);
+
+//         console.log(`[QUEUE TICKET] Successfully created ticket object: ${JSON.stringify(newTicket, null, 2)}`)
+
+//         const body: QueueTicketResponse = {
+//             ticket: newTicket,
+//             message: 'SUCCESS',
+//         };
+//         console.log('Successfully created a new ticket');
+//         console.log(JSON.stringify(body.ticket));
+//         res.status(201).json(body);
+//     }
+//     catch (error: unknown) {
+//         if (error instanceof ZodError) {
+//             res.status(400).json({ message: 'Invalid input', errors: error.issues });
+//             return;
+//         }
+//         if (error instanceof Error) {
+//             res.status(500).json({ message: error.message });
+//             return;
+//         }
+//         console.log('Failed to create a new ticket');
+//         res.status(500).json({ message: 'Failed to create ticket' });
+//     }
+// });
+
+// POST /api/queueticket/:queueId — create ticket
+router.post('/queues/:queueId', async (req: Request, res: Response): Promise<void> => {
     try {
+        const queueId = req.params.queueId as string;
+        const status  = req.body.status as SessionStatus;
         // The request body was attached from middleware with user
         const studentId = (req as any).user.id;
 
-        // The server owns student identity; never trust a client-supplied user ID.
         const validatedTicket = CreateQueueTicketValidationSchema.parse({
-            ...req.body, studentId
+            // Only param not calculated is position. id, joinedAt, and updatedAt are auto
+            ...req.body, status, queueId, studentId
         });
-        const { queueId } = validatedTicket;
 
         // Ticket id, joinedAt, updatedAt are set by the server
         // Call joinQueue service to create the ticket
@@ -167,21 +207,34 @@ router.patch('/:queueTicketId', async (req: Request, res: Response): Promise<voi
             return;
         }
 
-        // Check the status of the request
         const status = req.body.status as SessionStatus;
+        if (status !== SessionStatus.LEFT) {
+            res.status(400).json({ message: 'This endpoint only supports leaving a queue' });
+            return;
+        }
 
-        // Call startHelping service to update the ticket status
-        // const updatedTicket = await startHelping(ticketId);
-
-        const response = await prisma.queueTicket.update({
+        const existingTicket = await prisma.queueTicket.findUnique({
             where: { id: ticketId },
-            data: {status: status} 
-        })
-        
-        const updatedTicketStatus = response.status;
+        });
+        if (!existingTicket) {
+            res.status(404).json({ message: 'Ticket not found' });
+            return;
+        }
 
-        console.log(`[QUEUE TICKET] Successfully updated ticket status to: ${JSON.stringify(updatedTicketStatus, null, 2)}`)
-        res.status(200);
+        const studentId = (req as any).user.id;
+        if (existingTicket.studentId !== studentId) {
+            res.status(403).json({ message: 'You cannot leave another student’s ticket' });
+            return;
+        }
+
+        const updatedTicket = await leaveQueue(existingTicket.queueId, studentId);
+        const body: QueueTicketResponse = {
+            ticket: updatedTicket,
+            message: 'SUCCESS',
+        };
+
+        console.log(`[QUEUE TICKET] Successfully updated ticket status to ${updatedTicket.status}`);
+        res.status(200).json(body);
     }
      catch (error: unknown) {
         if (error instanceof ZodError) {
@@ -230,6 +283,40 @@ router.delete('/:queueTicketId', async (req: Request, res: Response): Promise<vo
             return;
         }
         res.status(500).json({ message: 'Failed to delete ticket' });
+    }
+});
+
+router.delete('/queues/:queueId', async (req: Request, res: Response): Promise<void> => {
+    try {
+        const queueId = req.params.queueId as string;
+
+        if (!queueId) {
+            res.status(400).json({ message: 'Ticket ID is required' });
+            return;
+        }
+
+        const ticketsToDelete = await prisma.queueTicket.deleteMany({
+            where: { queueId },
+        });
+        if (!ticketsToDelete) {
+            res.status(404).json({ message: 'Ticket not found' });
+            return;
+        }
+
+        const body: ApiMessageResponse = { message: 'SUCCESS' };
+        console.log(`[QUEUE TICKET] Successfully deleted all tickets from ${queueId}`);
+        res.status(200).json(body);
+    }
+    catch (error: unknown) {
+        if (error instanceof ZodError) {
+            res.status(400).json({ message: 'Invalid input', errors: error.issues });
+            return;
+        }
+        if (error instanceof Error) {
+            res.status(500).json({ message: error.message });
+            return;
+        }
+        res.status(500).json({ message: 'Failed to delete all tickets' });
     }
 });
 

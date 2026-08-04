@@ -18,6 +18,7 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ CSCEClasses, selec
     const [selectedQueue, setSelectedQueue] = useState<Queue | null>(null);
     const [isModalOpen, setModalOpen] = useState(false);
     const [ticket, setTicket] = useState<QueueTicket | null>(null);
+    const [isViewingQueue, setIsViewingQueue] = useState(false);
 
     // Visible queues that will be displayed (will refresh every time queue changes)
     const visibleQueues = queue;
@@ -26,7 +27,8 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ CSCEClasses, selec
     const createTicket = async (queueId: string) =>  {
         try {
             // res: data: payload
-            const response = await axios.post<QueueTicketResponse>('/api/queueticket', { queueId, status: 'WAITING' });
+            console.log('Calling createTicket from ClassSelector');
+            const response = await axios.post<QueueTicketResponse>(`/api/queueticket/queues/${queueId}`, { status: 'WAITING' });
             console.log('Successfully created a new ticket');
 
             // Need to return ticket and ticket id to pass into QueueModal
@@ -64,6 +66,7 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ CSCEClasses, selec
                 // Return original array if no new unique items exist
                 if (uniqueNewItems.length === 0) return prevQueue;
                 return [...prevQueue, ...uniqueNewItems];
+
             });
         } 
         catch (error) { 
@@ -74,9 +77,42 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ CSCEClasses, selec
             } 
         } 
     };
+
+    const clearAllTickets = async (queueId: string) => {
+      const response = await axios.delete(`/api/queueticket/queues/${queueId}`);
+      if (response.status === 200) {
+        console.log(`SUCCESSFULLY deleted all tickets from ${queueId}`);
+        return;
+      }
+      console.log(`FAILED to delete all tickets from ${queueId}`);
+    }
+
     const clearQueue = () => {
         setQueue([]);
     }
+
+    // Remove Join button after a user has joined a queue
+    const handleJoinQueue = async (selectedQueue: Queue) => {
+      const response = await createTicket(selectedQueue.id);
+      if (!response) return;
+
+      const joinButton = document.getElementsByClassName("join-btn")[0] as HTMLButtonElement;
+      if (joinButton) {
+          joinButton.disabled = true;
+      }
+
+      setIsViewingQueue(false);
+      setSelectedQueue(selectedQueue);
+      setModalOpen(true);
+    }
+
+    const handleViewQueue = (selectedQueue: Queue) => {
+      setTicket(null);
+      setIsViewingQueue(true);
+      setSelectedQueue(selectedQueue);
+      setModalOpen(true);
+    }
+
   return ( 
     <> 
       {/* Class selector available at /dashboardc#class */} 
@@ -125,28 +161,38 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ CSCEClasses, selec
             <div className='grid grid-cols-1 justify-center md:grid-cols-2 bg-white lg:grid-cols-3 gap-10 w-100 md:w-full h-80 md:h-50 space-y-2 pr-5 '>
               {visibleQueues.map((q) => (
                 // Actual Queue card
-                <div key={q.id} className='relative p-3 border rounded-lg bg-gray-50 flex justify-between border-gray-300 border-1 shadow-inner'>
-                  <div>
+                <div key={q.id} className='relative p-3 flex border rounded-lg bg-gray-50 flex justify-between border-gray-300 border-1 shadow-inner'>
+                  <div className='flex flex-col h-40 mb-2'>
                     <p className='font-semibold text-sm'>Course: {q.courseId}</p>
                     <p className='text-xs text-gray-500'>Location: {q.location}</p>
 
-                    {/* Join queue */}
-                     <Button 
-                            onClick={async () => {
-                              // Create a ticket for the selected queue
-                              const response = await createTicket(q.id);
-                              if (!response) return;                              
-
-                              // Update selected queue and open the modal
-                              setSelectedQueue(q);
-                              setModalOpen(true);
-                            }}
+                    <div className='absolute bottom-2 right-2 flex flex-row gap-2'>
+                      {/* Join queue */}
+                      <Button
+                            onClick={() => void handleJoinQueue(q)}
                             disabled={!q.isOpen}
-                            variant={'ghost'}
-                            className='absolute bottom-2 right-2'
-                        > 
-                            {q.isOpen && 'Join'}
-                        </Button> 
+                            variant='default'
+                            className={'join-btn'}
+                        >
+                            Join
+                        </Button>
+
+                        {/* View a queue modal button */}
+                        <Button
+                            onClick={() => handleViewQueue(q)}
+                            variant='outline'
+                        >
+                            View
+                        </Button>
+                        {/* Clear all tickets from a queue modal button */}
+                        <Button
+                            onClick={() => clearAllTickets(q.id)}
+                            variant='destructive'
+                        >
+                            Delete Tickets
+                        </Button>
+                    </div>
+
                   </div>
                   <span className={`text-xs px-2 py-1 h-fit rounded ${q.isOpen ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
                     {q.isOpen ? 'Open' : 'Closed'}
@@ -154,7 +200,15 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ CSCEClasses, selec
                 </div>
               ))}
               {/* Render a modal for each selected queue and when isModalOpen  */}
-              {isModalOpen && <QueueModal queue={selectedQueue} ticket={ticket} isModalOpen={isModalOpen} setModalOpen={setModalOpen}/>}
+              {isModalOpen && (
+                <QueueModal
+                  queue={selectedQueue}
+                  ticket={ticket}
+                  isModalOpen={isModalOpen}
+                  isViewingQueue={isViewingQueue}
+                  setModalOpen={setModalOpen}
+                />
+              )}
             </div>
           )}
         </div>

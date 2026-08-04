@@ -14,7 +14,7 @@ import { socketMiddleware } from './middlewares/socket.middleware.js';
 
 // Socket Services helpers
 import { listActiveTickets } from './services/queue.services.js';
-import { joinQueue, leaveQueue, startHelping, completeTicket } from './services/queue.services.js';
+import { startHelping, completeTicket } from './services/queue.services.js';
 import { findQueueIdByTicketId } from './services/queueTicket.services.js';
 
 const app = express();
@@ -26,7 +26,8 @@ const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
     origin: ["http://localhost:5173", "http://localhost:5174"],
-    methods: ["GET", "POST"]
+    methods: ["GET", "POST"],
+    credentials: true
   }
 })
 
@@ -34,52 +35,73 @@ const io = new Server(server, {
 io.use(socketMiddleware);
 io.on('connection', async (socket: Socket) => {
   const userId = (socket as any).user?.id;
-  
+
+  const reportSocketError = (event: string, error: unknown) => {
+    const message = error instanceof Error ? error.message : 'Unexpected socket error';
+    console.error(`[SOCKET] ${event} failed for user ${userId}:`, message);
+    socket.emit('queue-error', { event, message });
+  };
+
   console.log(`User connected: ${userId}`);
-  
-  // Client side wants to disconnect -> must send queue id to server
-  socket.on('disconnect', async () => {
-    socket.disconnect();
+
+  socket.on('disconnect', (reason) => {
+    console.log(`User ${userId} disconnected: ${reason}`);
   });
 
-  // Join queue
-  socket.on('join-queue', async (queueId: string) => {
-    socket.join(queueId);
-
-    await joinQueue(queueId, userId);
-    const tickets = await listActiveTickets(queueId);
-
-    io.to(queueId).emit('queue-updated', tickets);
-    console.log(`User ${socket.id} joined room ${queueId}`);
+  // Room subscriptions never create or update queue tickets.
+  socket.on('watch-queue', async (queueId: string) => {
+    try {
+      await socket.join(queueId);
+      const tickets = await listActiveTickets(queueId);
+      io.to(queueId).emit('queue-updated', tickets);
+      console.log(`User ${socket.id} is watching room ${queueId}`);
+    } catch (error: unknown) {
+      reportSocketError('watch-queue', error);
+    }
   });
 
-  // Leave queue
-  socket.on('leave-queue', async (queueId: string) => {
-    socket.leave(queueId);
+  socket.on('unwatch-queue', async (queueId: string) => {
+    try {
+      await socket.leave(queueId);
+      console.log(`User ${socket.id} stopped watching room ${queueId}`);
+    } catch (error: unknown) {
+      reportSocketError('unwatch-queue', error);
+    }
+  });
 
-    await leaveQueue(queueId, userId);
-    const tickets = await listActiveTickets(queueId);
-
-    io.to(queueId).emit('queue-updated', tickets);
-    console.log(`User ${socket.id} left room ${queueId}`);
+  socket.on('refresh-queue', async (queueId: string) => {
+    try {
+      const tickets = await listActiveTickets(queueId);
+      io.to(queueId).emit('queue-updated', tickets);
+    } catch (error: unknown) {
+      reportSocketError('refresh-queue', error);
+    }
   });
 
   // Need ticket id and expect ticket id
   socket.on('start-helping', async (ticketId: string) => {
-    await startHelping(ticketId);
-
-    const queueId = await findQueueIdByTicketId(ticketId);
-    const tickets = await listActiveTickets(queueId);
-    
-    io.to(queueId).emit('queue-updated', tickets);
-    console.log(`User ${userId} started helping in room ${queueId}`);
+    try {
+      await startHelping(ticketId);
+      const queueId = await findQueueIdByTicketId(ticketId);
+      const tickets = await listActiveTickets(queueId);
+      io.to(queueId).emit('queue-updated', tickets);
+      console.log(`User ${userId} started helping in room ${queueId}`);
+    } catch (error: unknown) {
+      reportSocketError('start-helping', error);
+    }
   });
 
   // Expect ticket id
   socket.on('complete-ticket', async (ticketId: string) => {
-    await completeTicket(ticketId);
-    const queueId = await findQueueIdByTicketId(ticketId);
-    io.to(queueId).emit('ticket-completed', ticketId, userId);
+    try {
+      await completeTicket(ticketId);
+      const queueId = await findQueueIdByTicketId(ticketId);
+      const tickets = await listActiveTickets(queueId);
+      io.to(queueId).emit('queue-updated', tickets);
+      console.log(`User ${userId} completed ticket ${ticketId}`);
+    } catch (error: unknown) {
+      reportSocketError('complete-ticket', error);
+    }
   });
 });
 
