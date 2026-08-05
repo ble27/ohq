@@ -5,7 +5,7 @@ export const Body = () => {
     <div className="flex flex-col items-center h-auto bg-white mt-12 sm:mt-20 mb-20"> 
       
       <div className="pt-10 flex flex-col justify-center items-center w-100 text-lg sm:text-2xl lg:w-full font-semibold text-center mb-5 lg:mb-18 sm:mb-20">
-        <p>Select your class and receive live updates for office hours seamlessly.</p>
+        <p>Don't wait to get help! Select a class and receive live updates for office hours seamlessly.</p>
         
         <span className="mt-2 justify-center items-center w-80 text-base md:text-lg lg:w-full sm:text-lg font-light text-center">
           Alert when a TA/PT is available for help

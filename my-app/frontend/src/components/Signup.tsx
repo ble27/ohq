@@ -3,6 +3,7 @@ import { signUp } from "../services/authService";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContextProvider";
 import { Link } from "react-router-dom";
+import { LuArrowLeft } from "react-icons/lu";
 
 export const Signup = () => {
     const [email, setEmail] = useState("");
@@ -35,31 +36,48 @@ export const Signup = () => {
 
     return (
         <>
-        <div className="h-screen gap-3 bg-black/70">
-            <div className='flex flex-col absolute inset-0 m-auto items-center justify-center w-100 h-100 bg-white border-2 border-gray-300 rounded-xl shadow-md'>
-                <h1 className='text-xl text-black'>Sign Up</h1>
-                <input
-                type="email"
-                placeholder="Email"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                className="border rounded px-3 py-2 mb-2"
+        <div className="flex flex-col items-center justify-center h-screen gap-3 bg-black/90 text-white">
+            <div className='absolute top-5 left-5'>
+                <LuArrowLeft 
+                    onClick={() => {navigate('/')}}
+                    size={25}
+                    className='hover:opacity-80'    
                 />
-                <input
-                type="password"
-                placeholder="Password"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                className="border rounded px-3 py-2 mb-2"
-                />
+            </div>
+            
+            <div className='relative shadow-inner flex flex-col 
+                w-full p-10 justify-center rounded-lg'>
+                <h1 className='items-start font-medium text-2xl mb-8'>Create your account today</h1>
+                <div className='mb-5 flex flex-col'>
+                    <label htmlFor="email" className='mb-2'>Email</label>
+                    <input
+                    type="email"
+                    id="email"
+                    placeholder="my123@email.com"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    className="border rounded px-2 py-2 mt-0 outline-none border-gray-500/50 border-[1.5px]"
+                    />
+                </div>
+                <div className='mb-8 flex flex-col'>
+                    <label htmlFor="password" className='mb-2'>Password</label>
+                    <input
+                    type="password"
+                    placeholder="password"
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    className="border rounded px-3 py-2 outline-none border-gray-500/50 border-[1.5px]"
+                    />
+                </div>
+                
                 <button
-                onClick={handleSignup}
-                disabled={submitting}
-                className="bg-black text-white rounded-lg px-3 py-2 hover:opacity-80 disabled:opacity-50"
+                    onClick={handleSignup}
+                    disabled={submitting}
+                    className="bg-red-900 text-white transition-opacity duration-200 ease-in-out rounded-lg px-3 py-2 hover:opacity-80 disabled:opacity-50"
                 >
                 {submitting ? "Signing up…" : "Sign Up"}
                 </button>
-                <div className='absolute bottom-2'> Already have an account? <Link to='/signin' className='text-blue-500 underline'>Sign In</Link></div>
+                <div className='flex justify-center mt-8'> Already have an account? <Link to='/signin' className='ml-1 text-blue-500 hover:underline'> Sign in here</Link></div>
                 {error && <p className="text-red-500">{error}</p>}
             </div>
         </div>

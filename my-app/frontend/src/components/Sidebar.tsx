@@ -54,7 +54,10 @@ export const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }: SideBarProps ) => {
   // Desktop: spacer matches sidebar so content is pushed.
   const spacerWidth = isDesktop ? sidebarWidth : 'w-[72px]';
 
-
+  let inactivityTimer: any;
+  const TIMEOUT_MINUTES = 5; 
+  const TIMEOUT_MS = TIMEOUT_MINUTES * 60 * 1000;  
+  
   const handleSignout = async () => {
     try {
       await signOut();
@@ -65,6 +68,22 @@ export const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }: SideBarProps ) => {
       console.log(err);
     } 
   }
+
+  const events = ['mousedown', 'load', 'mousemove', 'click', 'scroll', 'keypress'];
+  // Each event reset the timer
+  events.forEach((event) => {
+    window.addEventListener(event, resetTimer);
+  })
+
+  function resetTimer() {
+    // Clear out any previous timer
+    clearTimeout(inactivityTimer);
+    // Reset timer
+    inactivityTimer = setTimeout(handleSignout, TIMEOUT_MS);
+  }
+
+  resetTimer();
+
   return (
     <>
       {/* Spacer keeps main content offset; on mobile it never grows with expand */}

@@ -30,7 +30,6 @@ export const Home = () => {
 
     return (
         <>
-      
         {/* Ticket header */}
         <div className='flex flex-col w-full min-h-full ml-8 mt-10 pr-20 bg-b'>
             <div className='p-3 text-2xl bg-gray-500/20 rounded-full font-semibold'>My Tickets:</div>

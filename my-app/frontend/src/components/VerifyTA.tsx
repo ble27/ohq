@@ -38,12 +38,12 @@ export const VerifyTA = ({ children }: VerifyTAProps) => {
                 setIsTA(true);
             } else {
                 localStorage.removeItem(TA_VERIFIED_KEY);
-                setError(response?.message ?? 'Failed to verify TA\'s status');
+                setError(response?.message ?? 'Access authorized to TAs only');
             }
         }
         catch (err: unknown) {
             localStorage.removeItem(TA_VERIFIED_KEY);
-            const msg = 'Failed to verify TA\'s status';
+            const msg = 'Access authorized to TAs only';
             setError(msg);
             console.log(msg, err);
         } finally {
@@ -56,19 +56,22 @@ export const VerifyTA = ({ children }: VerifyTAProps) => {
     }
 
     return (
-        <div className='bg-red-900 w-screen h-screen flex flex-col items-center justify-center'>
-            <div className='flex flex-col items-center font-bold justify-center text-center text-white text-xl gap-2'>
-                <div> Verify your TA's status here </div>
+        <div className="flex w-full h-screen m-0 p-0 overflow-hidden items-center justify-center bg-gray-500/50">
+            <div className='relative flex flex-col items-center font-semibold text-black text-xl gap-2 px-5 py-10 bg-white rounded-lg h-1/5 w-1/2'>
+                <div className='absolute top-5 text-lg'> Queuedex </div>
+                {(!isLoading && !error) ? <div className='absolute top-15 text-base font-normal'> Click to verify your TA role </div> : 
+                <div className="absolute top-15 text-base font-normal text-red-900">{error}</div>}
                 <Button
                     size={'lg'}
                     variant='default'
                     onClick={() => { void handleVerification(); }}
+                    className={'absolute bottom-10 bg-blue-500 hover:bg-blue-500/90'}
                     disabled={isLoading}
                 >
                     {isLoading ? 'Verifying' : 'Verify'}
                 </Button>
+
                 {isLoading && <Spinner />}
-                {error && <div className="text-sm font-normal">{error}</div>}
             </div>
         </div>
     )
