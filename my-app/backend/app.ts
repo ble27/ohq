@@ -7,6 +7,7 @@ import { userRouter } from './routes/user.routes.js';
 import { queueTicketRouter } from './routes/queueTicket.routes.js';
 import { authRouter } from './routes/auth.routes.js';
 import { courseRouter } from './routes/course.routes.js';
+import { taRouter } from './routes/ta.routes.js';
 import authMiddleware from './middlewares/auth.middleware.js';
 import { Server, Socket } from 'socket.io';
 import http from 'http';
@@ -114,6 +115,7 @@ app.use('/api/courses', authMiddleware, courseRouter);
 app.use('/api/queues', authMiddleware, queueRouter);
 app.use('/api/queueticket/', authMiddleware, queueTicketRouter);
 app.use('/api/users', authMiddleware, userRouter);
+app.use('/api/tas/', authMiddleware, taRouter);
 
 server.listen(PORT, () => {
   console.log(`Server is runnning on port ${PORT}`);

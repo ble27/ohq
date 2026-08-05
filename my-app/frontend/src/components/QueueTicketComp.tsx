@@ -48,7 +48,7 @@ export const QueueTicketComp = ({ ticket }: QueueTicketProps) => {
     }, []);
     
     return (
-        <div className='relative flex flex-col text-white text-xl bg-red-950/90 border border-white/15 shadow-[0_8px_32px_0_rgba(0,0,0,0.5)] h-80 w-full sm:w-70 md:w-80 rounded-2xl p-6 justify-between overflow-hidden'>
+        <div className='relative flex flex-col text-white text-xl bg-red-950/90 border border-white/15 h-80 w-full sm:w-70 md:w-80 rounded-2xl p-6 justify-between overflow-hidden'>
             {/* Subtle internal maroon glow tint */}
             <div className="absolute -top-10 -left-10 w-32 h-32 bg-red-500 rounded-lg blur-3xl pointer-events-none"></div>
             <div className="absolute -top-20 -left-20 w-25 h-25 bg-white/30 rounded-lg blur-3xl pointer-events-none"></div>

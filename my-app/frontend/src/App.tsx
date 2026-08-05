@@ -25,7 +25,7 @@ function App() {
             <Route path='/signin' element={<Signin />} />
             <Route path='signup' element={<Signup />} />
 
-            {/* Dashboard routes */}
+            {/* Dashboard routes — QueueManager is gated by VerifyTA inside Dashboard */}
             <Route path='/dashboard' element={<Dashboard />} />
             <Route path='/dashboard/home' element={<Dashboard />} />
             <Route path='/dashboard/class' element={<Dashboard />} />

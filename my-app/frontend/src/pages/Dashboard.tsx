@@ -4,6 +4,7 @@ import { Home } from '@/components/Home';
 import { Sidebar, MOBILE_BREAKPOINT } from '../components/Sidebar'
 import { useLocation } from 'react-router-dom';
 import { QueueManager, type CreateQueueInput } from '@/components/QueueManager';
+import { VerifyTA } from '@/components/VerifyTA';
 import type {
     ApiMessageResponse,
     Course,
@@ -102,13 +103,15 @@ return (
             {isDashboardClass && <ClassSelector CSCEClasses={CSCEClasses} selectedClass={selectedClass} setSelectedClass={setSelectedClass}/>}
             {isDashboardHome && <Home />}
             {isDashboardQueueManager && (
-                <QueueManager
-                    onCreateQueue={handleCreateQueue}
-                    onDeleteQueue={handleDeleteQueue}
-                    createdQueues={createdQueues}
-                    courses={courses}
-                    isLoading={isLoadingQueues}
-                />
+                <VerifyTA>
+                    <QueueManager
+                        onCreateQueue={handleCreateQueue}
+                        onDeleteQueue={handleDeleteQueue}
+                        createdQueues={createdQueues}
+                        courses={courses}
+                        isLoading={isLoadingQueues}
+                    />
+                </VerifyTA>
             )}
         </div>
         {/* Class selector available at /dashboardc#class */}
