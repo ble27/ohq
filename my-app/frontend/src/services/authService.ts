@@ -65,5 +65,6 @@ export const getMe = async () => {
         // Browser sends cookie cookie to server here
         withCredentials: true,
     });
-    return response.data.user ?? null;
+    // user, appUser
+    return response.data ?? null;
 }

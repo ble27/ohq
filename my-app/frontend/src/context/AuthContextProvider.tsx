@@ -1,9 +1,11 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 import type { User } from '@supabase/supabase-js';
+import type { Role } from '@shared/types';
 import { getMe } from '../services/authService';
 
 interface AuthContextValue {
   user: User | null;
+  role: Role | null;
   loading: boolean;
   refreshUser: () => Promise<void>;
 }
@@ -21,13 +23,15 @@ export const useAuth = () => {
 
 export const AuthContextProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [role, setRole] = useState(null);
   const [loading, setLoading] = useState(true);
   
   // Call getMe() to fetch current user state
   const refreshUser = useCallback(async () => {
     try {
-      const currentUser = await getMe();
-      setUser(currentUser);
+      const response = await getMe();
+      setUser(response.user);
+      setRole(response.profile?.role);
     } catch {
       setUser(null);
     } finally {
@@ -42,7 +46,7 @@ export const AuthContextProvider = ({ children }: { children: ReactNode }) => {
   }, [refreshUser]);
 
   return (
-    <AuthContext.Provider value={{ user, loading, refreshUser }}>
+    <AuthContext.Provider value={{ user, role, loading, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

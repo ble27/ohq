@@ -11,23 +11,24 @@ interface VerifyTAProps {
 }
 
 export const VerifyTA = ({ children }: VerifyTAProps) => {
-    const { user } = useAuth();
+    const { user, role } = useAuth();
     const [isTA, setIsTA] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
 
-    // Restore prior verification for this user (survives refresh / navigation)
+    // Reverify status if role or user id changes
     useEffect(() => {
-        if (!user?.id) {
+        if (!user?.id || role != 'TA') {
             setIsTA(false);
             return;
         }
         const verifiedId = localStorage.getItem(TA_VERIFIED_KEY);
         setIsTA(verifiedId === user.id);
-    }, [user?.id]);
+    }, [user?.id, role]);
 
     const handleVerification = async () => {
         const id = user?.id as string;
+
         setIsLoading(true);
         setError(null);
         try {

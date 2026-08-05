@@ -118,6 +118,7 @@ router.get('/me', async (req: Request, res: Response) => {
         const appUser = await prisma.user.findUnique({ where: { id: data.user.id } });
         return res.status(200).json({
             user: data.user,
+            // prisma user
             profile: appUser,
         });
     } catch {
