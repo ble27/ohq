@@ -56,16 +56,18 @@ export const VerifyTA = ({ children }: VerifyTAProps) => {
     }
 
     return (
-        <div className="flex w-full h-screen m-0 p-0 overflow-hidden items-center justify-center bg-gray-500/50">
-            <div className='relative flex flex-col items-center font-semibold text-black text-xl gap-2 px-5 py-10 bg-white rounded-lg h-1/5 w-1/2'>
-                <div className='absolute top-5 text-lg'> Queuedex </div>
-                {(!isLoading && !error) ? <div className='absolute top-15 text-base font-normal'> Click to verify your TA role </div> : 
-                <div className="absolute top-15 text-base font-normal text-red-900">{error}</div>}
+        // Background
+        <div className="flex w-full h-screen m-0 p-0 overflow-hidden items-center justify-center bg-black/70">
+            
+            <div className='relative flex flex-col justify-between items-center font-semibold text-black text-xl gap-2 px-6 py-8 bg-white rounded-lg h-1/5 w-[300px] max-w-[684px]'>
+                <div className='flex flex-col text-lg'> Queuedex </div>
+                {(!isLoading && !error) ? <div className='text-base font-normal text-center'> Are you a TA? Click here to manage queues</div> : 
+                <div className="text-base font-normal text-red-900">{error}</div>}
                 <Button
                     size={'lg'}
                     variant='default'
                     onClick={() => { void handleVerification(); }}
-                    className={'absolute bottom-10 bg-blue-500 hover:bg-blue-500/90'}
+                    className={'bg-green-800 hover:bg-green-800/80'}
                     disabled={isLoading}
                 >
                     {isLoading ? 'Verifying' : 'Verify'}

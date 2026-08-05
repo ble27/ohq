@@ -55,7 +55,7 @@ export const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }: SideBarProps ) => {
   const spacerWidth = isDesktop ? sidebarWidth : 'w-[72px]';
 
   let inactivityTimer: any;
-  const TIMEOUT_MINUTES = 5; 
+  const TIMEOUT_MINUTES = 15; 
   const TIMEOUT_MS = TIMEOUT_MINUTES * 60 * 1000;  
   
   const handleSignout = async () => {
@@ -137,7 +137,7 @@ export const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }: SideBarProps ) => {
             ${isSidebarOpen ? 'hover:bg-black/20 hover:opacity-90': 'hover:opacity-80 justify-center'}`}
             onClick={handleSignout}>
               <LuLogOut size={20} color="white"/>
-              {isSidebarOpen && <span>Signout</span>}
+              {isSidebarOpen && <span>Sign out</span>}
           </div>
         {/* Account and settings */}
         <div 

@@ -1,7 +1,8 @@
 import { useState, type FormEvent } from 'react'
-import { MapPin, Plus, Trash2 } from 'lucide-react'
+import { MapPin, Plus, Settings2, Trash2 } from 'lucide-react'
 import type { Course, Queue } from '@shared/types'
 import { useAuth } from '@/context/AuthContextProvider'
+import { DeleteConfirmation } from './DeleteConfirmation'
 
 export interface CreateQueueInput {
     courseId: string
@@ -31,6 +32,8 @@ export const QueueManager = ({
     const [isCreating, setIsCreating] = useState(false)
     const [deletingQueueId, setDeletingQueueId] = useState<string | null>(null)
     const [error, setError] = useState<string | null>(null)
+    const [isViewingDeletionModal, setIsViewingDeletionModal] = useState(false);
+
     // TA id = user.id
     const { user } = useAuth();
 
@@ -44,7 +47,7 @@ export const QueueManager = ({
             await onCreateQueue({
                 courseId,
                 taId: user.id,
-                location: location.trim(),
+                location: location.trim().toUpperCase(),
                 isOpen: true,
             })
             setCourseId('')
@@ -56,11 +59,15 @@ export const QueueManager = ({
         }
     }
 
-    const handleDeleteQueue = async (queueId: string) => {
+    const handleConfirmDeleteQueue = async () => {
         try {
-            setDeletingQueueId(queueId)
+            if (!deletingQueueId) {
+                console.log('No deleting queue ID present');
+                return;
+            }
             setError(null)
-            await onDeleteQueue(queueId)
+            // From dashboard
+            await onDeleteQueue(deletingQueueId);
         } catch {
             setError('Unable to delete the queue. Please try again.')
         } finally {
@@ -68,9 +75,27 @@ export const QueueManager = ({
         }
     }
 
+    // Set the deleting queue id and open the confirmation modal
+    const handleOpenDeleteModal = async (queueId: string) => {
+        setDeletingQueueId(queueId);
+        setIsViewingDeletionModal(true);
+    }
+
+    const handleOpenManagementModal = async (queueId: string) => {
+
+    }
+
     return (
         <main className="min-h-full bg-slate-50 px-5 py-8 sm:px-8">
-            <div className="mx-auto max-w-5xl">
+            {/* Confirmation modal */}
+            { isViewingDeletionModal && (
+                    <DeleteConfirmation 
+                        onClose={() => setIsViewingDeletionModal(false)}
+                        onConfirm={handleConfirmDeleteQueue} 
+                    />
+                )}
+
+            <div className={`mx-auto max-w-5xl`}>
                 <header className="mb-8">
                     <p className="text-sm font-medium text-blue-600">Queue management</p>
                     <h1 className="mt-1 text-3xl font-semibold tracking-tight text-slate-900">
@@ -103,6 +128,7 @@ export const QueueManager = ({
                                 placeholder="Select or enter a course code"
                                 className="h-10 rounded-lg border border-slate-300 bg-white px-3 font-normal outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                             />
+                            {/* List of currently active seeded courses */}
                             <datalist id="active-courses">
                                 {courses.map((course) => (
                                     <option key={course.id} value={course.code}>
@@ -182,18 +208,32 @@ export const QueueManager = ({
                                             {queue.isOpen ? 'Open' : 'Closed'}
                                         </span>
                                     </div>
-
+                                    {/* Manage queue */}
                                     <button
                                         type="button"
-                                        onClick={() => handleDeleteQueue(queue.id)}
-                                        disabled={deletingQueueId === queue.id}
-                                        className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                                        onClick={() => handleOpenManagementModal(queue.id)}
+                                        className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-green-900 px-3 py-2 
+                                            transition-background duration-100 ease-in-out hover:bg-green-900 hover:text-white text-sm font-medium text-green-900 transition disabled:cursor-not-allowed disabled:opacity-50"
+                                    >
+                                        <Settings2 className="size-4" />
+                                        <span>Manage</span>
+                                    </button>
+
+                                    {/* Delete queue */}
+                                    <button
+                                        type="button"
+                                        onClick = {() => handleOpenDeleteModal(queue.id)}
+                                        className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-red-500 px-3 py-2 
+                                        duration-100 transition-background ease-in-out text-sm font-medium text-red-600 hover:bg-red-500 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
                                     >
                                         <Trash2 className="size-4" />
-                                        {deletingQueueId === queue.id ? 'Deleting…' : 'Delete'}
+                                        <span>Delete</span>
                                     </button>
+
+                                   
                                 </article>
                             ))}
+                            
                         </div>
                     )}
                 </section>
