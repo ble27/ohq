@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { MapPin, Plus, Settings2, Trash2 } from 'lucide-react'
 import type { Course, Queue } from '@shared/types'
 import { useAuth } from '@/context/AuthContextProvider'
-import { DeleteConfirmation } from './DeleteConfirmation'
+import { DeleteConfirmation } from './DeleteConfirmationModal'
 import { QueueManagementModal } from './QueueManagementModal'
 
 export interface CreateQueueInput {
@@ -35,7 +35,7 @@ export const QueueManager = ({
     const [error, setError] = useState<string | null>(null)
     const [isViewingDeletionModal, setIsViewingDeletionModal] = useState(false);
     // TA workspace
-    const [isViewingManagementModal, setIsViewingManagementModal] = useState(true);
+    const [isViewingManagementModal, setIsViewingManagementModal] = useState(false);
     const [currentQueue, setCurrentQueue] = useState<Queue | null>(null);
 
     const { user } = useAuth();

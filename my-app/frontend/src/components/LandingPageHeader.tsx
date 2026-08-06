@@ -1,8 +1,6 @@
 import { Link } from 'react-router-dom'
 
 export const Header = () => {
-  // display LuMenu after authentication and in dashboard view
-
   return (
     <>
       <nav className='flex flex-row items-center sticky top-0 z-100 h-20 bg-white shadow p-5'>
@@ -17,7 +15,6 @@ export const Header = () => {
           <Link to='/signin' className='bg-black text-white transition-colors duration-300 ease-in-out rounded-full px-3 py-2 hover:opacity-80'>Log In</Link>
           <Link to='/signup' className='px-3 py-2 rounded-full transition-colors duration-300 ease-in-out hover:opacity-80 hover:bg-gray-300/50'>Sign Up</Link>
         </div>
-        {/* <div className="w-[105px] hidden sm:block"></div>  */}
       </nav>
    
     </>    

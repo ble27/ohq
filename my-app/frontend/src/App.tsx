@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
-import { Header } from './components/Header'
-import { Body } from './components/Body'
+import { Header } from './components/LandingPageHeader'
+import { Body } from './components/LandingPageBody'
 import { Dashboard } from './pages/Dashboard'
 import { AuthContextProvider } from './context/AuthContextProvider'
 import { SocketProvider } from './context/SocketProvider'

@@ -20,10 +20,10 @@ router.get('/', async (_req: Request, res: Response): Promise<void> => {
     try {
         const tickets = await prisma.queueTicket.findMany();
         const body: QueueTicketsListResponse = { tickets, message: 'SUCCESS' };
+
         console.log(`[QUEUE TICKET] Successfully sent ticket objects: ${JSON.stringify(body.tickets, null, 2)}`)
         res.status(200).json(body);
-    }
-     catch (error: unknown) {
+    } catch (error: unknown) {
         if (error instanceof ZodError) {
             res.status(400).json({ message: 'Invalid input', errors: error.issues });
             return;
@@ -58,11 +58,11 @@ router.get('/queues/:queueId', async (req: Request, res: Response): Promise<void
         }
 
         const ticketsArray: QueueTicket[] = queue.tickets;
-
         console.log(`[QUEUE TICKET] Successfully sent ticket objects: ${JSON.stringify(ticketsArray, null, 2)}`)
+
         const body: QueueTicketsListResponse = {
             tickets: ticketsArray,
-            message: `Tickets from queue ${queueId} successfully fetched`,
+            message: `Successfully fetched tickets from queue ${queueId}`,
         };
         res.status(200).json(body);
     }
@@ -83,7 +83,7 @@ router.get('/queues/:queueId', async (req: Request, res: Response): Promise<void
 router.get('/:queueTicketId', async (req: Request, res: Response): Promise<void> => {
     try {
         const queueTicketId = req.params.queueTicketId;
-        // no id or no queue id flag
+        // No id or no queue id flag
         if (!queueTicketId) {
             res.status(404).json({ message: 'Missing required parameter'})
             return;
@@ -98,13 +98,13 @@ router.get('/:queueTicketId', async (req: Request, res: Response): Promise<void>
         }
 
         console.log(`[QUEUE TICKET] Successfully sent ticket object: ${JSON.stringify(ticket, null, 2)}`)
+
         const body: QueueTicketResponse = {
             ticket,
-            message: `Ticket ${ticket.id} successfully fetched`,
+            message: `Successfully fetched ticket ${ticket.id}`,
         };
         res.status(200).json(body);
-    } 
-    catch (error: unknown) {
+    } catch (error: unknown) {
         if (error instanceof ZodError) {
             res.status(400).json({ message: 'Invalid input', errors: error.issues });
             return;
@@ -117,7 +117,7 @@ router.get('/:queueTicketId', async (req: Request, res: Response): Promise<void>
     }
 });
 
-// GET /api/queueticket/user/:studentId — single ticket
+// GET /api/queueticket/user/:studentId — single ticket from User ID
 router.get('/user/:studentId', async (req: Request, res: Response): Promise<void> => {
     try {
         const studentId = req.params.studentId;
@@ -136,7 +136,8 @@ router.get('/user/:studentId', async (req: Request, res: Response): Promise<void
             return;
         }
 
-        console.log(`[QUEUE TICKET] Successfully sent ticket objects: ${JSON.stringify(tickets, null, 2)}`)
+        // console.log(`[QUEUE TICKET] Successfully sent ticket objects: ${JSON.stringify(tickets, null, 2)}`)
+
         const body: QueueTicketsListResponse = {
             tickets,
             message: `Tickets successfully sent to ${studentId}`
@@ -198,16 +199,16 @@ router.get('/user/:studentId', async (req: Request, res: Response): Promise<void
 //     }
 // });
 
-// POST /api/queueticket/:queueId — create ticket
+// POST /api/queueticket/:queueId — create ticket based on queue ID
 router.post('/queues/:queueId', async (req: Request, res: Response): Promise<void> => {
     try {
         const queueId = req.params.queueId as string;
         const status  = req.body.status as SessionStatus;
-        // The request body was attached from middleware with user
+        // The request was attached with a user property from middleware with user
         const studentId = (req as any).user.id;
 
         const validatedTicket = CreateQueueTicketValidationSchema.parse({
-            // Only param not calculated is position. id, joinedAt, and updatedAt are auto
+            // Only param not calculated is position. id, joinedAt, and updatedAt are auto configured
             ...req.body, status, queueId, studentId
         });
 
@@ -223,9 +224,9 @@ router.post('/queues/:queueId', async (req: Request, res: Response): Promise<voi
         };
         console.log('Successfully created a new ticket');
         console.log(JSON.stringify(body.ticket));
+
         res.status(201).json(body);
-    }
-    catch (error: unknown) {
+    } catch (error: unknown) {
         if (error instanceof ZodError) {
             res.status(400).json({ message: 'Invalid input', errors: error.issues });
             return;

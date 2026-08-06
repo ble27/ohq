@@ -21,13 +21,13 @@ router.post(`/:id/verification`, async (req: Request, res: Response) => {
         }
         console.log('TA verification complete', JSON.stringify(response));
         return res.status(200).json({
-            message: 'TA verified successfully',
+            message: 'TA verification complete',
             success: true,
         });
     } catch (error) {
-        console.log('Failed to fetch verify TA\'s status', error);
+        console.log('Failed to verify TA\'s status', error);
         return res.status(500).json({
-            message: 'Failed to verify TA status',
+            message: 'Failed to verify TA\'s status',
             success: false,
         });
     }

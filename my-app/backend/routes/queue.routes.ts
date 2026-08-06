@@ -13,7 +13,7 @@ import { ZodError } from 'zod';
 
 const router: Router = Router();
 
-// GET /api/queues — list all (mock list payload for ClassSelector)
+// GET /api/queues — list all queues that are open
 router.get('/', async (req: Request, res: Response): Promise<void> => {
     try {
         const queues = await prisma.queue.findMany(
@@ -60,28 +60,28 @@ router.get('/:id', async (req: Request, res: Response): Promise<void> => {
     }
 });
 
-// GET /api/queues/:courseId select all queues based on courseId != course code
+// GET /api/queues/:courseId - select all queues based on course id (uuid)
 router.get('/course/:courseId', async (req: Request, res: Response): Promise<void> => { 
     try { 
-      const courseId = req.params.courseId as string; 
-      const activeQueues = await prisma.queue.findMany({ 
-        where: { courseId, isOpen: true } 
-    });
-    const body: QueuesListResponse = {
-        queues: activeQueues,
-        message: 'SUCCESS'
-    }
-    console.log('Sent active queues from /api/queues/course/:courseId');
-    console.log(JSON.stringify(body.queues));
-    res.status(200).json(body);
+        const courseId = req.params.courseId as string; 
+        const activeQueues = await prisma.queue.findMany({ 
+            where: { courseId, isOpen: true } 
+        });
+        const body: QueuesListResponse = {
+            queues: activeQueues,
+            message: 'SUCCESS'
+        }
+        console.log('Sent active queues from /api/queues/course/:courseId');
+        console.log(JSON.stringify(body.queues));
+        res.status(200).json(body);
     } catch (error) {
-      res.status(500).json({ error: 'Failed to fetch queues' });
-      console.log('Failed to send active queues from /api/queues/course/:courseId');
+        res.status(500).json({ error: 'Failed to fetch queues' });
+        console.log('Failed to send active queues from /api/queues/course/:courseId');
     }
     
 });
 
-// POST /api/queues — create queue
+// POST /api/queues — create a queue
 router.post('/', async (req: Request, res: Response): Promise<void> => {
     try {
         const requestedCourse = req.body?.courseId;
@@ -91,6 +91,7 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
                     isActive: true,
                     OR: [
                         { id: requestedCourse },
+                        // fix later: code is always text and can never equal courseId
                         { code: { equals: requestedCourse.trim(), mode: 'insensitive' } },
                     ],
                 },
@@ -134,6 +135,7 @@ router.patch('/:id', async (req: Request, res: Response): Promise<void> => {
             return;
         }
 
+        // Check whether the queue exists based on queueId
         const queueToToggle = await prisma.queue.findUnique({
             where: { id: queueId },
         });
@@ -141,20 +143,21 @@ router.patch('/:id', async (req: Request, res: Response): Promise<void> => {
             res.status(404).json({ message: 'Queue not found' });
             return;
         }
+
+        // Update the queue's status here
         const updatedQueue = await prisma.queue.update({
             where: { id: queueId },
             data: { isOpen: !queueToToggle.isOpen },
         });
 
-        console.log(`[QUEUE] Successfully toggled queue object: ${JSON.stringify(updatedQueue, null, 2)}`)
+        console.log(`[QUEUE] Successfully updated queue: ${JSON.stringify(updatedQueue, null, 2)}`)
 
         const body: QueueResponse = {
             queue: updatedQueue,
             message: `Queue successfully toggled to ${updatedQueue.isOpen}`,
         };
         res.status(200).json(body);
-    } 
-    catch (error: unknown) {
+    } catch (error: unknown) {
         if (error instanceof ZodError) {
             res.status(400).json({ message: 'Invalid input', errors: error.issues });
             return;
@@ -183,15 +186,16 @@ router.delete('/:id', async (req: Request, res: Response): Promise<void> => {
             res.status(404).json({ message: 'Queue not found' });
             return;
         }
-        await prisma.queue.delete({
+
+        const deletedQueue = await prisma.queue.delete({
             where: { id: queueId },
         });
-        console.log(`[QUEUE] Successfully deleted queue object: ${JSON.stringify(queueToDelete, null, 2)}`)
+        
+        console.log(`[QUEUE] Successfully deleted queue object: ${JSON.stringify(deletedQueue, null, 2)}`)
         const body: ApiMessageResponse = { message: 'SUCCESS' };
         
         res.status(200).json(body);
-    }
-     catch (error: unknown) {
+    } catch (error: unknown) {
         if (error instanceof ZodError) {
             res.status(400).json({ message: 'Invalid input', errors: error.issues });
             return;

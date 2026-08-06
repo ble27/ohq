@@ -40,6 +40,7 @@ router.post('/signup', async (req: Request, res: Response) => {
         return res.status(400).json({ error: 'Signup succeeded but no auth user was returned' });
     }
 
+    // Create a Prisma user if not already 
     try {
         const appUser = await prisma.user.upsert({
             where: { id: data.user.id },
@@ -118,7 +119,6 @@ router.get('/me', async (req: Request, res: Response) => {
         const appUser = await prisma.user.findUnique({ where: { id: data.user.id } });
         return res.status(200).json({
             user: data.user,
-            // prisma user
             profile: appUser,
         });
     } catch {

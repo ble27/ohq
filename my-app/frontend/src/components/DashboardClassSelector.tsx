@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import axios from 'axios'
-import { QueueModal } from '../components/QueueModal'
+import { QueueModal } from './QueueModal'
 import type { Queue, QueueTicket, QueuesListResponse, QueueTicketResponse, QueueTicketsListResponse } from '@shared/types';
 import { Button } from './ui/button';
 import { useAuth } from '@/context/AuthContextProvider';

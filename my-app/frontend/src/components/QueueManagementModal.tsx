@@ -5,6 +5,7 @@ import axios from 'axios';
 import { LuX } from 'react-icons/lu';
 import { Switch } from './ui/switch';
 import { Label } from './ui/label';
+import { ReceiptPoundSterling } from 'lucide-react';
 
 interface QueueManagementModalProps {
     queue: Queue | null
@@ -17,6 +18,7 @@ export const QueueManagementModal = ({ queue, setIsViewingManagementModal } : Qu
     const [isSettingsOpen, setIsSettingsOpen] = useState(true);
     const [isQueueModalOpen, setIsQueueModalOpen] = useState(false);
     const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(false);
+    const [roomLocation, setRoomLocation] = useState('');
 
     const handleQueueStatus = async () => {
         try {
@@ -35,6 +37,18 @@ export const QueueManagementModal = ({ queue, setIsViewingManagementModal } : Qu
             return false;
         }
     }
+
+    const handleChangeRoomLocation = async () => {
+        try {
+            const response = await axios.patch(`/api/queues/${queue?.id}/location/${roomLocation}`)
+            return;
+        }
+        catch (error) {
+            console.log(error);
+            return;
+        }
+    }
+
 
     return (
         <div className="fixed inset-0 flex flex-col items-center justify-center w-screen h-screen gap-3 bg-slate-300 text-black z-100">
@@ -82,7 +96,7 @@ export const QueueManagementModal = ({ queue, setIsViewingManagementModal } : Qu
                 </nav>
 
                 {/* Settings tab */}
-                <div className='mt-5 pl-5 p-3 flex flex-col text-lg text-gray-500 h-full gap-10'>
+                {isSettingsOpen && <div className='mt-5 pl-5 p-3 flex flex-col text-lg text-gray-500 h-full gap-10 z-200'>
 
                     {/* Open / Close queue */}
                     <div className='flex flex-row gap-10 items-center'>
@@ -93,6 +107,7 @@ export const QueueManagementModal = ({ queue, setIsViewingManagementModal } : Qu
                                 id="status-toggle" 
                                 checked={queue?.isOpen}
                                 onCheckedChange={handleQueueStatus}
+                                
                             />
                             <Label htmlFor="status-toggle" className={`font-semibold ${queue?.isOpen ? 'text-green-500' : 'text-red-500'}`}>
                                 {queue?.isOpen ? "Open" : "Closed"}
@@ -111,9 +126,8 @@ export const QueueManagementModal = ({ queue, setIsViewingManagementModal } : Qu
                     <div >
                        
                     </div>
-
-
-                </div>
+                </div>}
+                
             </div>
             
         </div>

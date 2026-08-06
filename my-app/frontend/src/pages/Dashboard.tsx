@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react'
-import { ClassSelector } from '../components/ClassSelector'
-import { Home } from '@/components/Home';
+import { ClassSelector } from '../components/DashboardClassSelector'
+import { Home } from '@/components/DashboardHome';
 import { Sidebar, MOBILE_BREAKPOINT } from '../components/Sidebar'
 import { useLocation } from 'react-router-dom';
-import { QueueManager, type CreateQueueInput } from '@/components/QueueManager';
-import { VerifyTA } from '@/components/VerifyTA';
+import { QueueManager, type CreateQueueInput } from '@/components/DashboardQueueManager';
+import { VerifyTA } from '@/components/TAVerification';
 import type {
     ApiMessageResponse,
     Course,
