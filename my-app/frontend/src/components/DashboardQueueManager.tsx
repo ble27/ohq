@@ -19,6 +19,7 @@ interface QueueManagerProps {
     // onCreateQueue is a prop for a function in the parent component
     onCreateQueue: (input: CreateQueueInput) => void | Promise<void>
     onDeleteQueue: (queueId: string) => void | Promise<void>
+    onUpdateQueue: (updated: Queue) => void | Promise<void>
 }
 
 export const QueueManager = ({
@@ -27,6 +28,7 @@ export const QueueManager = ({
     isLoading,
     onCreateQueue,
     onDeleteQueue,
+    onUpdateQueue
 }: QueueManagerProps) => {
     const [courseId, setCourseId] = useState('')
     const [location, setLocation] = useState('')
@@ -102,7 +104,7 @@ export const QueueManager = ({
             
             {/* Queue management modal */}
             { isViewingManagementModal && (
-                <QueueManagementModal queue={currentQueue} setIsViewingManagementModal={setIsViewingManagementModal}/>
+                <QueueManagementModal onUpdateQueue={onUpdateQueue} queue={currentQueue} setIsViewingManagementModal={setIsViewingManagementModal}/>
             )}
 
             <div className={`mx-auto max-w-5xl`}>

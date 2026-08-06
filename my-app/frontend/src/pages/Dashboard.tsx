@@ -94,6 +94,13 @@ export const Dashboard = () => {
         }
     }
 
+    const handleQueueUpdated = async (updated: Queue) => {
+        // if queue is updated the old queue becomes updated else remaining queues
+        setCreatedQueues((prev) => 
+            prev.map((q) => updated.id === q.id ? updated : q)
+        )
+    }
+
 return (
     <>
     <div className="flex w-full h-screen m-0 p-0 overflow-hidden">
@@ -107,6 +114,7 @@ return (
                     <QueueManager
                         onCreateQueue={handleCreateQueue}
                         onDeleteQueue={handleDeleteQueue}
+                        onUpdateQueue={handleQueueUpdated}
                         createdQueues={createdQueues}
                         courses={courses}
                         isLoading={isLoadingQueues}

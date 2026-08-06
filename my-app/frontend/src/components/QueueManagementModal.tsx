@@ -8,9 +8,10 @@ import { Button } from './ui/button';
 interface QueueManagementModalProps {
     queue: Queue | null
     setIsViewingManagementModal: (value : boolean) => void
+    onUpdateQueue: (updated: Queue) => void | Promise<void>
 }
 
-export const QueueManagementModal = ({ queue, setIsViewingManagementModal } : QueueManagementModalProps) => {
+export const QueueManagementModal = ({ queue, onUpdateQueue, setIsViewingManagementModal } : QueueManagementModalProps) => {
     // Has 3 tabs - Settings, Waitlist (QueueTicketModal), Workspace
     
     const [isSettingsOpen, setIsSettingsOpen] = useState(true);
@@ -23,39 +24,35 @@ export const QueueManagementModal = ({ queue, setIsViewingManagementModal } : Qu
     const [startTime, setStartTime] = useState('08:00');
     const [endTime, setEndTime] = useState('09:00');
 
-    const handleQueueStatus = async () => {
-        if (queue?.isOpen === isQueueOpen) return true;
+    const handleQueueStatus = async (): Promise<Queue | null> => {
+        if (!queue || queue.isOpen === isQueueOpen) return queue;
         try {
-            const queueId = queue?.id;
-            // API call to queue based on queue id
-            const response = await axios.patch(`/api/queues/${queueId}/status/${isQueueOpen}`);
+            const response = await axios.patch(`/api/queues/${queue.id}/status/${isQueueOpen}`);
             if (response.status !== 200) {
                 console.log('Failed to change queue status');
-                return false;
+                return null;
             }
             console.log('Queue status changed to', isQueueOpen);
-            return true;
-        }
-        catch (error) {
+            return response.data.queue as Queue;
+        } catch (error) {
             console.log(`Failed to change queue status ${error}`);
-            return false;
+            return null;
         }
     }
 
-    const handleChangeRoomLocation = async () => {
+    const handleChangeRoomLocation = async (): Promise<Queue | null> => {
         const trimmedLocation = roomLocation.trim();
-        if (!trimmedLocation || queue?.location === trimmedLocation) return true;
+        if (!queue || !trimmedLocation || queue.location === trimmedLocation) return queue;
         try {
             const response = await axios.patch(
-                `/api/queues/${queue?.id}/location/${encodeURIComponent(trimmedLocation)}`
+                `/api/queues/${queue.id}/location/${encodeURIComponent(trimmedLocation)}`
             );
-            if (response.status !== 200) return false;
+            if (response.status !== 200) return null;
             console.log(`SUCCESSFULLY changed queue location to ${trimmedLocation}`);
-            return true;
-        }
-        catch (error) {
+            return response.data.queue as Queue;
+        } catch (error) {
             console.log(error);
-            return false;
+            return null;
         }
     }
 
@@ -83,15 +80,18 @@ export const QueueManagementModal = ({ queue, setIsViewingManagementModal } : Qu
         }
 
         const trimmedLocation = roomLocation.trim();
+        let updatedQueue: Queue | null = queue;
+        let didUpdate = false;
 
         // Call only when location doesn't match new location (API)
         if (trimmedLocation && queue?.location !== trimmedLocation) {
             try {
-                const roomResponse = await handleChangeRoomLocation();
-                if (!roomResponse) {
+                updatedQueue = await handleChangeRoomLocation();
+                if (!updatedQueue) {
                     console.log('Failed to change queue location');
                     return;
                 }
+                didUpdate = true;
                 console.log('SUCCESSFULLY CHANGED queue location');
             } catch (error) {
                 console.log('Unable to change queue location', error);
@@ -102,17 +102,24 @@ export const QueueManagementModal = ({ queue, setIsViewingManagementModal } : Qu
         // Change queue status only when queue's original status doesn't equal new status (API)
         if (queue?.isOpen !== isQueueOpen) {
             try {
-                const queueResponse = await handleQueueStatus();
-                if (!queueResponse) {
+                updatedQueue = await handleQueueStatus();
+                if (!updatedQueue) {
                     console.log('Failed to change queue status');
                     return;
                 }
+                didUpdate = true;
                 console.log('SUCCESSFULLY CHANGED queue status');
             } catch (error) {
                 console.log('Unable to change queue status', error);
                 return;
             }
         }
+
+        // Sync the state call from dashboard here
+        if (didUpdate && updatedQueue) {
+            await onUpdateQueue(updatedQueue);
+        }
+        setIsViewingManagementModal(false);
     }
 
     const handleCancelChanges = () => {
