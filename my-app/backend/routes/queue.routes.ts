@@ -16,9 +16,7 @@ const router: Router = Router();
 // GET /api/queues — list all queues that are open
 router.get('/', async (req: Request, res: Response): Promise<void> => {
     try {
-        const queues = await prisma.queue.findMany(
-            { where: { isOpen: true } }
-        );
+        const queues = await prisma.queue.findMany();
         const body: QueuesListResponse = { queues, message: 'SUCCESS' };
 
         console.log(`[QUEUE] Successfully sent queue objects: ${JSON.stringify(body.queues, null, 2)}`)
@@ -123,6 +121,61 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
             return;
         }
         res.status(500).json({ message: 'Failed to create queue' });
+    }
+});
+
+// PATCH /api/queues/:queueId/status/:isQueueOpen — set isOpen
+router.patch('/:queueId/status/:isQueueOpen', async (req: Request, res: Response): Promise<void> => {
+    try {
+        const queueId = req.params.queueId as string;
+        const isQueueOpen = req.params.isQueueOpen === 'true';
+
+        const result: Queue = await prisma.queue.update({
+            where: { id: queueId },
+            data: { isOpen: isQueueOpen },
+        });
+
+        const body: QueueResponse = {
+            queue: result,
+            message: `SUCCESSFULLY UPDATED queue status to ${result.isOpen}`,
+        };
+        res.status(200).json(body);
+    } catch (error) {
+        if (error instanceof Error) {
+            res.status(500).json({ message: error.message });
+            return;
+        }
+        res.status(500).json({ message: 'Failed to update queue status' });
+    }
+});
+
+// PATCH /api/queues/:queueId/location/:roomLocation — set location
+router.patch('/:queueId/location/:roomLocation', async (req: Request, res: Response): Promise<void> => {
+    try {
+        const queueId = req.params.queueId as string;
+        const roomLocation = decodeURIComponent(req.params.roomLocation as string).trim();
+
+        if (!roomLocation) {
+            res.status(400).json({ message: 'Room location is required' });
+            return;
+        }
+
+        const result: Queue = await prisma.queue.update({
+            where: { id: queueId },
+            data: { location: roomLocation },
+        });
+
+        const body: QueueResponse = {
+            queue: result,
+            message: `SUCCESSFULLY UPDATED queue location to ${result.location}`,
+        };
+        res.status(200).json(body);
+    } catch (error) {
+        if (error instanceof Error) {
+            res.status(500).json({ message: error.message });
+            return;
+        }
+        res.status(500).json({ message: 'Failed to update queue location' });
     }
 });
 
