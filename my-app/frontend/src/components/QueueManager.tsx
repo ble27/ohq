@@ -3,6 +3,7 @@ import { MapPin, Plus, Settings2, Trash2 } from 'lucide-react'
 import type { Course, Queue } from '@shared/types'
 import { useAuth } from '@/context/AuthContextProvider'
 import { DeleteConfirmation } from './DeleteConfirmation'
+import { QueueManagementModal } from './QueueManagementModal'
 
 export interface CreateQueueInput {
     courseId: string
@@ -33,8 +34,10 @@ export const QueueManager = ({
     const [deletingQueueId, setDeletingQueueId] = useState<string | null>(null)
     const [error, setError] = useState<string | null>(null)
     const [isViewingDeletionModal, setIsViewingDeletionModal] = useState(false);
+    // TA workspace
+    const [isViewingManagementModal, setIsViewingManagementModal] = useState(true);
+    const [currentQueue, setCurrentQueue] = useState<Queue | null>(null);
 
-    // TA id = user.id
     const { user } = useAuth();
 
     const handleCreateQueue = async (event: FormEvent<HTMLFormElement>) => {
@@ -81,19 +84,26 @@ export const QueueManager = ({
         setIsViewingDeletionModal(true);
     }
 
-    const handleOpenManagementModal = async (queueId: string) => {
-
+    // Queue Management
+    const handleOpenManagementModal = async (queue: Queue) => {
+        setCurrentQueue(queue);
+        setIsViewingManagementModal(true);
     }
 
     return (
         <main className="min-h-full bg-slate-50 px-5 py-8 sm:px-8">
-            {/* Confirmation modal */}
+            {/* Delete confirmation modal */}
             { isViewingDeletionModal && (
                     <DeleteConfirmation 
                         onClose={() => setIsViewingDeletionModal(false)}
                         onConfirm={handleConfirmDeleteQueue} 
                     />
                 )}
+            
+            {/* Queue management modal */}
+            { isViewingManagementModal && (
+                <QueueManagementModal queue={currentQueue} setIsViewingManagementModal={setIsViewingManagementModal}/>
+            )}
 
             <div className={`mx-auto max-w-5xl`}>
                 <header className="mb-8">
@@ -211,7 +221,7 @@ export const QueueManager = ({
                                     {/* Manage queue */}
                                     <button
                                         type="button"
-                                        onClick={() => handleOpenManagementModal(queue.id)}
+                                        onClick={() => handleOpenManagementModal(queue)}
                                         className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-green-900 px-3 py-2 
                                             transition-background duration-100 ease-in-out hover:bg-green-900 hover:text-white text-sm font-medium text-green-900 transition disabled:cursor-not-allowed disabled:opacity-50"
                                     >
