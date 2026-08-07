@@ -30,9 +30,10 @@ model Queue {
     updatedAt   DateTime    @updatedAt
     
     // Relations
-    course      Course      @relation(fields: [courseId], references: [id], onDelete: Cascade)
-    ta          User        @relation(fields: [taId], references: [id], onDelete: Cascade)
-    tickets     QueueTicket[]   
+    course          Course          @relation(fields: [courseId], references: [id], onDelete: Cascade)
+    ta              User            @relation(fields: [taId], references: [id], onDelete: Cascade)
+    tickets         QueueTicket[]
+    notifications   Notification[]
 }
 
 model QueueTicket {
@@ -45,11 +46,32 @@ model QueueTicket {
     updatedAt   DateTime        @updatedAt
 
     // Relations
-    student     User            @relation(fields: [studentId], references: [id], onDelete: Cascade)
-    queue       Queue           @relation(fields: [queueId], references: [id], onDelete: Cascade)
+    student         User            @relation(fields: [studentId], references: [id], onDelete: Cascade)
+    queue           Queue           @relation(fields: [queueId], references: [id], onDelete: Cascade)
+    notifications   Notification[]
 
     // prevents the same student joining the same queue twice
     @@unique([queueId, studentId])
+}
+
+// Inbox row for a user; UI copy is derived from type + related queue/ticket
+model Notification {
+    id          String              @id @default(uuid())
+    userId      String              @db.Uuid // recipient // FK
+    type        NotificationType
+    queueId     String              // FK
+    ticketId    String?             // FK
+    createdAt   DateTime            @default(now())
+    readAt      DateTime?
+    clearedAt   DateTime?
+
+    // Relations
+    user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+    queue       Queue               @relation(fields: [queueId], references: [id], onDelete: Cascade)
+    ticket      QueueTicket?        @relation(fields: [ticketId], references: [id], onDelete: SetNull)
+
+    @@index([userId, createdAt])
+    @@index([userId, clearedAt])
 }
 
 // Course TA assignment
@@ -74,10 +96,11 @@ model User {
     name        String?     
     role        Role        @default(STUDENT)
 
-    // Relations
-    taQueues    Queue[]     
-    tickets     QueueTicket[]
-    courseTAs   CourseTA[]
+    // Reverse relations
+    taQueues        Queue[]    
+    tickets         QueueTicket[]
+    courseTAs       CourseTA[]
+    notifications   Notification[]
 }   
 
 enum Role {
@@ -92,4 +115,11 @@ enum SessionStatus {
     COMPLETED
     REMOVED
     LEFT
+}
+
+enum NotificationType {
+    JOIN
+    LEAVE
+    ASSIST
+    CLOSE
 }
