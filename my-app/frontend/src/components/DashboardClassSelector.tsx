@@ -26,7 +26,7 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ CSCEClasses, selec
     const [myTicketsByQueueId, setMyTicketsByQueueId] = useState<Map<string, QueueTicket>>(
         () => new Map(),
     );
-
+    
     // Visible queues that will be displayed (will refresh every time queue changes)
     const visibleQueues = queue;
 
@@ -34,6 +34,7 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ CSCEClasses, selec
     const syncJoinedQueuesFromServer = async () => {
         if (!user?.id) return;
 
+        // Return the list of tickets the current user has joined
         const response = await axios.get<QueueTicketsListResponse>(
             `/api/queueticket/user/${user.id}`,
         );
@@ -81,8 +82,13 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ CSCEClasses, selec
     // fetch queues are not currently fetching the correct selected class
     const fetchQueue = async (): Promise<void> => { 
         try { 
-            // selected class = course code
+            // selectedClass = course code not courseId
             const courseId = (await axios.get(`/api/courses/${selectedClass}`)).data.courseId;
+
+            // Remove previously selected class's that doesn't match new courseId
+            // so that when user switches to a new class and refetches, the old class id doesn't persist
+            setQueue((prev) => prev.filter((q) => q.courseId === courseId));
+            
             const response = await axios.get<QueuesListResponse>(`/api/queues/course/${courseId}`); 
             if (response.data.queues.length === 0) {
               setQueue([]);
@@ -91,6 +97,7 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ CSCEClasses, selec
               return;
             }
             const activeQueuesList: Queue[] = response.data.queues;
+
             setQueue((prevQueue) => {
                 // Extract new items that do not exist in the current queue and match the new course idea
                 const uniqueNewItems = activeQueuesList.filter(
@@ -198,6 +205,7 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ CSCEClasses, selec
             variant={'default'}
             size={'lg'}
             // Fetch should only fetch active and selected queues, not queues that are closed
+            // It shouldn't fetch queue that were active from other code when switching
             onClick={fetchQueue} 
             className='ml-4 mr-2 pointer-events-auto'
           > 

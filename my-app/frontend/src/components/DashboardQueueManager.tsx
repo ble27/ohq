@@ -94,10 +94,21 @@ export const QueueManager = ({
         setIsViewingManagementModal(true);
     }
 
+    // When queue management modal is closed
+    // Remove all tickets currently waiting and in session, essentially deleting them
+    // Don't persist
+    const removeTicketsWhenClosed = async () => {
+        console.log('Calling removeTicketsWhenClosed');
+        const queueId = currentQueue?.id;
+        // deleted tickets
+        await axios.delete(`/api/queueticket/queues/${queueId}/status/closed`);
+    }
+
     /* QueueManager will manage all tickets for each queue
         Fetch all current tickets for a queue based on queue ID
       And Pass to the QueueManagementModal  
     */
+
     useEffect(() => {
         if (!isViewingManagementModal || !currentQueue) {
             setTickets([]);
@@ -139,7 +150,13 @@ export const QueueManager = ({
             
             {/* Queue management modal */}
             { isViewingManagementModal && (
-                <QueueManagementModal setTickets={setTickets} tickets={tickets} onUpdateQueue={onUpdateQueue} queue={currentQueue} setIsViewingManagementModal={setIsViewingManagementModal}/>
+                <QueueManagementModal 
+                    setTickets={setTickets} 
+                    tickets={tickets} 
+                    onUpdateQueue={onUpdateQueue} 
+                    queue={currentQueue} 
+                    setIsViewingManagementModal={setIsViewingManagementModal}
+                    onQueueClosing={removeTicketsWhenClosed}/>
             )}
 
             <div className={`mx-auto max-w-5xl`}>

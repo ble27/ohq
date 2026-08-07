@@ -100,7 +100,7 @@ export const Dashboard = () => {
             prev.map((q) => updated.id === q.id ? updated : q)
         )
     }
-
+    
 return (
     <>
     <div className="flex w-full h-screen m-0 p-0 overflow-hidden">

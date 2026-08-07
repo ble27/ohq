@@ -12,6 +12,8 @@ interface QueueManagementModalProps {
     setTickets: (value: QueueTicket[]) => void
     setIsViewingManagementModal: (value : boolean) => void
     onUpdateQueue: (updated: Queue) => void | Promise<void>
+    // remove tickets when closed
+    onQueueClosing: () => | Promise<void>
 }
 
 export const QueueManagementModal = ({
@@ -20,6 +22,7 @@ export const QueueManagementModal = ({
     setTickets,
     onUpdateQueue,
     setIsViewingManagementModal,
+    onQueueClosing
 }: QueueManagementModalProps) => {
     // Has 3 tabs - Settings, Waitlist (QueueTicketModal), Workspace
     
@@ -73,16 +76,21 @@ export const QueueManagementModal = ({
         // Queue is already closed -> set to open
         if (!isQueueOpen) {
             setIsQueueOpen(true);
+            return;
         }
     }
 
+    // When the queue is closed, tickets in the waitlist will be removed (WAITING) 
+    // and ticket in session (HELPING)
+    // Open delete confirmation modal (later)
     const handleCloseQueue = () => {
         // Queue is already open -> set to close
         if (isQueueOpen) {
             setIsQueueOpen(false);
+            return;
         }
     }
-
+   
     const handleSaveChanges = async () => {
         // Check if time is valid
         if (endTime < startTime) {
@@ -122,6 +130,11 @@ export const QueueManagementModal = ({
                 }
                 didUpdate = true;
                 console.log('SUCCESSFULLY CHANGED queue status');
+                // Closing queue
+                if (!isQueueOpen) {
+                    console.log('Calling onQueueClosing here');
+                    onQueueClosing();
+                }
             } catch (error) {
                 console.log('Unable to change queue status', error);
                 return;

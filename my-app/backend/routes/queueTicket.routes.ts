@@ -446,4 +446,28 @@ router.delete('/queues/:queueId', async (req: Request, res: Response): Promise<v
     }
 });
 
+// DELETE waiting and helping tickets
+// /api/queueticket/queues/${queueId}/status/closed
+router.delete('/queues/:queueId/status/closed', async (req: Request, res: Response) => {
+    try {
+        const queueId = req.params.queueId as string;
+        const deletedTickets = await prisma.queueTicket.deleteMany({
+            where: { queueId , status: { in: [SessionStatus.WAITING, SessionStatus.HELPING] } }, 
+        })
+        const body = {
+            tickets: deletedTickets, 
+            message: `Successfully deleted all tickets currently waiting and helping from queue ${queueId}`
+        }
+        console.log(`Successfully deleted all tickets currently waiting and helping from queue ${queueId}`, JSON.stringify(body, null, 2));
+        res.status(200).json(body);
+    } catch (error) {
+        if (error instanceof Error) {
+            res.status(500).json({ message: error.message });
+            console.log(error);
+            return;
+        }
+        res.status(500).json({ message: 'Failed to delete all tickets' });
+    }
+})
+
 export const queueTicketRouter = router;
