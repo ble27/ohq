@@ -139,7 +139,7 @@ export const QueueManager = ({
             
             {/* Queue management modal */}
             { isViewingManagementModal && (
-                <QueueManagementModal tickets={tickets} onUpdateQueue={onUpdateQueue} queue={currentQueue} setIsViewingManagementModal={setIsViewingManagementModal}/>
+                <QueueManagementModal setTickets={setTickets} tickets={tickets} onUpdateQueue={onUpdateQueue} queue={currentQueue} setIsViewingManagementModal={setIsViewingManagementModal}/>
             )}
 
             <div className={`mx-auto max-w-5xl`}>

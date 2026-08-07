@@ -1,5 +1,5 @@
 import type { Queue, QueueTicket } from '@shared/types';
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import axios from 'axios';
 import { LuX } from 'react-icons/lu';
 import { Button } from './ui/button';
@@ -9,6 +9,7 @@ import { QueueWorkspace } from './workspace/QueueWorkspace';
 interface QueueManagementModalProps {
     queue: Queue | null
     tickets: QueueTicket[]
+    setTickets: (value: QueueTicket[]) => void
     setIsViewingManagementModal: (value : boolean) => void
     onUpdateQueue: (updated: Queue) => void | Promise<void>
 }
@@ -16,14 +17,15 @@ interface QueueManagementModalProps {
 export const QueueManagementModal = ({
     queue,
     tickets,
+    setTickets,
     onUpdateQueue,
     setIsViewingManagementModal,
 }: QueueManagementModalProps) => {
     // Has 3 tabs - Settings, Waitlist (QueueTicketModal), Workspace
     
-    const [isSettingsOpen, setIsSettingsOpen] = useState(true);
+    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [isQueueModalOpen, setIsQueueModalOpen] = useState(false);
-    const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(false);
+    const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(true);
 
     // Save all these settings at once
     const [isQueueOpen, setIsQueueOpen] = useState(queue?.isOpen ?? true);
@@ -129,6 +131,15 @@ export const QueueManagementModal = ({
         setIsViewingManagementModal(false);
     }
 
+    // Sync live ticket every time a single ticket transitions state useful for Workspace and Waitlist
+    const handleSyncTickets = async () => {
+        const queueId = queue?.id;
+        if (!queueId) return;
+        const response = await axios.get(`/api/queueticket/queues/${queueId}`);   
+        // Sync new states includes WAIITNG & HELPING tickets
+        setTickets(response.data.tickets);
+    } 
+
     const handleCancelChanges = () => {
         setIsQueueOpen(queue?.isOpen ?? true);
         setRoomLocation(queue?.location ?? '');
@@ -136,6 +147,7 @@ export const QueueManagementModal = ({
         setEndTime('09:00');
         setIsViewingManagementModal(false);
     }
+
     return (
         <div className="fixed inset-0 flex flex-col items-center justify-center w-screen h-screen gap-3 bg-black/40 text-black z-100">
             <div className="relative mx-4 flex h-[684px] max-h-[1000px] w-full max-w-[600px] flex-col overflow-hidden rounded-lg bg-white">
@@ -259,12 +271,14 @@ export const QueueManagementModal = ({
                 {/* Waitlist */}
                 {isQueueModalOpen && (
                     <div className="min-h-0 flex-1 overflow-y-auto px-5 pt-5">
-                        <QueueTicketModal queueTickets={tickets} />
+                        {tickets.length > 0 
+                            ? <QueueTicketModal queueTickets={tickets} /> 
+                            : 'No tickets in the waitlist'}
                     </div>
                 )}
 
                 {/* Workspace */}
-                {isWorkspaceOpen && <QueueWorkspace tickets={tickets} />}
+                {isWorkspaceOpen && <QueueWorkspace onUpdateTickets={handleSyncTickets} tickets={tickets} />}
             </div>
             
         </div>

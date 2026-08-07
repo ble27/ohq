@@ -85,6 +85,7 @@ export const leaveQueue = async (
   return ticket;
 };
 
+// Move a ticket from WAITING TO HELPING 
 export const startHelping = async (ticketId: string): Promise<QueueTicket> => {
   const existing = await prisma.queueTicket.findUnique({ where: { id: ticketId } });
   if (!existing) {
@@ -103,7 +104,7 @@ export const startHelping = async (ticketId: string): Promise<QueueTicket> => {
     where: { id: ticketId },
     data: { status: SessionStatus.HELPING, position: null },
   });
-
+  // Auto update position of the ticket
   await updatePosition(existing.queueId);
   return ticket;
 };

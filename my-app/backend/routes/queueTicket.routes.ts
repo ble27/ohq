@@ -1,8 +1,9 @@
 import { Router } from 'express';
 import type { Request, Response } from 'express';
 import { prisma } from '../prisma.js';
-import { SessionStatus } from '@prisma/client';
-import { joinQueue, leaveQueue } from '../services/queue.services.js';
+import { Prisma, PrismaClient, SessionStatus } from '@prisma/client';
+import { joinQueue, leaveQueue, listActiveTickets } from '../services/queue.services.js';
+import { startHelping } from '../services/queue.services.js';
 
 import type {
     ApiMessageResponse,
@@ -13,6 +14,7 @@ import type {
 
 import { CreateQueueTicketValidationSchema } from '../schemas/queueTicket.schema.js';
 import { ZodError } from 'zod';
+import { start } from 'repl';
 const router: Router = Router();
 
 // GET /api/queueticket — list all tickets
@@ -36,28 +38,19 @@ router.get('/', async (_req: Request, res: Response): Promise<void> => {
     }
 });
 
-// GET /api/queueticket/queues/:id — multiple tickets based on a Queue id
-// NOTE: this must be registered before GET /:id, otherwise Express would
-// match "queues" itself as the :id param on that route instead.
+// GET /api/queueticket/queues/:id — fetch only multiple active tickets based on a Queue ID
+// Call listActiveTickets helper
 router.get('/queues/:queueId', async (req: Request, res: Response): Promise<void> => {
     try {
-        const queueId = req.params.queueId;
+        
+        const queueId = req.params.queueId as string;
         if (!queueId) {
             res.status(400).json({ message: 'Queue ID is required' });
             return;
         }
-        
-        const queue = await prisma.queue.findUnique({
-            where: { id: queueId },
-            include: { tickets: true },
-        });
+        const ticketsResponse = await listActiveTickets(queueId);
+        const ticketsArray: QueueTicket[] = ticketsResponse;
 
-        if (!queue) {
-            res.status(404).json({ message: 'No ticket found' });
-            return;
-        }
-
-        const ticketsArray: QueueTicket[] = queue.tickets;
         console.log(`[QUEUE TICKET] Successfully sent ticket objects: ${JSON.stringify(ticketsArray, null, 2)}`)
 
         const body: QueueTicketsListResponse = {
@@ -240,7 +233,7 @@ router.post('/queues/:queueId', async (req: Request, res: Response): Promise<voi
     }
 });
 
-// PATCH /api/queueticket/:id — update status (e.g. WAITING -> HELPING)
+// PATCH /api/queueticket/:id — update status
 router.patch('/:queueTicketId', async (req: Request, res: Response): Promise<void> => {
     try {
         const ticketId = req.params.queueTicketId;
@@ -291,6 +284,56 @@ router.patch('/:queueTicketId', async (req: Request, res: Response): Promise<voi
         res.status(500).json({ message: 'Failed to update ticket' });
     }
 });
+
+// PATCH /api/queueticket/:queueTicketId/status/helping
+router.patch('/:queueTicketId/status/helping', async (req: Request, res: Response) => {
+    try {
+        const queueTicketId = req.params.queueTicketId as string;
+        const ticketResponse = await startHelping(queueTicketId);
+
+        const body = {
+            ticket: ticketResponse, 
+            message: 'Successfully updated ticket status to "Helping"'
+        }
+        res.status(200).json(body);
+    } catch (error) {
+        if (error instanceof Error) {
+            res.status(500).json({ message: error.message });
+            return;
+        }
+        res.status(500).json({ message: 'Failed to update ticket\'s status to being helped' });
+    }
+})
+
+// PATCH /api/queueticket/:queueTicketId/status/completed -> Move ticket from helping to completed
+// Do not update position since each ticket's status must be from helping (update position already)
+router.patch('/:queueTicketId/status/completed', async (req: Request, res: Response) => {
+    try {
+        const queueTicketId = req.params.queueTicketId as string;
+        const ticketResponse = await prisma.queueTicket.update({
+            where: {id: queueTicketId, status: 'HELPING'},
+            data: {status: 'COMPLETED'}
+        })
+        const body = {
+            ticket: ticketResponse, 
+            message: 'Successfully updated ticket status to "Completed"'
+        }
+        res.status(200).json(body);
+    } catch (error) {
+        // Record not found
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
+            if (error.code === 'P2025') {
+              res.status(404).json({ message: 'Queue ticket not found' });
+              return;
+            }
+        }
+        if (error instanceof Error) {
+            res.status(500).json({ message: error.message });
+            return;
+        }
+        res.status(500).json({ message: 'Failed to update ticket\'s status to completed' });
+    }
+})
 
 // DELETE /api/queueticket/:id
 router.delete('/:queueTicketId', async (req: Request, res: Response): Promise<void> => {

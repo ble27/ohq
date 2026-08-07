@@ -5,41 +5,59 @@ import { Button } from '../ui/button'
 import { WorkspaceColumn } from './WorkspaceColumn'
 import { WorkspaceTicketCard } from './WorkspaceTicketCard'
 import { useRef } from 'react'
+import axios from 'axios'
 
 interface QueueWorkspaceProps {
     tickets: QueueTicket[]
+    onUpdateTickets: () => void | Promise<void>
 }
 
-export const QueueWorkspace = ({ tickets }: QueueWorkspaceProps) => {
-    // Local UI staging only — Next is always the head of the waiting list
-    const [waiting, setWaiting] = useState<QueueTicket[]>(tickets)
-    const [inSession, setInSession] = useState<QueueTicket | null>(null)
+export const QueueWorkspace = ({ tickets, onUpdateTickets }: QueueWorkspaceProps) => {
+    // sort -> <0: before, =0: no change, >0: after
+    const waiting = tickets.filter((t) => t.status === 'WAITING')
+                            .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+    
+    const nextTicket = waiting[0] ?? null
+
+    const [inSession, setInSession] = useState(tickets.find((t) => t.status === 'HELPING') ?? null)
     const [completed, setCompleted] = useState<QueueTicket[]>([])
     const [seconds, setSeconds] = useState(0);
     const [sesssionSecs, setSessionSeconds] = useState(0);
+    const [busy, setBusy] = useState(false);
+
     const timerId = useRef<number | null>(null);
 
-    useEffect(() => {
-        setWaiting(tickets)
-        setInSession(null)
-        setCompleted([])
-    }, [tickets])
-
-    const nextTicket = waiting[0] ?? null
-
-    const moveNextToSession = () => {
-        if (!nextTicket || inSession) return
-        setInSession(nextTicket)
-        setWaiting((prev) => prev.slice(1))
-        setTimeElapsed();
+    const moveNextToSession = async () => {
+        if (!nextTicket || inSession || busy) return
+        setBusy(true);
+        try {
+            // update current next ticket to being helped
+            await axios.patch(`/api/queueticket/${nextTicket.id}/status/helping`);
+            await onUpdateTickets() // parent setCurTickets → props update → inSession appears
+            setTimeElapsed();
+            setInSession(nextTicket);
+        } catch (error) {
+            console.log('Failed to start helping', error);
+        } finally {
+            setBusy(false);
+        }
     }
 
-    const completeSession = () => {
-        if (!inSession) return
-        setCompleted((prev) => [inSession, ...prev])
-        setInSession(null)
-        setSessionSeconds(seconds)
-        endTimeElapsed();
+    const completeSession = async () => {
+        if (!inSession || busy) return;
+        const done = inSession;
+        setBusy(true);
+        try {
+            await axios.patch(`/api/queueticket/${done.id}/status/completed`);
+            setCompleted((prev) => [...prev, done]);
+            setSessionSeconds(seconds);
+            endTimeElapsed();
+            setInSession(null);
+        } catch (error) {
+            console.log('Failed to complete ticket', error);
+        } finally {
+            setBusy(false);
+        }
     }
 
     const setTimeElapsed = () => {
@@ -49,6 +67,7 @@ export const QueueWorkspace = ({ tickets }: QueueWorkspaceProps) => {
             setSeconds((prev) => prev + 1)
         }, 1000);
     }
+
     const endTimeElapsed = () => {
         if (timerId.current) {
             clearInterval(timerId.current);
@@ -69,6 +88,7 @@ export const QueueWorkspace = ({ tickets }: QueueWorkspaceProps) => {
                     count={nextTicket ? 1 : 0}
                     emptyLabel="No ticket waiting"
                 >
+                    {/* Move a ticket from WAITING to HELPING */}
                     {nextTicket ? (
                         <WorkspaceTicketCard
                             ticket={nextTicket}
@@ -77,7 +97,7 @@ export const QueueWorkspace = ({ tickets }: QueueWorkspaceProps) => {
                                 <Button
                                     size="icon-sm"
                                     variant="outline"
-                                    disabled={Boolean(inSession)}
+                                    disabled={Boolean(inSession) || busy}
                                     onClick={moveNextToSession}
                                     aria-label="Move ticket into session"
                                     className="border-blue-300 text-blue-700 hover:bg-blue-100 disabled:opacity-40"
@@ -94,6 +114,7 @@ export const QueueWorkspace = ({ tickets }: QueueWorkspaceProps) => {
                     count={inSession ? 1 : 0}
                     emptyLabel="No ticket in session"
                 >
+                    {/* Mark a ticket as complete */}
                     {inSession ? (
                         <WorkspaceTicketCard
                             ticket={inSession}
@@ -102,6 +123,7 @@ export const QueueWorkspace = ({ tickets }: QueueWorkspaceProps) => {
                                 <Button
                                     size="sm"
                                     onClick={completeSession}
+                                    disabled={busy}
                                     className="bg-emerald-600 text-white hover:bg-emerald-700"
                                 >
                                     Complete
