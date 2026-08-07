@@ -55,7 +55,7 @@ export const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }: SideBarProps ) => {
   const spacerWidth = isDesktop ? sidebarWidth : 'w-[72px]';
 
   let inactivityTimer: any;
-  const TIMEOUT_MINUTES = 15; 
+  const TIMEOUT_MINUTES = 100; 
   const TIMEOUT_MS = TIMEOUT_MINUTES * 60 * 1000;  
   
   const handleSignout = async () => {

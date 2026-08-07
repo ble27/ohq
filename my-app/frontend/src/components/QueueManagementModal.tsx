@@ -1,17 +1,24 @@
-import React from 'react';
-import type { Queue } from '@shared/types';
+import type { Queue, QueueTicket } from '@shared/types';
 import { useState } from 'react'
 import axios from 'axios';
 import { LuX } from 'react-icons/lu';
 import { Button } from './ui/button';
+import { QueueTicketModal } from './QueueTicketModal';
+import { QueueWorkspace } from './workspace/QueueWorkspace';
 
 interface QueueManagementModalProps {
     queue: Queue | null
+    tickets: QueueTicket[]
     setIsViewingManagementModal: (value : boolean) => void
     onUpdateQueue: (updated: Queue) => void | Promise<void>
 }
 
-export const QueueManagementModal = ({ queue, onUpdateQueue, setIsViewingManagementModal } : QueueManagementModalProps) => {
+export const QueueManagementModal = ({
+    queue,
+    tickets,
+    onUpdateQueue,
+    setIsViewingManagementModal,
+}: QueueManagementModalProps) => {
     // Has 3 tabs - Settings, Waitlist (QueueTicketModal), Workspace
     
     const [isSettingsOpen, setIsSettingsOpen] = useState(true);
@@ -131,8 +138,8 @@ export const QueueManagementModal = ({ queue, onUpdateQueue, setIsViewingManagem
     }
     return (
         <div className="fixed inset-0 flex flex-col items-center justify-center w-screen h-screen gap-3 bg-black/40 text-black z-100">
-            <div className='relative bg-white rounded-lg w-[500px] max-w-[700px] h-[684px] max-h-[1000px] overflow-hidden'>
-                <nav className='relative flex flex-row pt-5 pl-5 text-lg h-[50px] w-full gap-5'>
+            <div className="relative mx-4 flex h-[684px] max-h-[1000px] w-full max-w-[600px] flex-col overflow-hidden rounded-lg bg-white">
+                <nav className='relative flex h-[50px] w-full shrink-0 flex-row gap-5 pt-5 pl-5 text-lg'>
                     <div className='flex flex-row justify-between gap-5 w-2/3'>
                         {/* Settings */}
                         <button 
@@ -175,7 +182,7 @@ export const QueueManagementModal = ({ queue, onUpdateQueue, setIsViewingManagem
                 </nav>
 
                 {/* Settings tab */}
-                {isSettingsOpen && <div className='mt-5 pl-5 p-3 w-screen flex flex-col text-lg text-gray-500 h-full gap-10 z-200'>
+                {isSettingsOpen && <div className='mt-5 flex h-full w-full flex-col gap-10 p-3 pl-5 text-lg text-gray-500'>
 
                     {/* Open / Close queue */}
                     <div className='flex flex-row gap-5 items-center'>
@@ -249,6 +256,15 @@ export const QueueManagementModal = ({ queue, onUpdateQueue, setIsViewingManagem
                     </div>
                 </div>}
                 
+                {/* Waitlist */}
+                {isQueueModalOpen && (
+                    <div className="min-h-0 flex-1 overflow-y-auto px-5 pt-5">
+                        <QueueTicketModal queueTickets={tickets} />
+                    </div>
+                )}
+
+                {/* Workspace */}
+                {isWorkspaceOpen && <QueueWorkspace tickets={tickets} />}
             </div>
             
         </div>

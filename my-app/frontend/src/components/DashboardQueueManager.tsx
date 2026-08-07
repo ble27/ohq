@@ -1,9 +1,10 @@
-import { useState, type FormEvent } from 'react'
+import { useState, useEffect, type FormEvent } from 'react'
 import { MapPin, Plus, Settings2, Trash2 } from 'lucide-react'
-import type { Course, Queue } from '@shared/types'
+import type { Course, Queue, QueueTicket, QueueTicketsListResponse } from '@shared/types'
 import { useAuth } from '@/context/AuthContextProvider'
 import { DeleteConfirmation } from './DeleteConfirmationModal'
 import { QueueManagementModal } from './QueueManagementModal'
+import axios from 'axios'
 
 export interface CreateQueueInput {
     courseId: string
@@ -39,6 +40,7 @@ export const QueueManager = ({
     // TA workspace
     const [isViewingManagementModal, setIsViewingManagementModal] = useState(false);
     const [currentQueue, setCurrentQueue] = useState<Queue | null>(null);
+    const [tickets, setTickets] = useState<QueueTicket[]>([]);
 
     const { user } = useAuth();
 
@@ -86,11 +88,44 @@ export const QueueManager = ({
         setIsViewingDeletionModal(true);
     }
 
-    // Queue Management
+    // Queue Management Modal
     const handleOpenManagementModal = async (queue: Queue) => {
         setCurrentQueue(queue);
         setIsViewingManagementModal(true);
     }
+
+    /* QueueManager will manage all tickets for each queue
+        Fetch all current tickets for a queue based on queue ID
+      And Pass to the QueueManagementModal  
+    */
+    useEffect(() => {
+        if (!isViewingManagementModal || !currentQueue) {
+            setTickets([]);
+            return;
+        }
+
+        let cancelled = false;
+        const fetchTickets = async () => {
+            try {
+                const response = await axios.get<QueueTicketsListResponse>(
+                    `/api/queueticket/queues/${currentQueue.id}`,
+                );
+                if (!cancelled) {
+                    setTickets(response.data.tickets);
+                }
+            } catch (error) {
+                console.log('Failed to fetch all active tickets from id', currentQueue.id, error);
+                if (!cancelled) {
+                    setTickets([]);
+                }
+            }
+        };
+
+        void fetchTickets();
+        return () => {
+            cancelled = true;
+        };
+    }, [isViewingManagementModal, currentQueue]);
 
     return (
         <main className="min-h-full bg-slate-50 px-5 py-8 sm:px-8">
@@ -104,7 +139,7 @@ export const QueueManager = ({
             
             {/* Queue management modal */}
             { isViewingManagementModal && (
-                <QueueManagementModal onUpdateQueue={onUpdateQueue} queue={currentQueue} setIsViewingManagementModal={setIsViewingManagementModal}/>
+                <QueueManagementModal tickets={tickets} onUpdateQueue={onUpdateQueue} queue={currentQueue} setIsViewingManagementModal={setIsViewingManagementModal}/>
             )}
 
             <div className={`mx-auto max-w-5xl`}>
