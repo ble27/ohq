@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { LuCheck } from 'react-icons/lu'
-import type { QueueTicket } from '@shared/types'
+import type { Queue, QueueTicket } from '@shared/types'
 import { Button } from '../ui/button'
 import { WorkspaceColumn } from './WorkspaceColumn'
 import { WorkspaceTicketCard } from './WorkspaceTicketCard'
@@ -8,34 +8,43 @@ import { useRef } from 'react'
 import axios from 'axios'
 
 interface QueueWorkspaceProps {
+    queue?: Queue | null
     tickets: QueueTicket[]
+    completedTickets: QueueTicket[]
     onUpdateTickets: () => void | Promise<void>
+    onUpdateCompleted: () => void | Promise<void>
 }
 
-export const QueueWorkspace = ({ tickets, onUpdateTickets }: QueueWorkspaceProps) => {
+export const QueueWorkspace = ({ tickets, onUpdateTickets, completedTickets, onUpdateCompleted }: QueueWorkspaceProps) => {
     // sort -> <0: before, =0: no change, >0: after
     const waiting = tickets.filter((t) => t.status === 'WAITING')
                             .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
     
     const nextTicket = waiting[0] ?? null
 
-    const [inSession, setInSession] = useState(tickets.find((t) => t.status === 'HELPING') ?? null)
-    const [completed, setCompleted] = useState<QueueTicket[]>([])
+    const inSession = tickets.find((t) => t.status === 'HELPING') ?? null
+
     const [seconds, setSeconds] = useState(0);
     const [sesssionSecs, setSessionSeconds] = useState(0);
     const [busy, setBusy] = useState(false);
+    
 
     const timerId = useRef<number | null>(null);
+
+    useEffect(() => {
+        return () => {
+            if (timerId.current) clearInterval(timerId.current);
+        };
+    }, []);
 
     const moveNextToSession = async () => {
         if (!nextTicket || inSession || busy) return
         setBusy(true);
         try {
-            // update current next ticket to being helped
+            // Mark ticket as helping
             await axios.patch(`/api/queueticket/${nextTicket.id}/status/helping`);
             await onUpdateTickets() // parent setCurTickets → props update → inSession appears
             setTimeElapsed();
-            setInSession(nextTicket);
         } catch (error) {
             console.log('Failed to start helping', error);
         } finally {
@@ -43,16 +52,17 @@ export const QueueWorkspace = ({ tickets, onUpdateTickets }: QueueWorkspaceProps
         }
     }
 
+    // Every time a ticket is done, it will refresh the and resync tickets
     const completeSession = async () => {
         if (!inSession || busy) return;
         const done = inSession;
         setBusy(true);
         try {
-            await axios.patch(`/api/queueticket/${done.id}/status/completed`);
-            setCompleted((prev) => [...prev, done]);
+            await axios.patch(`/api/queueticket/${done.id}/status/completed`); // mark ticket as completed will remove from active list
+            await onUpdateTickets();    // sync current active tickets
+            await onUpdateCompleted();  // sync completed tickets
             setSessionSeconds(seconds);
             endTimeElapsed();
-            setInSession(null);
         } catch (error) {
             console.log('Failed to complete ticket', error);
         } finally {
@@ -67,7 +77,7 @@ export const QueueWorkspace = ({ tickets, onUpdateTickets }: QueueWorkspaceProps
             setSeconds((prev) => prev + 1)
         }, 1000);
     }
-
+    
     const endTimeElapsed = () => {
         if (timerId.current) {
             clearInterval(timerId.current);
@@ -138,12 +148,12 @@ export const QueueWorkspace = ({ tickets, onUpdateTickets }: QueueWorkspaceProps
             {/* Completed lane: many */}
             <WorkspaceColumn
                 title="Completed"
-                count={completed.length}
+                count={completedTickets.length}
                 emptyLabel="Completed tickets will appear here"
                 className="min-h-[140px] flex-1"
             >
-                {completed.length > 0
-                    ? completed.map((ticket) => (
+                {completedTickets.length > 0
+                    ? completedTickets.map((ticket) => (
                           <WorkspaceTicketCard
                               key={ticket.id}
                               ticket={ticket}
@@ -155,7 +165,7 @@ export const QueueWorkspace = ({ tickets, onUpdateTickets }: QueueWorkspaceProps
             </WorkspaceColumn>
 
             <p className="shrink-0 text-right text-xs text-slate-500">
-                Tickets served: {completed.length}
+                Tickets served: {completedTickets.length}
             </p>
         </div>
     )

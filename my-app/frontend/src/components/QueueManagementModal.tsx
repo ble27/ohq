@@ -33,6 +33,10 @@ export const QueueManagementModal = ({
     const [startTime, setStartTime] = useState('08:00');
     const [endTime, setEndTime] = useState('09:00');
 
+    // Every time this refreshes it doesn't sync the state
+    const [completedTickets, setCompletedTickets] = useState<QueueTicket[]>([]);
+
+    // SETTINGS
     const handleQueueStatus = async (): Promise<Queue | null> => {
         if (!queue || queue.isOpen === isQueueOpen) return queue;
         try {
@@ -131,15 +135,6 @@ export const QueueManagementModal = ({
         setIsViewingManagementModal(false);
     }
 
-    // Sync live ticket every time a single ticket transitions state useful for Workspace and Waitlist
-    const handleSyncTickets = async () => {
-        const queueId = queue?.id;
-        if (!queueId) return;
-        const response = await axios.get(`/api/queueticket/queues/${queueId}`);   
-        // Sync new states includes WAIITNG & HELPING tickets
-        setTickets(response.data.tickets);
-    } 
-
     const handleCancelChanges = () => {
         setIsQueueOpen(queue?.isOpen ?? true);
         setRoomLocation(queue?.location ?? '');
@@ -147,6 +142,34 @@ export const QueueManagementModal = ({
         setEndTime('09:00');
         setIsViewingManagementModal(false);
     }
+
+    // WORKSPACE
+    // Sync live ticket every time a single ticket transitions state useful for Workspace and Waitlist
+    // For WAITING & HELPING tickets
+    const refreshActive = async () => {
+        const queueId = queue?.id;
+        if (!queueId) return;
+        const response = await axios.get(`/api/queueticket/queues/${queueId}`);   
+        // Sync new states includes WAIITNG & HELPING tickets
+        setTickets(response.data.tickets);
+    } 
+
+    // Sync completed ticket for queue ID
+    // For COMPLETED tickets
+    const refreshCompleted = async () => {
+        try {
+            const queueId = queue?.id;
+            const response = await axios.get(`/api/queueticket/queues/${queueId}/status/completed`);
+            setCompletedTickets(response.data.tickets);
+        } catch (error) {
+            console.log('Failed to fetch completed tickets', error);
+        }
+    }
+
+    useEffect(() => {
+        refreshActive();
+        refreshCompleted();
+    }, [queue?.id])
 
     return (
         <div className="fixed inset-0 flex flex-col items-center justify-center w-screen h-screen gap-3 bg-black/40 text-black z-100">
@@ -235,20 +258,20 @@ export const QueueManagementModal = ({
                     {/* Start / end time manual configuration */}
                     <div className='flex lfex-row items-center gap-5'>
                         <label htmlFor="start_time">Start:</label>
-                       <input 
-                        type="time" 
-                        onChange={e => {setStartTime(e.target.value)}}
-                        value={startTime}
-                        className='outline-none'
-                        />
+                        <input 
+                            type="time" 
+                            onChange={e => {setStartTime(e.target.value)}}
+                            value={startTime}
+                            className='outline-none'
+                            />
 
-                       <label htmlFor="end_time">End: </label>
-                       <input 
-                        type="time" 
-                        onChange={e => {setEndTime(e.target.value)}}
-                        value={endTime}
-                        className='outline-none'
-                        />
+                        <label htmlFor="end_time">End: </label>
+                        <input 
+                            type="time" 
+                            onChange={e => {setEndTime(e.target.value)}}
+                            value={endTime}
+                            className='outline-none'
+                            />
                     </div>
 
                     <div className='flex flex-row absolute bottom-5 right-5 gap-3'>
@@ -277,8 +300,16 @@ export const QueueManagementModal = ({
                     </div>
                 )}
 
-                {/* Workspace */}
-                {isWorkspaceOpen && <QueueWorkspace onUpdateTickets={handleSyncTickets} tickets={tickets} />}
+                {/* Keep Workspace mounted so the session timer survives tab switches */}
+                <div className={isWorkspaceOpen ? 'flex min-h-0 flex-1 flex-col' : 'hidden'}>
+                    <QueueWorkspace
+                        queue={queue}
+                        tickets={tickets}
+                        onUpdateTickets={refreshActive}
+                        completedTickets={completedTickets}
+                        onUpdateCompleted={refreshCompleted}
+                    />
+                </div>
             </div>
             
         </div>

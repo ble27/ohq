@@ -163,17 +163,17 @@ export const QueueManager = ({
                     )}
 
                     <form
-                        className="mt-4 grid gap-4 sm:grid-cols-[1fr_1fr_auto] sm:items-end"
+                        className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] lg:items-end"
                         onSubmit={handleCreateQueue}
                     >
-                        <label className="grid gap-1.5 text-sm font-medium text-slate-700">
+                        <label className="grid min-w-0 gap-1.5 text-sm font-medium text-slate-700">
                             Course
                             <input
                                 list="active-courses"
                                 value={courseId}
                                 onChange={(event) => setCourseId(event.target.value)}
                                 placeholder="Select or enter a course code"
-                                className="h-10 rounded-lg border border-slate-300 bg-white px-3 font-normal outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                                className="h-10 w-full min-w-0 rounded-lg border border-slate-300 bg-white px-3 font-normal outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                             />
                             {/* List of currently active seeded courses */}
                             <datalist id="active-courses">
@@ -185,23 +185,23 @@ export const QueueManager = ({
                             </datalist>
                         </label>
 
-                        <label className="grid gap-1.5 text-sm font-medium text-slate-700">
+                        <label className="grid min-w-0 gap-1.5 text-sm font-medium text-slate-700">
                             Location
                             <input
                                 value={location}
                                 onChange={(event) => setLocation(event.target.value)}
                                 placeholder="e.g. Zachary - Room 240"
-                                className="h-10 rounded-lg border border-slate-300 bg-white px-3 font-normal outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                                className="h-10 w-full min-w-0 rounded-lg border border-slate-300 bg-white px-3 font-normal outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                             />
                         </label>
 
                         <button
                             type="submit"
                             disabled={isCreating || !courseId || !location.trim() || !user}
-                            className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+                            className="inline-flex h-10 w-full shrink-0 items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50 md:col-span-2 lg:col-span-1 lg:w-auto"
                         >
-                            <Plus className="size-4" />
-                            {isCreating ? 'Creating…' : 'Create queue'}
+                            <Plus className="size-4 shrink-0" />
+                            <span className="truncate">{isCreating ? 'Creating…' : 'Create queue'}</span>
                         </button>
                     </form>
                 </section>

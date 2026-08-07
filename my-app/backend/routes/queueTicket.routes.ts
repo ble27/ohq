@@ -13,7 +13,7 @@ import type {
 } from '../../shared/types.js';
 
 import { CreateQueueTicketValidationSchema } from '../schemas/queueTicket.schema.js';
-import { ZodError } from 'zod';
+import { date, ZodError } from 'zod';
 import { start } from 'repl';
 const router: Router = Router();
 
@@ -39,7 +39,7 @@ router.get('/', async (_req: Request, res: Response): Promise<void> => {
 });
 
 // GET /api/queueticket/queues/:id — fetch only multiple active tickets based on a Queue ID
-// Call listActiveTickets helper
+// Call listActiveTickets helper (only WAITING and HELPING tickets)
 router.get('/queues/:queueId', async (req: Request, res: Response): Promise<void> => {
     try {
         
@@ -71,6 +71,43 @@ router.get('/queues/:queueId', async (req: Request, res: Response): Promise<void
         res.status(500).json({ message: 'Failed to fetch ticket' });
     }
 });
+
+// GET /api/queueticket/queues/:queueId/status/completed - for completed tickets to store in local completed storage
+router.get('/queues/:queueId/status/completed', async (req: Request, res: Response): Promise<void> => {
+    try {
+        const queueId = req.params.queueId as string;
+        if (!queueId) {
+            res.status(400).json({ message: 'Queue ID is required' });
+            return;
+        }
+        const ticketsResponse = await prisma.queueTicket.findMany({
+            where: {queueId, status: 'COMPLETED'}, 
+            orderBy: {updatedAt: 'asc'}
+        })
+
+        const ticketsArray: QueueTicket[] = ticketsResponse;
+
+        console.log(`[QUEUE TICKET] Successfully sent ticket objects: ${JSON.stringify(ticketsArray, null, 2)}`)
+
+        const body: QueueTicketsListResponse = {
+            tickets: ticketsArray,
+            message: `Successfully fetched tickets from queue ${queueId}`,
+        };
+        res.status(200).json(body);
+    }
+    catch (error: unknown) {
+        if (error instanceof ZodError) {
+            res.status(400).json({ message: 'Invalid input', errors: error.issues });
+            return;
+        }
+        if (error instanceof Error) {
+            res.status(500).json({ message: error.message });
+            return;
+        }
+        res.status(500).json({ message: 'Failed to fetch ticket' });
+    }
+});
+
 
 // GET /api/queueticket/:queueTicketId — single ticket
 router.get('/:queueTicketId', async (req: Request, res: Response): Promise<void> => {
@@ -310,6 +347,8 @@ router.patch('/:queueTicketId/status/helping', async (req: Request, res: Respons
 router.patch('/:queueTicketId/status/completed', async (req: Request, res: Response) => {
     try {
         const queueTicketId = req.params.queueTicketId as string;
+
+        // automatically update updatedAt
         const ticketResponse = await prisma.queueTicket.update({
             where: {id: queueTicketId, status: 'HELPING'},
             data: {status: 'COMPLETED'}
@@ -318,6 +357,7 @@ router.patch('/:queueTicketId/status/completed', async (req: Request, res: Respo
             ticket: ticketResponse, 
             message: 'Successfully updated ticket status to "Completed"'
         }
+        console.log(`[QUEUE TICKET] Successfully updated ticket status to ${JSON.stringify(ticketResponse, null, 2)}`);
         res.status(200).json(body);
     } catch (error) {
         // Record not found
