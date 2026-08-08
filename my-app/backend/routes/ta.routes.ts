@@ -1,7 +1,7 @@
 import { Router } from "express";
 import type { Request, Response } from "express";
 import { prisma } from "../prisma.js";
-import { Role } from "../generated/prisma/enums.js";
+import { Role } from "../generated/prisma/client.js";
 
 const router = Router();
 

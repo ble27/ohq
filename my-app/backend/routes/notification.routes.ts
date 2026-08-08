@@ -1,0 +1,180 @@
+import { prisma } from '../prisma.js';
+import { CreateNotificationValidationSchema } from '../schemas/notification.schema.js';
+import type { Request, Response } from 'express';
+import { Router } from 'express';
+import { ZodError } from 'zod';
+import { NotificationType } from '../generated/prisma/index.js';
+import { listActiveTickets } from '../services/queue.services.js';
+
+const router = Router();
+
+// GET /api/notifications/user/:userId — inbox for recipient
+router.get('/user/:userId', async (req, res) => {
+    try {
+        const userId = req.params.userId;
+        if (!userId) {
+            res.status(400).json({ message: 'Missing required parameter' });
+            return;
+        }
+
+        const notifications = await prisma.notification.findMany({
+            where: { userId, clearedAt: null },
+            orderBy: { createdAt: 'desc' },
+        });
+        const body = {
+            notifications,
+            message: `Successfully fetched notifications for ${userId}`,
+        };
+        console.log(`Successfully fetched notifications`, JSON.stringify(body, null, 2));
+        res.status(200).json(body);
+    } catch (error) {
+        if (error instanceof Error) {
+            res.status(500).json({ message: error.message });
+            return;
+        }
+        res.status(500).json({ message: 'Failed to fetch notifications' });
+    }
+});
+
+// POST /api/notifications/queues/:queueId/user/:recipientId/type/:type
+// Whenever a student joins/leaves, or TA accepts a student into a session
+// Recipient receives the notification (TA for JOIN/LEAVE, student for ASSIST)
+router.post('/queues/:queueId/user/:recipientId/type/:type', async (req: Request, res: Response) => {
+    try {
+        const queueId = req.params.queueId as string;
+        const recipientId = req.params.recipientId as string;
+        const type = req.params.type as NotificationType;
+        const ticketId = req.body?.ticketId as string | undefined;
+
+        const body = CreateNotificationValidationSchema.parse({
+            userId: recipientId,
+            type,
+            queueId,
+            ticketId,
+        });
+
+        const response = await prisma.notification.create({
+            data: {
+                queueId: body.queueId,
+                userId: body.userId,
+                type: body.type,
+                ticketId: body.ticketId ?? null,
+            },
+        });
+
+        res.status(201).json({
+            notification: response,
+            message: 'SUCCESS',
+        });
+    } catch (error: unknown) {
+        if (error instanceof ZodError) {
+            res.status(400).json({ message: 'Invalid input', errors: error.issues });
+            return;
+        }
+        if (error instanceof Error) {
+            res.status(500).json({ message: error.message });
+            return;
+        }
+        res.status(500).json({ message: 'Failed to create a new notification' });
+    }
+});
+
+// POST /api/notifications/queues/:queueId/type/close — fan-out to active students + TA
+router.post('/queues/:queueId/type/close', async (req: Request, res: Response) => {
+    try {
+        const queueId = req.params.queueId as string;
+        const type = NotificationType.CLOSE;
+
+        const queue = await prisma.queue.findFirst({
+            where: { id: queueId },
+        });
+        if (!queue) {
+            res.status(404).json({ message: 'Queue not found' });
+            return;
+        }
+
+        const tickets = await listActiveTickets(queueId);
+        const recipientIds = [...tickets.map((t) => t.studentId), queue.taId];
+
+        const response = await prisma.$transaction(
+            recipientIds.map((userId) =>
+                prisma.notification.create({
+                    data: { queueId, type, userId },
+                })
+            )
+        );
+
+        res.status(201).json({
+            notifications: response,
+            message: 'SUCCESS',
+        });
+    } catch (error: unknown) {
+        if (error instanceof Error) {
+            res.status(500).json({ message: error.message });
+            return;
+        }
+        res.status(500).json({ message: 'Failed to create close notifications' });
+    }
+});
+
+// PATCH
+router.patch('/:id', async (req: Request, res: Response) => {
+    res.status(501).json({ message: 'Not implemented' });
+});
+
+// DELETE /api/notifications/user/:userId — clear all for recipient
+router.delete('/user/:userId', async (req: Request, res: Response) => {
+    try {
+        const userId = req.params.userId as string;
+        if (!userId) {
+            res.status(400).json({ message: 'Missing required parameter' });
+            return;
+        }
+        const notificationResponses = await prisma.notification.deleteMany({
+            where: { userId },
+        });
+        const body = {
+            notification: notificationResponses,
+            message: `Successfully cleared all notifications associated with user ${userId}`,
+        };
+        console.log(
+            `Successfully cleared all notifications associated with user ${userId}`,
+            JSON.stringify(body, null, 2)
+        );
+        res.status(200).json(body);
+    } catch (error) {
+        if (error instanceof Error) {
+            res.status(500).json({ message: error.message });
+            return;
+        }
+        res.status(500).json({ message: 'Failed to clear all notifications' });
+    }
+});
+
+// DELETE /api/notifications/:id — dismiss one
+router.delete('/:id', async (req: Request, res: Response) => {
+    try {
+        const id = req.params.id as string;
+        if (!id) {
+            res.status(400).json({ message: 'Missing required parameter' });
+            return;
+        }
+        const notificationResponse = await prisma.notification.delete({
+            where: { id },
+        });
+        const body = {
+            notification: notificationResponse,
+            message: `Successfully deleted notification ${id}`,
+        };
+        console.log(`Successfully deleted notification`, JSON.stringify(body, null, 2));
+        res.status(200).json(body);
+    } catch (error) {
+        if (error instanceof Error) {
+            res.status(500).json({ message: error.message });
+            return;
+        }
+        res.status(500).json({ message: 'Failed to delete notification' });
+    }
+});
+
+export const notificationRouter = router;

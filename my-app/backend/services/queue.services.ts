@@ -1,7 +1,7 @@
 import { prisma } from '../prisma.js';
 import { updatePosition } from './queueTicket.services.js';
 import type { QueueTicket } from '../generated/prisma/client.js';
-import { SessionStatus } from '../generated/prisma/enums.js';
+import { SessionStatus } from '../generated/prisma/client.js';
 
 const ACTIVE_STATUSES = [SessionStatus.WAITING, SessionStatus.HELPING] as const;
 

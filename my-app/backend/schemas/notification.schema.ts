@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { NotificationType } from '../generated/prisma/enums.js';
+import { NotificationType } from '../generated/prisma/client.js';
 
 export const NotificationValidationSchema = z.object({
     id: z.uuid({ message: 'Invalid ID format' }),

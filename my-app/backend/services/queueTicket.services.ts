@@ -1,6 +1,6 @@
 import { prisma } from '../prisma.js';
 import type { QueueTicket } from '../generated/prisma/client.js';
-import { SessionStatus } from '../generated/prisma/enums.js';
+import { SessionStatus } from '../generated/prisma/client.js';
 
 /**
  * Re-number WAITING tickets by joinedAt (1..n).
