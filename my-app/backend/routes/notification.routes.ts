@@ -23,9 +23,14 @@ router.get('/user/:userId', async (req, res) => {
             return;
         }
 
+        // Get both ticket and queue referenced objects
         const notifications = await prisma.notification.findMany({
             where: { userId, clearedAt: null },
             orderBy: { createdAt: 'desc' },
+            include: {
+                ticket: true,
+                queue: true
+            }
         });
         const body: NotificationsListResponse = {
             notifications,
@@ -132,6 +137,7 @@ router.patch('/:id', async (req: Request, res: Response) => {
 
 // DELETE /api/notifications/user/:userId — clear all for recipient
 router.delete('/user/:userId', async (req: Request, res: Response) => {
+    console.log('Calling delete /api/notifications/user/:userId');
     try {
         const userId = req.params.userId as string;
         if (!userId) {

@@ -142,6 +142,11 @@ export interface QueueTicketsListResponse {
 }
 
 // --- Notification responses ---
+// Extension for GET method
+export interface NotificationWithDetails extends Notification {
+    ticket: QueueTicket | null;
+    queue: Queue
+}
 
 export interface NotificationResponse {
     notification: Notification;
@@ -149,7 +154,7 @@ export interface NotificationResponse {
 }
 
 export interface NotificationsListResponse {
-    notifications: Notification[];
+    notifications: NotificationWithDetails[];
     message: string;
 }
 

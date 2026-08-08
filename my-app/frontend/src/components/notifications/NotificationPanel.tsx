@@ -1,58 +1,17 @@
-import type { Notification } from '@shared/types'
+import type { NotificationWithDetails } from '@shared/types'
 import { NotificationBanner } from './NotificationBanner'
 
 interface NotificationPanelProps {
-    notifications?: Notification[]
+    notifications: NotificationWithDetails[]
     onClearAll?: () => void
 }
 
-const placeholderNotifications: Notification[] = [
-    {
-        id: '1',
-        userId: '',
-        type: 'JOIN',
-        queueId: '',
-        ticketId: null,
-        createdAt: new Date(),
-        readAt: null,
-        clearedAt: null,
-    },
-    {
-        id: '2',
-        userId: '',
-        type: 'LEAVE',
-        queueId: '',
-        ticketId: null,
-        createdAt: new Date(),
-        readAt: null,
-        clearedAt: null,
-    },
-    {
-        id: '3',
-        userId: '',
-        type: 'ASSIST',
-        queueId: '',
-        ticketId: null,
-        createdAt: new Date(),
-        readAt: null,
-        clearedAt: null,
-    },
-    {
-        id: '4',
-        userId: '',
-        type: 'CLOSE',
-        queueId: '',
-        ticketId: null,
-        createdAt: new Date(),
-        readAt: null,
-        clearedAt: null,
-    },
-]
-
 export const NotificationPanel = ({
-    notifications = placeholderNotifications,
+    notifications,
     onClearAll,
 }: NotificationPanelProps) => {
+    // GET method uses include to get both ticket and queue so each notification can access
+    // notification.ticket and notification.queue
     return (
         <div
             className="fixed top-20 right-10 z-20 m-0 h-[280px] w-[280px] min-h-0 overflow-x-hidden
@@ -79,6 +38,9 @@ export const NotificationPanel = ({
                     notifications.map((item) => (
                         <NotificationBanner
                             key={item.id}
+                            queue={item.queue}
+                            ticket={item.ticket}
+                            time={item.createdAt}
                             type={item.type}
                         />
                     ))

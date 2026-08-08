@@ -16,7 +16,7 @@ interface ModalProps {
     isViewingQueue: boolean;
     joinedQueueIds: Set<string>
     setModalOpen: (value: boolean) => void;
-    onLeaveQueue: (queueId: string) => void;
+    onLeaveQueue: (queueId: string) => void | Promise<void>;
 }
 
 // Local queue for each instance
@@ -35,22 +35,23 @@ export const QueueModal = ({
 
     const socket = useSocket();
 
-    const deleteTicketById = async () => {
+    // Soft leave — keep the ticket row (status LEFT) so LEAVE notifications can still include it
+    const leaveTicketById = async () => {
         try {
-            if (!curTicket) {      
-                console.log('No ticket available to delete');
+            if (!curTicket) {
+                console.log('No ticket available to leave');
                 return;
             }
-            const response = await axios.delete(`/api/queueticket/${curTicket.id}`);
-            // previouslly call patch
-            // const response = await axios.patch(`/api/queueticket/${curTicket.id}`, { status: 'LEFT' });
+            const response = await axios.patch(`/api/queueticket/${curTicket.id}`, {
+                status: 'LEFT',
+            });
             if (response.status !== 200) {
-                console.log(`Failed to delete ticket ${curTicket.id}`);
+                console.log(`Failed to leave ticket ${curTicket.id}`);
                 return;
             }
-        }
-        catch (error) {
-            console.log(`Failed to delete a ticket ${error}`);
+        } catch (error) {
+            console.log(`Failed to leave ticket ${error}`);
+            throw error;
         }
     }
 
@@ -132,16 +133,16 @@ export const QueueModal = ({
                         <button
                             onClick={async () => {
                                 if (!curTicket) {
-                                    console.log('No ticket available to delete');
+                                    console.log('No ticket available to leave');
                                     return;
                                 }
                                 try {
-                                    await deleteTicketById();
+                                    // Notify while ticket still exists, then soft-leave (LEFT)
+                                    await onLeaveQueue(queue.id);
+                                    await leaveTicketById();
                                     socket?.emit('refresh-queue', queue.id);
-                                    onLeaveQueue(queue.id);
-                                }
-                                catch (error) {
-                                    console.log('Failed to delete ticket', error);
+                                } catch (error) {
+                                    console.log('Failed to leave queue', error);
                                 }
                             }}
                             className="rounded-md bg-red-500 px-2.5 py-1 text-xs font-medium text-white hover:bg-red-600"

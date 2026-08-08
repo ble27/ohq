@@ -195,6 +195,7 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ CSCEClasses, selec
 
       // hmap : queueId -> ticket
       const ticketId = myTicketsByQueueId.get(queueId)?.id as string;
+      
       await createNotification(selectedQueue, 'LEAVE', ticketId);
       
       setJoinedQueueIds((prev) => {

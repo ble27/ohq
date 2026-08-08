@@ -13,7 +13,7 @@ interface QueueWorkspaceProps {
     completedTickets: QueueTicket[]
     onUpdateTickets: () => void | Promise<void>
     onUpdateCompleted: () => void | Promise<void>
-    onNotifyInSession: (studentId: string, type: NotificationType, ticket: QueueTicket) => void | Promise<void>
+    onNotifyInSession: (studentId: string, type: NotificationType, ticket: QueueTicket) => void 
 }
 
 export const QueueWorkspace = ({ tickets, onUpdateTickets, completedTickets, onUpdateCompleted, onNotifyInSession }: QueueWorkspaceProps) => {
