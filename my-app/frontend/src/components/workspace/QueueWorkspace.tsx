@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { LuCheck } from 'react-icons/lu'
-import type { Queue, QueueTicket } from '@shared/types'
+import type { NotificationType, Queue, QueueTicket } from '@shared/types'
 import { Button } from '../ui/button'
 import { WorkspaceColumn } from './WorkspaceColumn'
 import { WorkspaceTicketCard } from './WorkspaceTicketCard'
@@ -13,22 +13,19 @@ interface QueueWorkspaceProps {
     completedTickets: QueueTicket[]
     onUpdateTickets: () => void | Promise<void>
     onUpdateCompleted: () => void | Promise<void>
+    onNotifyInSession: (studentId: string, type: NotificationType, ticket: QueueTicket) => void | Promise<void>
 }
 
-export const QueueWorkspace = ({ tickets, onUpdateTickets, completedTickets, onUpdateCompleted }: QueueWorkspaceProps) => {
+export const QueueWorkspace = ({ tickets, onUpdateTickets, completedTickets, onUpdateCompleted, onNotifyInSession }: QueueWorkspaceProps) => {
     // sort -> <0: before, =0: no change, >0: after
     const waiting = tickets.filter((t) => t.status === 'WAITING')
                             .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
-    
     const nextTicket = waiting[0] ?? null
-
     const inSession = tickets.find((t) => t.status === 'HELPING') ?? null
 
     const [seconds, setSeconds] = useState(0);
     const [sesssionSecs, setSessionSeconds] = useState(0);
     const [busy, setBusy] = useState(false);
-    
-
     const timerId = useRef<number | null>(null);
 
     useEffect(() => {
@@ -45,6 +42,11 @@ export const QueueWorkspace = ({ tickets, onUpdateTickets, completedTickets, onU
             await axios.patch(`/api/queueticket/${nextTicket.id}/status/helping`);
             await onUpdateTickets() // parent setCurTickets → props update → inSession appears
             setTimeElapsed();
+
+            // Create notification to student currently waiting ahead of line
+            // Callback function here
+            // Need ticket to be passed here to pass down to Notification Banner
+            onNotifyInSession(nextTicket.studentId, 'ASSIST', nextTicket);
         } catch (error) {
             console.log('Failed to start helping', error);
         } finally {

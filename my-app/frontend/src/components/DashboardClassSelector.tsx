@@ -1,7 +1,15 @@
 import React, { useState } from 'react'
-import axios from 'axios'
+import axios, { create } from 'axios'
 import { QueueModal } from './QueueModal'
-import type { Queue, QueueTicket, QueuesListResponse, QueueTicketResponse, QueueTicketsListResponse } from '@shared/types';
+import type {
+  NotificationResponse,
+  NotificationType,
+  Queue,
+  QueueTicket,
+  QueuesListResponse,
+  QueueTicketResponse,
+  QueueTicketsListResponse,
+} from '@shared/types';
 import { Button } from './ui/button';
 import { useAuth } from '@/context/AuthContextProvider';
 
@@ -146,8 +154,19 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ CSCEClasses, selec
         setQueue([]);
     }
 
+    // Create notification
+    const createNotification = async (selectedQueue: Queue, type: NotificationType, ticketId: string) => {
+      const queueId = selectedQueue.id;
+      const taId = selectedQueue.taId;
+      const response = await axios.post<NotificationResponse>(
+        `/api/notifications/queues/${queueId}/user/${taId}/type/${type}`, { ticketId }
+      );
+      return response.data.notification;
+    }
+
     // Remove Join button after a user has joined a queue
     const handleJoinQueue = async (selectedQueue: Queue) => {
+      // createTicket returns ticket and ticketId from joinQueue
       const response = await createTicket(selectedQueue.id);
       if (!response) return;
 
@@ -157,6 +176,9 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ CSCEClasses, selec
       setIsViewingQueue(false);
       setSelectedQueue(selectedQueue);
       setModalOpen(true);
+
+      // Create notification to TA on join
+      await createNotification(selectedQueue, 'JOIN', response.ticketId);
     }
 
     const handleViewQueue = (selectedQueue: Queue) => {
@@ -167,7 +189,14 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ CSCEClasses, selec
       setModalOpen(true);
     }
 
-    const handleLeaveQueue = (queueId: string) => {
+    const handleLeaveQueue = async (queueId: string) => {
+      // Create notification to TA on leave
+      if (!selectedQueue) return;
+
+      // hmap : queueId -> ticket
+      const ticketId = myTicketsByQueueId.get(queueId)?.id as string;
+      await createNotification(selectedQueue, 'LEAVE', ticketId);
+      
       setJoinedQueueIds((prev) => {
         const next = new Set(prev);
         next.delete(queueId);
@@ -180,6 +209,7 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ CSCEClasses, selec
       });
       setTicket(null);
       setModalOpen(false);
+      
     }
 
   return ( 

@@ -1,29 +1,27 @@
 import type { ReactNode } from 'react'
-import type { Queue, QueueTicket } from '@shared/types'
-
-export type NotificationAccent = 'join' | 'leave' | 'assist' | 'close'
+import type { NotificationType, Queue, QueueTicket } from '@shared/types'
 
 interface NotificationBannerProps {
     queue?: Queue
     ticket?: QueueTicket
-    accent?: NotificationAccent
+    type?: NotificationType
     time?: number
     message?: string
     action?: ReactNode
 }
 
-const accentStyles = {
-    join: 'border-blue-400 bg-blue-300',
-    leave: 'border-slate-400 bg-slate-300',
-    assist: 'border-emerald-400 bg-emerald-300',
-    close: 'border-red-500 bg-red-400',
-} as const
+const accentStyles: Record<NotificationType, string> = {
+    JOIN: 'border-blue-400 bg-blue-300',
+    LEAVE: 'border-slate-400 bg-slate-300',
+    ASSIST: 'border-emerald-400 bg-emerald-300',
+    CLOSE: 'border-red-500 bg-red-400',
+}
 
-const defaultMessages: Record<NotificationAccent, string> = {
-    join: 'Student Name joined your queue',
-    leave: 'Student Name left your queue',
-    assist: 'Please head to Location. TA is ready to assist you.',
-    close: 'Queue is closing in 5 mins.',
+const defaultMessages: Record<NotificationType, string> = {
+    JOIN: 'Student Name joined your queue',
+    LEAVE: 'Student Name left your queue',
+    ASSIST: 'Please head to Location. TA is ready to assist you.',
+    CLOSE: 'Queue is closing in 5 mins.',
 }
 
 const formatTime = (time?: number) => {
@@ -34,18 +32,18 @@ const formatTime = (time?: number) => {
 }
 
 export const NotificationBanner = ({
-    accent = 'join',
+    type = 'JOIN',
     time,
     message,
     action,
 }: NotificationBannerProps) => {
     return (
         <div
-            className={`flex w-full items-center gap-3 rounded-xl border px-3 py-3 ${accentStyles[accent]}`}
+            className={`flex w-full items-center gap-3 rounded-xl border px-3 py-3 ${accentStyles[type]}`}
         >
             <div className="flex min-w-0 flex-1 items-start justify-between gap-3">
                 <p className="min-w-0 text-sm font-normal text-slate-900">
-                    {message ?? defaultMessages[accent]}
+                    {message ?? defaultMessages[type]}
                 </p>
                 <span className="shrink-0 text-xs tabular-nums text-slate-500">
                     {formatTime(time)}

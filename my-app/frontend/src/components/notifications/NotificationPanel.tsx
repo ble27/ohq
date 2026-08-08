@@ -1,22 +1,52 @@
-import { NotificationBanner, type NotificationAccent } from './NotificationBanner'
-
-export interface NotificationItem {
-    id: string
-    accent: NotificationAccent
-    message?: string
-    time?: number
-}
+import type { Notification } from '@shared/types'
+import { NotificationBanner } from './NotificationBanner'
 
 interface NotificationPanelProps {
-    notifications?: NotificationItem[]
+    notifications?: Notification[]
     onClearAll?: () => void
 }
 
-const placeholderNotifications: NotificationItem[] = [
-    { id: '1', accent: 'join', time: 0 },
-    { id: '2', accent: 'leave', time: 0 },
-    { id: '3', accent: 'assist', time: 0 },
-    { id: '4', accent: 'close', time: 0 },
+const placeholderNotifications: Notification[] = [
+    {
+        id: '1',
+        userId: '',
+        type: 'JOIN',
+        queueId: '',
+        ticketId: null,
+        createdAt: new Date(),
+        readAt: null,
+        clearedAt: null,
+    },
+    {
+        id: '2',
+        userId: '',
+        type: 'LEAVE',
+        queueId: '',
+        ticketId: null,
+        createdAt: new Date(),
+        readAt: null,
+        clearedAt: null,
+    },
+    {
+        id: '3',
+        userId: '',
+        type: 'ASSIST',
+        queueId: '',
+        ticketId: null,
+        createdAt: new Date(),
+        readAt: null,
+        clearedAt: null,
+    },
+    {
+        id: '4',
+        userId: '',
+        type: 'CLOSE',
+        queueId: '',
+        ticketId: null,
+        createdAt: new Date(),
+        readAt: null,
+        clearedAt: null,
+    },
 ]
 
 export const NotificationPanel = ({
@@ -49,9 +79,7 @@ export const NotificationPanel = ({
                     notifications.map((item) => (
                         <NotificationBanner
                             key={item.id}
-                            accent={item.accent}
-                            message={item.message}
-                            time={item.time}
+                            type={item.type}
                         />
                     ))
                 )}

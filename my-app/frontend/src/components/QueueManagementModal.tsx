@@ -5,6 +5,7 @@ import { LuX } from 'react-icons/lu';
 import { Button } from './ui/button';
 import { QueueTicketModal } from './QueueTicketModal';
 import { QueueWorkspace } from './workspace/QueueWorkspace';
+import type { NotificationType } from '@shared/types';
 
 interface QueueManagementModalProps {
     queue: Queue | null
@@ -179,6 +180,22 @@ export const QueueManagementModal = ({
         }
     }
 
+    // Notification
+    /* 
+    This function creates a notification whenever the TA sets the student in session, 
+    where the status changes from WAITING to HELPING.
+    Sends an alert to the student
+    Also need to pass the ticket here
+    */
+    const createNotificationForInSession = async (studentId: string, type: NotificationType, ticket: QueueTicket) => {
+        const queueId = queue?.id;
+        // Ticket is optional
+        const response = await axios.post(`/api/notifications/queues/${queueId}/user/${studentId}/type/${type}`, 
+            { ticketId: ticket.id }
+        );
+        return response;
+    }
+
     useEffect(() => {
         refreshActive();
         refreshCompleted();
@@ -321,6 +338,7 @@ export const QueueManagementModal = ({
                         onUpdateTickets={refreshActive}
                         completedTickets={completedTickets}
                         onUpdateCompleted={refreshCompleted}
+                        onNotifyInSession={createNotificationForInSession}
                     />
                 </div>
             </div>

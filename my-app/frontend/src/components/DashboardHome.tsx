@@ -30,6 +30,13 @@ export const Home = () => {
 
         void handleActiveTickets()
     }, [user?.id])
+    
+    const clearAllNotifications = async () => {
+        // /api/notifications/user/:userId
+        const userId = user?.id;
+        const response = await axios.delete(`/api/notifications/user/${userId}`);
+        return response;
+    }
 
     return (
         <div className="flex min-h-full w-full flex-col px-4 py-8 sm:px-6 md:px-8 lg:pr-12">
@@ -42,7 +49,10 @@ export const Home = () => {
                 />
             </div>
 
-            {isOpenAlert && <NotificationPanel />}
+            {/* Notis */}
+            {/* Panel accepts notification array and clearAll callback */}
+            {/* Banner accepts queue, ticket, time, type, message, action */}
+            {isOpenAlert && <NotificationPanel onClearAll={clearAllNotifications}/>}
 
             {tickets.length === 0 && (
                 <span className="mt-8 flex items-center justify-center px-3 text-center text-sm italic text-gray-500 sm:mt-10 sm:text-base">

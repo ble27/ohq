@@ -3,8 +3,14 @@ import { CreateNotificationValidationSchema } from '../schemas/notification.sche
 import type { Request, Response } from 'express';
 import { Router } from 'express';
 import { ZodError } from 'zod';
-import { NotificationType } from '../generated/prisma/index.js';
+import { NotificationType as PrismaNotificationType } from '../generated/prisma/index.js';
 import { listActiveTickets } from '../services/queue.services.js';
+import type {
+    NotificationResponse,
+    NotificationsClearResponse,
+    NotificationsListResponse,
+    NotificationType,
+} from '../../shared/types.js';
 
 const router = Router();
 
@@ -21,7 +27,7 @@ router.get('/user/:userId', async (req, res) => {
             where: { userId, clearedAt: null },
             orderBy: { createdAt: 'desc' },
         });
-        const body = {
+        const body: NotificationsListResponse = {
             notifications,
             message: `Successfully fetched notifications for ${userId}`,
         };
@@ -62,10 +68,11 @@ router.post('/queues/:queueId/user/:recipientId/type/:type', async (req: Request
             },
         });
 
-        res.status(201).json({
+        const payload: NotificationResponse = {
             notification: response,
             message: 'SUCCESS',
-        });
+        };
+        res.status(201).json(payload);
     } catch (error: unknown) {
         if (error instanceof ZodError) {
             res.status(400).json({ message: 'Invalid input', errors: error.issues });
@@ -83,7 +90,7 @@ router.post('/queues/:queueId/user/:recipientId/type/:type', async (req: Request
 router.post('/queues/:queueId/type/close', async (req: Request, res: Response) => {
     try {
         const queueId = req.params.queueId as string;
-        const type = NotificationType.CLOSE;
+        const type = PrismaNotificationType.CLOSE;
 
         const queue = await prisma.queue.findFirst({
             where: { id: queueId },
@@ -104,10 +111,11 @@ router.post('/queues/:queueId/type/close', async (req: Request, res: Response) =
             )
         );
 
-        res.status(201).json({
+        const payload: NotificationsListResponse = {
             notifications: response,
             message: 'SUCCESS',
-        });
+        };
+        res.status(201).json(payload);
     } catch (error: unknown) {
         if (error instanceof Error) {
             res.status(500).json({ message: error.message });
@@ -133,8 +141,8 @@ router.delete('/user/:userId', async (req: Request, res: Response) => {
         const notificationResponses = await prisma.notification.deleteMany({
             where: { userId },
         });
-        const body = {
-            notification: notificationResponses,
+        const body: NotificationsClearResponse = {
+            count: notificationResponses.count,
             message: `Successfully cleared all notifications associated with user ${userId}`,
         };
         console.log(
@@ -162,7 +170,7 @@ router.delete('/:id', async (req: Request, res: Response) => {
         const notificationResponse = await prisma.notification.delete({
             where: { id },
         });
-        const body = {
+        const body: NotificationResponse = {
             notification: notificationResponse,
             message: `Successfully deleted notification ${id}`,
         };

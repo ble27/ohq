@@ -13,6 +13,8 @@ export type SessionStatus =
     | 'REMOVED'
     | 'LEFT';
 
+export type NotificationType = 'JOIN' | 'LEAVE' | 'ASSIST' | 'CLOSE';
+
 // --- Prisma models (shared shape) ---
 
 export interface Course {
@@ -55,6 +57,17 @@ export interface User {
     email: string;
     name: string | null;
     role: Role;
+}
+
+export interface Notification {
+    id: string;
+    userId: string;
+    type: NotificationType;
+    queueId: string;
+    ticketId: string | null;
+    createdAt: string | Date;
+    readAt: string | Date | null;
+    clearedAt: string | Date | null;
 }
 
 // --- Shared API envelopes ---
@@ -125,6 +138,23 @@ export interface QueueTicketResponse {
 
 export interface QueueTicketsListResponse {
     tickets: QueueTicket[];
+    message: string;
+}
+
+// --- Notification responses ---
+
+export interface NotificationResponse {
+    notification: Notification;
+    message: string;
+}
+
+export interface NotificationsListResponse {
+    notifications: Notification[];
+    message: string;
+}
+
+export interface NotificationsClearResponse {
+    count: number;
     message: string;
 }
 

@@ -4,6 +4,8 @@ import type { Course, Queue, QueueTicket, QueueTicketsListResponse } from '@shar
 import { useAuth } from '@/context/AuthContextProvider'
 import { DeleteConfirmation } from './DeleteConfirmationModal'
 import { QueueManagementModal } from './QueueManagementModal'
+import type { NotificationType } from '@shared/types'
+
 import axios from 'axios'
 
 export interface CreateQueueInput {
