@@ -158,6 +158,10 @@ export interface NotificationsListResponse {
     message: string;
 }
 
+export interface NotificationsCreateListResponse {
+    notifications: Notification[], 
+    message: string
+}
 export interface NotificationsClearResponse {
     count: number;
     message: string;

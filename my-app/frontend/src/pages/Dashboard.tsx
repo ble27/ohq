@@ -1,20 +1,24 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { ClassSelector } from '../components/DashboardClassSelector'
 import { Home } from '@/components/DashboardHome';
 import { Sidebar, MOBILE_BREAKPOINT } from '../components/Sidebar'
 import { useLocation } from 'react-router-dom';
 import { QueueManager, type CreateQueueInput } from '@/components/DashboardQueueManager';
 import { VerifyTA } from '@/components/TAVerification';
+import { NotificationPanel } from '@/components/notifications/NotificationPanel'
+import { LuBell } from 'react-icons/lu'
 import type {
     ApiMessageResponse,
     Course,
     CoursesListResponse,
+    NotificationWithDetails,
     Queue,
     QueueResponse,
     QueuesListResponse,
 } from '@shared/types';
 import axios from 'axios'
 import { useAuth } from '@/context/AuthContextProvider';
+import { useSocket } from '@/context/SocketProvider';
 
 export const Dashboard = () => {
     const location = useLocation();
@@ -23,6 +27,7 @@ export const Dashboard = () => {
     const isDashboardQueueManager = location.pathname === '/dashboard/queuemanager';
     const { user } = useAuth();
     const userId = user?.id;
+    const socket = useSocket();
 
     // Sidebar remains open when above mobile breakpoint
     const [isSidebarOpen, setIsSidebarOpen] = useState(() => window.innerWidth >= MOBILE_BREAKPOINT);
@@ -33,6 +38,39 @@ export const Dashboard = () => {
     const [createdQueues, setCreatedQueues] = useState<Queue[]>([]);
     const [courses, setCourses] = useState<Course[]>([]);
     const [isLoadingQueues, setIsLoadingQueues] = useState(true);
+
+    // Inbox lives on Dashboard so it stays mounted across Class / Home / Queue Manager
+    const [isOpenAlert, setIsOpenAlert] = useState(false);
+    const [notifications, setNotifications] = useState<NotificationWithDetails[]>([]);
+
+    useEffect(() => {
+        if (!socket) return;
+        const onCreated = (n: NotificationWithDetails) => {
+            setNotifications((prev) => [n, ...prev]);
+        };
+        socket.on('notification-created', onCreated);
+        return () => {
+            socket.off('notification-created', onCreated);
+        };
+    }, [socket]);
+
+    const refreshNotifications = useCallback(async (): Promise<NotificationWithDetails[]> => {
+        if (!userId) return [];
+        const response = await axios.get(`/api/notifications/user/${userId}`);
+        const next: NotificationWithDetails[] = response.data.notifications;
+        setNotifications(next);
+        return next;
+    }, [userId]);
+
+    const clearAllNotifications = async () => {
+        if (!userId) return;
+        await axios.delete(`/api/notifications/user/${userId}`);
+        await refreshNotifications();
+    };
+
+    useEffect(() => {
+        void refreshNotifications();
+    }, [refreshNotifications]);
 
     useEffect(() => {
         if (!isDashboardQueueManager || !userId) return;
@@ -106,9 +144,25 @@ return (
     <div className="flex w-full h-screen m-0 p-0 overflow-hidden">
         {/* Sidebar */}
         <Sidebar isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen}/>
-        <div className="flex-1 min-w-0 overflow-y-auto">
+        <div className="relative flex-1 min-w-0 overflow-y-auto">
+            {/* Fixed overlay — no layout whitespace. Home places its own bell in the title row. */}
+            {!isDashboardHome && (
+                <LuBell
+                    size={35}
+                    className="fixed top-11 right-7 z-30 cursor-pointer p-2 hover:rounded-full hover:bg-gray-100 hover:opacity-80 sm:right-9 md:right-11 lg:right-15"
+                    onClick={() => setIsOpenAlert((prev) => !prev)}
+                />
+            )}
+            {isOpenAlert && (
+                <NotificationPanel
+                    notifications={notifications}
+                    onClearAll={clearAllNotifications}
+                />
+            )}
             {isDashboardClass && <ClassSelector CSCEClasses={CSCEClasses} selectedClass={selectedClass} setSelectedClass={setSelectedClass}/>}
-            {isDashboardHome && <Home />}
+            {isDashboardHome && (
+                <Home onToggleNotifications={() => setIsOpenAlert((prev) => !prev)} />
+            )}
             {isDashboardQueueManager && (
                 <VerifyTA>
                     <QueueManager

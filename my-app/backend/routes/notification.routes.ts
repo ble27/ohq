@@ -9,8 +9,10 @@ import type {
     NotificationResponse,
     NotificationsClearResponse,
     NotificationsListResponse,
+    NotificationsCreateListResponse,
     NotificationType,
 } from '../../shared/types.js';
+import { getIo } from '../socket.js';
 
 const router = Router();
 
@@ -71,7 +73,12 @@ router.post('/queues/:queueId/user/:recipientId/type/:type', async (req: Request
                 type: body.type,
                 ticketId: body.ticketId ?? null,
             },
+            include: { queue: true, ticket: true }
         });
+        
+        // Send event to frontend
+        getIo().to(`user:${recipientId}`).emit('notification-created', response);
+        console.log(`[Socket] Sent notification to ${recipientId}`);
 
         const payload: NotificationResponse = {
             notification: response,
@@ -116,7 +123,13 @@ router.post('/queues/:queueId/type/close', async (req: Request, res: Response) =
             )
         );
 
-        const payload: NotificationsListResponse = {
+        // Send alert to frontend
+        for (const n of response) {
+            getIo().to(`user:${n.userId}`).emit('notification-created', n);
+          }
+
+        // Use NLRP instead of NLR due to missing queue and ticket as optional
+        const payload: NotificationsCreateListResponse= {
             notifications: response,
             message: 'SUCCESS',
         };

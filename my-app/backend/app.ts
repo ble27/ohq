@@ -13,6 +13,7 @@ import authMiddleware from './middlewares/auth.middleware.js';
 import { Server, Socket } from 'socket.io';
 import http from 'http';
 import { socketMiddleware } from './middlewares/socket.middleware.js';
+import { setIo } from './socket.js';
 
 // Socket Services helpers
 import { listActiveTickets } from './services/queue.services.js';
@@ -33,10 +34,17 @@ const io = new Server(server, {
   }
 })
 
+// Save server instance
+setIo(io);
+
 // IO = web socket server, socket = client
 io.use(socketMiddleware);
 io.on('connection', async (socket: Socket) => {
+  // from socket middleware
   const userId = (socket as any).user?.id;
+
+  // join the userId room 
+  await socket.join(`user:${userId}`);
 
   const reportSocketError = (event: string, error: unknown) => {
     const message = error instanceof Error ? error.message : 'Unexpected socket error';
@@ -56,7 +64,7 @@ io.on('connection', async (socket: Socket) => {
       await socket.join(queueId);
       const tickets = await listActiveTickets(queueId);
       io.to(queueId).emit('queue-updated', tickets);
-      console.log(`User ${socket.id} is watching room ${queueId}`);
+      console.log(`User ${userId} is watching room ${queueId}`);
     } catch (error: unknown) {
       reportSocketError('watch-queue', error);
     }
@@ -65,7 +73,7 @@ io.on('connection', async (socket: Socket) => {
   socket.on('unwatch-queue', async (queueId: string) => {
     try {
       await socket.leave(queueId);
-      console.log(`User ${socket.id} stopped watching room ${queueId}`);
+      console.log(`User ${userId} stopped watching room ${queueId}`);
     } catch (error: unknown) {
       reportSocketError('unwatch-queue', error);
     }

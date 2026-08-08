@@ -14,6 +14,7 @@ export function SocketProvider ({ children }: { children: ReactNode } ) {
             return;
         }
 
+        // Client side socket
         // Initialize connection with auth token
         const instance = io(
             import.meta.env.VITE_API_URL ?? "http://localhost:3000",

@@ -1,5 +1,5 @@
-import React, { useState } from 'react'
-import axios, { create } from 'axios'
+import React, { useEffect, useState } from 'react'
+import axios from 'axios'
 import { QueueModal } from './QueueModal'
 import type {
   NotificationResponse,
@@ -34,7 +34,7 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ CSCEClasses, selec
     const [myTicketsByQueueId, setMyTicketsByQueueId] = useState<Map<string, QueueTicket>>(
         () => new Map(),
     );
-    
+
     // Visible queues that will be displayed (will refresh every time queue changes)
     const visibleQueues = queue;
 
@@ -197,7 +197,7 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ CSCEClasses, selec
       const ticketId = myTicketsByQueueId.get(queueId)?.id as string;
       
       await createNotification(selectedQueue, 'LEAVE', ticketId);
-      
+
       setJoinedQueueIds((prev) => {
         const next = new Set(prev);
         next.delete(queueId);
