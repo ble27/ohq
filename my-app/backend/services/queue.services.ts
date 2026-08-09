@@ -15,6 +15,7 @@ export const listActiveTickets = async (queueId: string): Promise<QueueTicket[]>
       { position: 'asc' },
       { joinedAt: 'asc' }, // schema has joinedAt, not createdAt
     ],
+    include: { student: true }
   });
 };
 

@@ -1,6 +1,7 @@
 import { useState, useEffect, type ReactNode } from 'react'
 import type { QueueTicket } from '../../../shared/types'
 import axios from 'axios'
+import { MapPin } from 'lucide-react'
 
 interface QueueTicketProps {
     ticket: QueueTicket
@@ -8,46 +9,41 @@ interface QueueTicketProps {
     taName?: string
     className?: string
     footer?: ReactNode
+    onLeave?: (ticket: QueueTicket) => void | Promise<void>
 }
 
-const formatJoinedAt = (joinedAt: string | Date) => {
+const formatJoinedDate = (joinedAt: string | Date) => {
     const date = new Date(joinedAt)
-    if (Number.isNaN(date.getTime())) return String(joinedAt)
-
-    return date.toLocaleString('en-US', {
-        dateStyle: 'medium',
-        timeStyle: 'short',
-    })
+    if (Number.isNaN(date.getTime())) return '—'
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }).toUpperCase()
 }
 
-const shortId = (id: string) => id.slice(0, 8)
+const formatJoinedTime = (joinedAt: string | Date) => {
+    const date = new Date(joinedAt)
+    if (Number.isNaN(date.getTime())) return '—'
+    return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }).toUpperCase()
+}
 
-const TicketMetaRow = ({
-    label,
-    value,
-    muted = false,
-}: {
-    label: string
-    value: ReactNode
-    muted?: boolean
-}) => (
-    <div
-        className={`flex flex-wrap items-baseline gap-x-2 gap-y-0.5 break-words ${
-            muted ? 'text-gray-50/50' : 'text-white'
-        }`}
-    >
-        <span className="shrink-0 font-medium opacity-90">{label}:</span>
-        <span className="min-w-0">{value}</span>
+const shortId = (id: string) => id.slice(0, 8).toUpperCase()
+
+// Meta label (e.g. Date, Time, Status,)
+const MetaCell = ({ label, value }: { label: string; value: ReactNode }) => (
+    <div className="min-w-0">
+        <p className="text-[0.65rem] font-semibold tracking-[0.14em] text-[#e8c97a]">{label}</p>
+        <p className="mt-0.5 truncate text-sm font-medium text-white sm:text-[0.95rem]">{value}</p>
     </div>
 )
 
-const TicketGlow = () => (
+const TicketNotches = () => (
     <>
-        <div className="pointer-events-none absolute -top-10 -left-10 h-24 w-24 rounded-lg bg-red-500 blur-3xl sm:h-32 sm:w-32" />
-        <div className="pointer-events-none absolute -top-20 -left-20 h-20 w-20 rounded-lg bg-white/30 blur-3xl sm:h-25 sm:w-25" />
-        <div className="pointer-events-none absolute -right-10 -bottom-10 h-24 w-24 rounded-lg bg-red-500 blur-3xl sm:h-32 sm:w-32" />
-        <div className="pointer-events-none absolute -top-20 -right-20 h-24 w-24 rounded-full bg-black blur-3xl sm:h-32 sm:w-32" />
-        <div className="pointer-events-none absolute -bottom-15 -left-15 h-24 w-24 rounded-full bg-black blur-3xl sm:h-32 sm:w-32" />
+        {[12, 36, 60, 84].map((top) => (
+            <span
+                key={top}
+                aria-hidden
+                className="pointer-events-none absolute -left-2 z-20 size-4 rounded-full bg-white"
+                style={{ top: `${top}%`, transform: 'translateY(-50%)' }}
+            />
+        ))}
     </>
 )
 
@@ -57,70 +53,174 @@ export const QueueTicketComp = ({
     taName: taNameProp,
     className = '',
     footer,
+    onLeave,
 }: QueueTicketProps) => {
-    const [currentDate] = useState(() => new Date())
-    const readableDate = currentDate.toLocaleString('en-US', {
-        dateStyle: 'medium',
-        timeStyle: 'short',
-    })
     const [fetchedLocation, setFetchedLocation] = useState('')
     const [fetchedTaName, setFetchedTaName] = useState('')
+    const [fetchedTaId, setFetchedTaId] = useState('')
+    const [isLeaving, setIsLeaving] = useState(false)
 
     useEffect(() => {
-        if (locationProp != null && taNameProp != null) return
+        let cancelled = false
 
         const fetchNameLocationFromQueueID = async () => {
-            const queueId = ticket.queueId
             try {
-                const response = await axios.get(`/api/queues/${queueId}`)
-                if (!response.data?.queue) {
-                    console.log('No queue fetched back from fetchNameLocationFromQueueID')
+                const response = await axios.get(`/api/queues/${ticket.queueId}`)
+                const queue = response.data?.queue
+                if (!queue || cancelled) {
+                    if (!queue) console.log('No queue fetched back from fetchNameLocationFromQueueID')
                     return
                 }
                 if (locationProp == null) {
-                    setFetchedLocation(response.data.queue.location as string)
+                    setFetchedLocation(queue.location as string)
                 }
                 if (taNameProp == null) {
-                    setFetchedTaName(response.data.queue.taId as string)
+                    setFetchedTaName(
+                        (queue.ta?.name as string) || (queue.ta?.email as string) || '',
+                    )
+                }
+                if (queue.taId) {
+                    setFetchedTaId(queue.taId as string)
                 }
             } catch (error) {
-                console.log('Failed to fetch queue location/TA', error)
+                if (!cancelled) console.log('Failed to fetch queue location/TA', error)
             }
         }
 
         void fetchNameLocationFromQueueID()
+        return () => {
+            cancelled = true
+        }
     }, [ticket.queueId, locationProp, taNameProp])
 
     const location = locationProp ?? fetchedLocation
     const taName = taNameProp ?? fetchedTaName
+    const canLeave = ticket.status === 'WAITING'
+    const positionLabel =
+        ticket.position != null ? `#${ticket.position}` : ticket.status === 'HELPING' ? 'NOW' : '—'
+
+    const handleLeave = async () => {
+        if (!canLeave || isLeaving) return
+        setIsLeaving(true)
+        try {
+            // Notify TA while ticket still exists, then soft-leave (LEFT)
+            if (fetchedTaId) {
+                await axios.post(
+                    `/api/notifications/queues/${ticket.queueId}/user/${fetchedTaId}/type/LEAVE`,
+                    { ticketId: ticket.id },
+                )
+            }
+            await axios.patch(`/api/queueticket/${ticket.id}`, { status: 'LEFT' })
+            await onLeave?.(ticket)
+        } catch (error) {
+            console.log('Failed to leave queue from Home', error)
+        } finally {
+            setIsLeaving(false)
+        }
+    }
 
     return (
         <article
             className={[
-                'relative flex h-full min-h-[12rem] w-full flex-col justify-between overflow-hidden',
-                'rounded-2xl border border-white/15 bg-red-950/90 text-white',
-                'px-4 py-4 text-sm sm:min-h-[14rem] sm:px-5 sm:py-5 sm:text-base lg:min-h-[15rem] lg:text-lg',
+                'group relative flex w-full overflow-hidden text-white',
+                'rounded-xl shadow-[0_12px_40px_-12px_rgba(80,0,20,0.55)]',
+                'bg-[#6b1024]',
+                'min-h-[9.5rem] sm:min-h-[10.5rem]',
                 className,
             ]
                 .filter(Boolean)
                 .join(' ')}
         >
-            <TicketGlow />
+            <TicketNotches />
 
-            <div className="relative z-10 flex min-w-0 flex-col gap-1.5 sm:gap-2">
-                <TicketMetaRow
-                    label="Date"
-                    value={formatJoinedAt(ticket.joinedAt) || readableDate}
-                />
-                <TicketMetaRow label="Ticket ID" value={shortId(ticket.id)} />
-                <TicketMetaRow label="Status" value={ticket.status} />
-                <TicketMetaRow label="Location" value={location || '—'} muted />
-                <TicketMetaRow label="TA" value={taName || '—'} muted />
+            {/* Gold inner frame */}
+            <div className="pointer-events-none absolute inset-2 rounded-lg border border-[#e8c97a]/40 sm:inset-2.5" />
+
+            {/* Left stub — position */}
+            <div className="relative z-10 flex w-14 shrink-0 flex-col items-center justify-center border-r border-dashed border-[#e8c97a]/35 px-1 sm:w-16 xl:w-14">
+                <p className="text-[0.6rem] font-semibold tracking-[0.18em] text-[#e8c97a]">POS</p>
+                <p
+                    className="mt-1 text-xl font-bold leading-none text-[#f3e6c0] sm:text-2xl"
+                    style={{ fontFamily: 'Georgia, "Times New Roman", serif' }}
+                >
+                    {positionLabel}
+                </p>
             </div>
 
-            {footer ? (
-                <div className="relative z-10 mt-3 w-full min-w-0 sm:mt-4">{footer}</div>
-            ) : null}
+            {/* Main body */}
+            <div className="relative z-10 flex min-w-0 flex-1 flex-col justify-between gap-2.5 px-2.5 py-3 sm:gap-3 sm:px-3 sm:py-3.5">
+                <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-2">
+                    <div className="min-w-0">
+                        <p className="text-[0.65rem] font-semibold tracking-[0.2em] text-white/80">
+                            OFFICE HOURS
+                        </p>
+                        <h3
+                            className="mt-0.5 text-lg font-bold tracking-wide text-[#f3e6c0] sm:text-xl"
+                            style={{ fontFamily: 'Georgia, "Times New Roman", serif' }}
+                        >
+                            QUEUE TICKET
+                        </h3>
+                    </div>
+                    <div className="flex flex-wrap gap-3 sm:gap-4">
+                        <MetaCell label="DATE" value={formatJoinedDate(ticket.joinedAt)} />
+                        <MetaCell label="TIME" value={formatJoinedTime(ticket.joinedAt)} />
+                        <MetaCell label="STATUS" value={ticket.status} />
+                    </div>
+                </div>
+
+                <div className="border-t border-dotted border-[#e8c97a]/35" />
+
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                    <MetaCell label="TA" value={taName || '—'} />
+                    <MetaCell
+                        label="LOCATION"
+                        value={
+                            <span className="inline-flex max-w-full items-center gap-1">
+                                <MapPin className="size-3.5 shrink-0 text-[#e8c97a]" aria-hidden />
+                                <span className="truncate">{location || '—'}</span>
+                            </span>
+                        }
+                    />
+                    <MetaCell label="TICKET" value={shortId(ticket.id)} />
+                </div>
+
+                {footer ? <div className="min-w-0">{footer}</div> : null}
+
+                {/* Mobile leave — stub is tight on small screens */}
+                {canLeave && (
+                    <button
+                        type="button"
+                        onClick={() => void handleLeave()}
+                        disabled={isLeaving}
+                        className="mt-1 w-full rounded-md border border-[#e8c97a]/50 bg-[#4a0b18] px-3 py-1.5 text-xs font-semibold tracking-widest text-[#f3e6c0] transition hover:bg-[#3a0812] disabled:opacity-60 sm:hidden"
+                    >
+                        {isLeaving ? 'LEAVING…' : 'LEAVE'}
+                    </button>
+                )}
+            </div>
+
+            {/* Right tear-off stub — desktop leave (hidden below sm; narrow at xl 3-up) */}
+            <div className="relative z-10 hidden w-14 shrink-0 flex-col items-center justify-center border-l border-dashed border-[#e8c97a]/35 px-1.5 sm:flex sm:w-16 xl:w-14">
+                {canLeave ? (
+                    <button
+                        type="button"
+                        onClick={() => void handleLeave()}
+                        disabled={isLeaving}
+                        className="rounded-md border border-[#e8c97a]/55 bg-[#4a0b18] px-2.5 py-6 text-[0.7rem] font-bold tracking-[0.2em] text-[#f3e6c0] transition hover:bg-[#3a0812] hover:text-white disabled:opacity-60"
+                        style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}
+                        aria-label={`Leave queue ticket ${shortId(ticket.id)}`}
+                    >
+                        {isLeaving ? '…' : 'LEAVE'}
+                    </button>
+                ) : (
+                    <p
+                        className="text-[0.65rem] font-semibold tracking-[0.18em] text-[#e8c97a]/70"
+                        style={{ writingMode: 'vertical-rl' }}
+                    >
+                        ADMIT ONE
+                    </p>
+                )}
+            </div>
         </article>
     )
 }

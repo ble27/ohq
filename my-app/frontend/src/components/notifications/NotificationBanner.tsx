@@ -1,9 +1,9 @@
 import type { ReactNode } from 'react'
-import type { NotificationType, Queue, QueueTicket } from '@shared/types'
+import type { NotificationType, Queue, QueueTicket, QueueTicketWithStudent, QueueWithTA } from '@shared/types'
 
 interface NotificationBannerProps {
-    queue: Queue
-    ticket?: QueueTicket | null
+    queue: QueueWithTA | null
+    ticket?: QueueTicketWithStudent | null
     type: NotificationType
     time?: Date | string // when the notification was created
     message?: string
@@ -31,9 +31,9 @@ export const NotificationBanner = ({
     }
 
     const defaultMessages: Record<NotificationType, string> = {
-        JOIN: `Student ${ticket?.id} joined your queue`,
-        LEAVE: `Student ${ticket?.id} left your queue`,
-        ASSIST: `Please head to ${queue.location}. TA ${queue.taId} is ready to assist you.`,
+        JOIN: `Student ${ticket?.student?.name} joined your queue`,
+        LEAVE: `Student ${ticket?.student?.name} left your queue`,
+        ASSIST: `Please head to ${queue?.location}. TA ${queue?.ta?.name} is ready to assist you.`,
         CLOSE: 'Queue is closing in 5 mins.',
     }
 

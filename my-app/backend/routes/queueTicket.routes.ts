@@ -10,6 +10,7 @@ import type {
     QueueTicket,
     QueueTicketResponse,
     QueueTicketsListResponse,
+    QueueTicketWithStudent,
 } from '../../shared/types.js';
 
 import { CreateQueueTicketValidationSchema } from '../schemas/queueTicket.schema.js';
@@ -48,8 +49,9 @@ router.get('/queues/:queueId', async (req: Request, res: Response): Promise<void
             res.status(400).json({ message: 'Queue ID is required' });
             return;
         }
+        // Also return students from include 
         const ticketsResponse = await listActiveTickets(queueId);
-        const ticketsArray: QueueTicket[] = ticketsResponse;
+        const ticketsArray: QueueTicketWithStudent[] = ticketsResponse;
 
         console.log(`[QUEUE TICKET] Successfully sent ticket objects: ${JSON.stringify(ticketsArray, null, 2)}`)
 
@@ -82,7 +84,8 @@ router.get('/queues/:queueId/status/completed', async (req: Request, res: Respon
         }
         const ticketsResponse = await prisma.queueTicket.findMany({
             where: {queueId, status: 'COMPLETED'}, 
-            orderBy: {updatedAt: 'asc'}
+            orderBy: {updatedAt: 'asc'}, 
+            include: {student: true}
         })
 
         const ticketsArray: QueueTicket[] = ticketsResponse;
@@ -159,6 +162,7 @@ router.get('/user/:studentId', async (req: Request, res: Response): Promise<void
 
         const tickets = await prisma.queueTicket.findMany({
             where: { studentId },
+            include: { queue: { include: { ta: true } } }
         });
 
         if (!tickets) {

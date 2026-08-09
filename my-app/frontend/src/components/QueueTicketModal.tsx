@@ -1,8 +1,8 @@
-import type { QueueTicket } from '../../../shared/types'
+import type { QueueTicket, QueueTicketWithStudent } from '../../../shared/types'
 
 interface QueueTicketModalProps {
     // chronological order
-    queueTickets: QueueTicket[]
+    queueTickets: QueueTicketWithStudent[]
 }
 
 const formatJoinedAt = (joinedAt: string | Date) => {
@@ -33,7 +33,8 @@ export const QueueTicketModal = ({ queueTickets }: QueueTicketModalProps) => {
 
                     <div className="min-w-0">
                         <p className="truncate text-sm font-medium text-gray-800">
-                            {shortId(qt.id)}
+                            
+                            {qt.student?.name ?? qt.student?.email}
                         </p>
                         <p className="text-xs text-gray-500">
                             Joined {formatJoinedAt(qt.joinedAt)}

@@ -41,6 +41,8 @@ export const Dashboard = () => {
 
     // Inbox lives on Dashboard so it stays mounted across Class / Home / Queue Manager
     const [isOpenAlert, setIsOpenAlert] = useState(false);
+
+    // This include ticket.student and queue.ta from forward relations
     const [notifications, setNotifications] = useState<NotificationWithDetails[]>([]);
 
     useEffect(() => {

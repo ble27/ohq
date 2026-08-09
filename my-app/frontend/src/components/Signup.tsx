@@ -1,17 +1,19 @@
 import { useEffect, useState } from "react";
-import { signUp } from "../services/authService";
+import { PENDING_CONFIRM_EMAIL_KEY, signUp } from "../services/authService";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContextProvider";
 import { Link } from "react-router-dom";
 import { LuArrowLeft } from "react-icons/lu";
+import filter from 'leo-profanity'
 
 export const Signup = () => {
     const [email, setEmail] = useState("");
-    const [error, setError] = useState("");
     const [password, setPassword] = useState("");
+    const [name, setName] = useState("");
+    const [error, setError] = useState("");
     const [submitting, setSubmitting] = useState(false);
     const navigate = useNavigate();
-    const { user, loading } = useAuth();
+    const { user, loading, refreshUser } = useAuth();
 
     useEffect(() => {
         if (!loading && user) {
@@ -20,12 +22,27 @@ export const Signup = () => {
     }, [user, loading, navigate]);
 
     const handleSignup = async () => {
+        setError("");
         setSubmitting(true);
         try {
-            await signUp(email, password);
-            navigate('/dashboard/home');
+            if (filter.check(name)) {
+                alert('Please remove inappropriate language from Full Name field');
+                return;
+            }
+            const result = await signUp(email, password, name);
 
-        } catch(error: unknown) {
+            if (result.needsConfirmation) {
+                const confirmEmail = result.email || email;
+                sessionStorage.setItem(PENDING_CONFIRM_EMAIL_KEY, confirmEmail);
+                // Attach state which can be extracted via location.state
+                navigate('/check-email', { state: { email: confirmEmail } });
+                return;
+            }
+
+            // Confirm-email disabled in Supabase — cookies already set by signup
+            await refreshUser();
+            navigate('/dashboard/home');
+        } catch (error: unknown) {
             const message = error instanceof Error ? error.message : 'Sign up failed';
             setError(message);
             console.log(`Failed to signup ${error}`);
@@ -39,27 +56,40 @@ export const Signup = () => {
         <div className="flex flex-col items-center justify-center w-screen h-screen gap-3 bg-black/90 text-white">
             <div className='w-screen max-w-[684px]'>
                 <div className='absolute top-5 left-5'>
-                    <LuArrowLeft 
+                    <LuArrowLeft
                         onClick={() => {navigate('/')}}
                         size={25}
-                        className='hover:opacity-80'    
+                        className='hover:opacity-80'
                     />
                 </div>
-                
-                <div className='relative shadow-inner flex flex-col 
+
+                <div className='relative shadow-inner flex flex-col
                     w-full p-10 justify-center rounded-lg'>
                     <h1 className='items-start font-medium text-2xl mb-8'>Create your account today</h1>
+                    <div className='mb-5 flex flex-col'>
+                        <label htmlFor="full_name" className='mb-2'>Full Name</label>
+                        <input
+                        type="text"
+                        id="full_name"
+                        placeholder="First Last"
+                        value={name}
+                        onChange={e => setName(e.target.value)}
+                        className="border rounded px-2 py-2 mt-0 outline-none border-gray-500/50 border-[1.5px]"
+                        />
+                    </div>
+
                     <div className='mb-5 flex flex-col'>
                         <label htmlFor="email" className='mb-2'>Email</label>
                         <input
                         type="email"
                         id="email"
-                        placeholder="my123@email.com"
+                        placeholder="johndoe@email.com"
                         value={email}
                         onChange={e => setEmail(e.target.value)}
                         className="border rounded px-2 py-2 mt-0 outline-none border-gray-500/50 border-[1.5px]"
                         />
                     </div>
+
                     <div className='mb-8 flex flex-col'>
                         <label htmlFor="password" className='mb-2'>Password</label>
                         <input
@@ -70,7 +100,7 @@ export const Signup = () => {
                         className="border rounded px-3 py-2 outline-none border-gray-500/50 border-[1.5px]"
                         />
                     </div>
-                    
+
                     <button
                         onClick={handleSignup}
                         disabled={submitting}
@@ -83,6 +113,6 @@ export const Signup = () => {
                 </div>
             </div>
         </div>
-        </>    
+        </>
     )
 }

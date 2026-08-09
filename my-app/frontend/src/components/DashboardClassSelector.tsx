@@ -9,6 +9,7 @@ import type {
   QueuesListResponse,
   QueueTicketResponse,
   QueueTicketsListResponse,
+  QueueWithTA,
 } from '@shared/types';
 import { Button } from './ui/button';
 import { useAuth } from '@/context/AuthContextProvider';
@@ -24,7 +25,7 @@ interface ClassSelectorProps {
 
 export const ClassSelector: React.FC<ClassSelectorProps> = ({ CSCEClasses, selectedClass, setSelectedClass }) => { 
     const { user } = useAuth();
-    const [queue, setQueue] = useState<Queue[]>([]);
+    const [queue, setQueue] = useState<QueueWithTA[]>([]);
     // Load a modal only for selected queue
     const [selectedQueue, setSelectedQueue] = useState<Queue | null>(null);
     const [isModalOpen, setModalOpen] = useState(false);
@@ -87,7 +88,7 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ CSCEClasses, selec
         }
     }
 
-    // fetch queues are not currently fetching the correct selected class
+    // Fetch queue based on course ID
     const fetchQueue = async (): Promise<void> => { 
         try { 
             // selectedClass = course code not courseId
@@ -106,6 +107,7 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ CSCEClasses, selec
             }
             const activeQueuesList: Queue[] = response.data.queues;
 
+            // Set only active queues from course code
             setQueue((prevQueue) => {
                 // Extract new items that do not exist in the current queue and match the new course idea
                 const uniqueNewItems = activeQueuesList.filter(
@@ -116,7 +118,6 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ CSCEClasses, selec
                 // Return original array if no new unique items exist
                 if (uniqueNewItems.length === 0) return prevQueue;
                 return [...prevQueue, ...uniqueNewItems];
-
             });
             // Rebuild Join/View from DB so Enter doesn't show Join after an existing membership
             await syncJoinedQueuesFromServer();
@@ -264,7 +265,8 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ CSCEClasses, selec
                 // Actual Queue card
                 <div key={q.id} className='relative p-3 flex border rounded-lg bg-gray-50 flex justify-between border-gray-300 border-1 shadow-inner'>
                   <div className='flex flex-col h-40 mb-2'>
-                    <p className='font-semibold text-sm'>Course: {q.courseId}</p>
+                    <p className='font-semibold text-sm'>TA: {q.ta?.name ?? q.ta?.email}</p>
+                    <p className='font-semibold text-sm'>Course: {q.course?.code}</p>
                     <p className='text-xs text-gray-500'>Location: {q.location}</p>
 
                     <div className='absolute bottom-2 right-2 flex flex-row gap-2'>

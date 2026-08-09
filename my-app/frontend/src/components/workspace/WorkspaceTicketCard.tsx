@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react'
-import type { QueueTicket } from '@shared/types'
+import type { QueueTicket, QueueTicketWithStudent } from '@shared/types'
 
 interface WorkspaceTicketCardProps {
-    ticket: QueueTicket
+    ticket: QueueTicketWithStudent
     accent?: 'next' | 'session' | 'done'
     action?: ReactNode
     time?: number
@@ -17,8 +17,6 @@ const formatJoinedAt = (joinedAt: string | Date) => {
         minute: '2-digit',
     })
 }
-
-const shortId = (id: string) => id.slice(0, 8)
 
 const accentStyles = {
     next: 'border-blue-200 bg-blue-50/60',
@@ -48,7 +46,7 @@ export const WorkspaceTicketCard = ({
                             </span>
                         )}
                         <p className="truncate text-sm font-medium text-slate-900">
-                            {shortId(ticket.id)}
+                            {ticket.student?.name ?? ticket.student?.email}
                         </p>
                     </div>
                     <p className="mt-0.5 text-xs text-slate-500">

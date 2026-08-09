@@ -4,7 +4,6 @@ import { LuHouse, LuLibraryBig, LuSettings, LuPanelLeft, LuLogOut, LuPackage } f
 import { signOut } from '@/services/authService';
 import { useAuth } from '@/context/AuthContextProvider';
 
-
 export const MOBILE_BREAKPOINT = 640;
 
 interface SideBarProps {
@@ -28,7 +27,7 @@ export const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }: SideBarProps ) => {
       setIsSidebarOpen(false);
     }
   }
-
+  
   // Sync open/closed with viewport; always collapse below breakpoint
   useEffect(() => {
     const handleResize = () => {

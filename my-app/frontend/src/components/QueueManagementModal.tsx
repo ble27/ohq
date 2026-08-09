@@ -1,4 +1,4 @@
-import type { Queue, QueueTicket } from '@shared/types';
+import type { Queue, QueueTicket, QueueTicketWithStudent } from '@shared/types';
 import { useState, useEffect } from 'react'
 import axios from 'axios';
 import { LuX } from 'react-icons/lu';
@@ -9,7 +9,7 @@ import type { NotificationType } from '@shared/types';
 
 interface QueueManagementModalProps {
     queue: Queue | null
-    tickets: QueueTicket[]
+    tickets: QueueTicketWithStudent[]
     setTickets: (value: QueueTicket[]) => void
     setIsViewingManagementModal: (value : boolean) => void
     onUpdateQueue: (updated: Queue) => void | Promise<void>
@@ -131,10 +131,12 @@ export const QueueManagementModal = ({
                 }
                 didUpdate = true;
                 console.log('SUCCESSFULLY CHANGED queue status');
-                // Closing queue
+
+                // Closing queue will delete all active tickets in the queue
                 if (!isQueueOpen) {
                     console.log('Calling onQueueClosing here');
                     onQueueClosing();
+
                 }
             } catch (error) {
                 console.log('Unable to change queue status', error);

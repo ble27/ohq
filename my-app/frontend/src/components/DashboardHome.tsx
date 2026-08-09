@@ -1,9 +1,13 @@
 import { useState, useEffect } from 'react'
 import axios from 'axios'
-import type { QueueTicket } from '@shared/types'
+import type { QueueTicket, QueueWithTA } from '@shared/types'
 import { QueueTicketComp } from './QueueTicketComp'
 import { useAuth } from '@/context/AuthContextProvider'
 import { LuBell } from 'react-icons/lu'
+
+const ACTIVE_TICKET_STATUSES = new Set(['WAITING', 'HELPING'])
+
+type HomeTicket = QueueTicket & { queue?: QueueWithTA }
 
 interface HomeProps {
     onToggleNotifications?: () => void
@@ -11,7 +15,7 @@ interface HomeProps {
 
 export const Home = ({ onToggleNotifications }: HomeProps) => {
     // Home owns the tickets for the current user
-    const [tickets, setTickets] = useState<QueueTicket[]>([])
+    const [tickets, setTickets] = useState<HomeTicket[]>([])
     const { user } = useAuth()
 
     useEffect(() => {
@@ -27,10 +31,18 @@ export const Home = ({ onToggleNotifications }: HomeProps) => {
                 return
             }
 
-            setTickets(response.data.tickets)
+            setTickets(
+                (response.data.tickets as HomeTicket[]).filter((t) =>
+                    ACTIVE_TICKET_STATUSES.has(t.status),
+                ),
+            )
         }
         void handleActiveTickets()
     }, [user?.id]) // rerun when user.id changes
+
+    const handleLeaveTicket = (ticket: QueueTicket) => {
+        setTickets((prev) => prev.filter((t) => t.id !== ticket.id))
+    }
 
     return (
         <div className="flex min-h-full w-full flex-col px-4 py-8 sm:px-6 md:px-8 lg:pr-12">
@@ -49,9 +61,16 @@ export const Home = ({ onToggleNotifications }: HomeProps) => {
                 </span>
             )}
 
-            <div className="mt-8 grid grid-cols-1 gap-4 sm:mt-10 sm:gap-6 md:grid-cols-2 xl:grid-cols-3">
+            {/* 1 col < lg; 2 from lg (~content ≥720px with sidebar); 3 from xl */}
+            <div className="mt-8 grid grid-cols-1 gap-5 sm:mt-10 sm:gap-6 lg:grid-cols-2 xl:grid-cols-3">
                 {tickets.map((ticket) => (
-                    <QueueTicketComp key={ticket.id} ticket={ticket} />
+                    <QueueTicketComp
+                        key={ticket.id}
+                        ticket={ticket}
+                        location={ticket.queue?.location}
+                        taName={ticket.queue?.ta?.name ?? ticket.queue?.ta?.email}
+                        onLeave={handleLeaveTicket}
+                    />
                 ))}
             </div>
         </div>

@@ -25,14 +25,14 @@ router.get('/user/:userId', async (req, res) => {
             return;
         }
 
-        // Get both ticket and queue referenced objects
+        // Nested includes: ticket alone has no student; queue alone has no ta
         const notifications = await prisma.notification.findMany({
             where: { userId, clearedAt: null },
             orderBy: { createdAt: 'desc' },
             include: {
-                ticket: true,
-                queue: true
-            }
+                ticket: { include: { student: true } },
+                queue: { include: { ta: true } },
+            },
         });
         const body: NotificationsListResponse = {
             notifications,
@@ -73,10 +73,13 @@ router.post('/queues/:queueId/user/:recipientId/type/:type', async (req: Request
                 type: body.type,
                 ticketId: body.ticketId ?? null,
             },
-            include: { queue: true, ticket: true }
+            include: {
+                ticket: { include: { student: true } },
+                queue: { include: { ta: true } },
+            },
         });
-        
-        // Send event to frontend
+
+        // Send event to frontend (same nested shape as GET inbox)
         getIo().to(`user:${recipientId}`).emit('notification-created', response);
         console.log(`[Socket] Sent notification to ${recipientId}`);
 
@@ -119,6 +122,10 @@ router.post('/queues/:queueId/type/close', async (req: Request, res: Response) =
             recipientIds.map((userId) =>
                 prisma.notification.create({
                     data: { queueId, type, userId },
+                    include: {
+                        ticket: { include: { student: true } },
+                        queue: { include: { ta: true } },
+                    },
                 })
             )
         );
@@ -126,7 +133,7 @@ router.post('/queues/:queueId/type/close', async (req: Request, res: Response) =
         // Send alert to frontend
         for (const n of response) {
             getIo().to(`user:${n.userId}`).emit('notification-created', n);
-          }
+        }
 
         // Use NLRP instead of NLR due to missing queue and ticket as optional
         const payload: NotificationsCreateListResponse= {

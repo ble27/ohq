@@ -16,7 +16,9 @@ const router: Router = Router();
 // GET /api/queues — list all queues that are open
 router.get('/', async (req: Request, res: Response): Promise<void> => {
     try {
-        const queues = await prisma.queue.findMany();
+        const queues = await prisma.queue.findMany({
+            where: { isOpen: true}
+        });
         const body: QueuesListResponse = { queues, message: 'SUCCESS' };
 
         console.log(`[QUEUE] Successfully sent queue objects: ${JSON.stringify(body.queues, null, 2)}`)
@@ -39,8 +41,11 @@ router.get('/:id', async (req: Request, res: Response): Promise<void> => {
             res.status(400).json({ message: 'Queue ID is required' });
             return;
         }
-
-        const queue = await prisma.queue.findUnique({ where: { id: queueId } });
+        // Return the TA of the queue
+        const queue = await prisma.queue.findUnique({ 
+            where: { id: queueId } , 
+            include: { ta: true }
+        });
         if (!queue) {
             res.status(404).json({ message: 'Queue Not Found!' });
             return;
@@ -63,8 +68,10 @@ router.get('/course/:courseId', async (req: Request, res: Response): Promise<voi
     try { 
         const courseId = req.params.courseId as string; 
         const activeQueues = await prisma.queue.findMany({ 
-            where: { courseId, isOpen: true } 
+            where: { courseId, isOpen: true }, 
+            include: { ta: true , course: true} 
         });
+        // fix this
         const body: QueuesListResponse = {
             queues: activeQueues,
             message: 'SUCCESS'
@@ -80,6 +87,7 @@ router.get('/course/:courseId', async (req: Request, res: Response): Promise<voi
 });
 
 // POST /api/queues — create a queue
+// Get requested course code and course ID
 router.post('/', async (req: Request, res: Response): Promise<void> => {
     try {
         const requestedCourse = req.body?.courseId;

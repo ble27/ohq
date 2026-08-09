@@ -1,6 +1,6 @@
 import { useState, useEffect, type FormEvent } from 'react'
 import { MapPin, Plus, Settings2, Trash2 } from 'lucide-react'
-import type { Course, Queue, QueueTicket, QueueTicketsListResponse } from '@shared/types'
+import type { Course, Queue, QueueTicket, QueueTicketsListResponse, QueueTicketWithStudent } from '@shared/types'
 import { useAuth } from '@/context/AuthContextProvider'
 import { DeleteConfirmation } from './DeleteConfirmationModal'
 import { QueueManagementModal } from './QueueManagementModal'
@@ -42,7 +42,7 @@ export const QueueManager = ({
     // TA workspace
     const [isViewingManagementModal, setIsViewingManagementModal] = useState(false);
     const [currentQueue, setCurrentQueue] = useState<Queue | null>(null);
-    const [tickets, setTickets] = useState<QueueTicket[]>([]);
+    const [tickets, setTickets] = useState<QueueTicketWithStudent[]>([]);
 
     const { user } = useAuth();
 

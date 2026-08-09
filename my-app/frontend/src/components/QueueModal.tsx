@@ -6,12 +6,13 @@
 import { useEffect, useState } from 'react'
 import type { Queue, QueueTicket, QueueTicketsListResponse } from '../../../shared/types'
 import { QueueTicketModal } from './QueueTicketModal';
+import type { QueueTicketWithStudent } from '../../../shared/types';
 import axios from 'axios'
 import { useSocket } from '@/context/SocketProvider';
 
 interface ModalProps {
     queue: Queue
-    ticket: QueueTicket | null
+    ticket: QueueTicketWithStudent | null
     isModalOpen: boolean;
     isViewingQueue: boolean;
     joinedQueueIds: Set<string>
@@ -30,7 +31,7 @@ export const QueueModal = ({
     onLeaveQueue,
 }: ModalProps) => {
     // All the tickets for each queue
-    const [tickets, setTickets] = useState<QueueTicket[]>([]);
+    const [tickets, setTickets] = useState<QueueTicketWithStudent[]>([]);
     const curTicket = ticket;
 
     const socket = useSocket();
@@ -61,7 +62,7 @@ export const QueueModal = ({
 
         const queueId = queue.id;
         let cancelled = false;
-        const handleQueueUpdate = (updatedTickets: QueueTicket[]) => {
+        const handleQueueUpdate = (updatedTickets: QueueTicketWithStudent[]) => {
             if (!cancelled) {
                 setTickets(updatedTickets);
             }

@@ -6,11 +6,14 @@ import { AuthContextProvider } from './context/AuthContextProvider'
 import { SocketProvider } from './context/SocketProvider'
 import { Signin } from './components/Signin'
 import { Signup } from './components/Signup'
+import { EmailConfirmation } from './components/EmailConfirmation'
+import { AuthCallback } from './components/AuthCallback'
+
 import './index.css'
 
 function App() {
   return (
-    <AuthContextProvider>  
+    <AuthContextProvider>
       <SocketProvider>
         <BrowserRouter>
           <Routes>
@@ -23,8 +26,9 @@ function App() {
               }
             />
             <Route path='/signin' element={<Signin />} />
-            <Route path='signup' element={<Signup />} />
-
+            <Route path='/signup' element={<Signup />} />
+            <Route path='/check-email' element={<EmailConfirmation />} />
+            <Route path='/auth/callback' element={<AuthCallback />} />
             {/* Dashboard routes — QueueManager is gated by VerifyTA inside Dashboard */}
             <Route path='/dashboard' element={<Dashboard />} />
             <Route path='/dashboard/home' element={<Dashboard />} />

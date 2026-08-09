@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { LuCheck } from 'react-icons/lu'
-import type { NotificationType, Queue, QueueTicket } from '@shared/types'
+import type { NotificationType, Queue, QueueTicket, QueueTicketWithStudent } from '@shared/types'
 import { Button } from '../ui/button'
 import { WorkspaceColumn } from './WorkspaceColumn'
 import { WorkspaceTicketCard } from './WorkspaceTicketCard'
@@ -9,7 +9,7 @@ import axios from 'axios'
 
 interface QueueWorkspaceProps {
     queue?: Queue | null
-    tickets: QueueTicket[]
+    tickets: QueueTicketWithStudent[]
     completedTickets: QueueTicket[]
     onUpdateTickets: () => void | Promise<void>
     onUpdateCompleted: () => void | Promise<void>

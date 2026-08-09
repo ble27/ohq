@@ -1,16 +1,23 @@
 import { useEffect, useState } from "react";
-import { signIn } from "../services/authService";
-import { useNavigate } from "react-router-dom";
+import { PENDING_CONFIRM_EMAIL_KEY, signIn } from "../services/authService";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContextProvider";
 import { LuArrowLeft } from "react-icons/lu";
 
 export const Signin = () => {
     const [email, setEmail] = useState("");
     const [error, setError] = useState("");
+    const [info, setInfo] = useState("");
     const [password, setPassword] = useState("");
     const [submitting, setSubmitting] = useState(false);
     const navigate = useNavigate();
+    const location = useLocation();
     const { user, loading, refreshUser } = useAuth();
+
+    useEffect(() => {
+        const message = (location.state as { message?: string } | null)?.message;
+        if (message) setInfo(message);
+    }, [location.state]);
 
     useEffect(() => {
         if (!loading && user) {
@@ -23,6 +30,7 @@ export const Signin = () => {
         setSubmitting(true);
         try {
             await signIn(email, password);
+            sessionStorage.removeItem(PENDING_CONFIRM_EMAIL_KEY);
             await refreshUser();
             navigate("/dashboard/home");
         } catch (err: unknown) {
@@ -37,16 +45,17 @@ export const Signin = () => {
         <div className="flex flex-col items-center justify-center h-screen gap-3 bg-black/90 text-white">
             <div className='w-screen max-w-[684px]'>
                 <div className='absolute top-5 left-5'>
-                    <LuArrowLeft 
+                    <LuArrowLeft
                         onClick={() => {navigate('/')}}
                         size={25}
-                        className='hover:opacity-80'    
+                        className='hover:opacity-80'
                     />
                 </div>
-                
-                <div className='relative shadow-inner flex flex-col 
+
+                <div className='relative shadow-inner flex flex-col
                     w-full p-10 justify-center rounded-lg'>
                     <h1 className='items-start font-medium text-2xl mb-8'>Login</h1>
+                    {info && <p className="mb-4 text-sm text-emerald-400">{info}</p>}
                     <div className='mb-5 flex flex-col'>
                         <label htmlFor="email" className='mb-2'>Email</label>
                         <input
@@ -68,7 +77,7 @@ export const Signin = () => {
                         className="border rounded px-3 py-2 outline-none border-gray-500/50 border-[1.5px]"
                         />
                     </div>
-                    
+
                     <button
                         onClick={handleSignin}
                         disabled={submitting}
@@ -76,11 +85,11 @@ export const Signin = () => {
                     >
                     {submitting ? "Signing in…" : "Sign In"}
                     </button>
-                    
+
                     {error && <p className="text-red-500">{error}</p>}
                 </div>
             </div>
-            
+
         </div>
     )
 };

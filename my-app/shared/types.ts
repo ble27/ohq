@@ -35,6 +35,11 @@ export interface Queue {
     updatedAt: string | Date;
 }
 
+export interface QueueWithTA extends Queue {
+    ta?: User
+    course?: Course
+}
+
 export interface QueueTicket {
     id: string;
     studentId: string;
@@ -45,6 +50,9 @@ export interface QueueTicket {
     updatedAt: string | Date;
 }
 
+export interface QueueTicketWithStudent extends QueueTicket {
+    student?: User
+}
 export interface CourseTA {
     id: string;
     courseId: string;
@@ -55,7 +63,7 @@ export interface CourseTA {
 export interface User {
     id: string;
     email: string;
-    name: string | null;
+    name: string; // name
     role: Role;
 }
 
@@ -89,7 +97,7 @@ export interface QueueResponse {
 }
 
 export interface QueuesListResponse {
-    queues: Queue[];
+    queues: QueueWithTA[];
     message: string;
 }
 
@@ -137,15 +145,15 @@ export interface QueueTicketResponse {
 }
 
 export interface QueueTicketsListResponse {
-    tickets: QueueTicket[];
+    tickets: QueueTicketWithStudent[];
     message: string;
 }
 
 // --- Notification responses ---
-// Extension for GET method
+// Extension for GET method including forward relations
 export interface NotificationWithDetails extends Notification {
-    ticket: QueueTicket | null;
-    queue: Queue
+    ticket: QueueTicketWithStudent | null
+    queue: QueueWithTA | null
 }
 
 export interface NotificationResponse {

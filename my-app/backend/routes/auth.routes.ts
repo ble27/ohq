@@ -27,12 +27,18 @@ async function ensureAppUser(authUser: { id: string; email?: string | null }) {
     });
 }
 
+const emailRedirectTo =
+    process.env.EMAIL_CONFIRM_REDIRECT_TO ?? 'http://localhost:5173/auth/callback';
+
 router.post('/signup', async (req: Request, res: Response) => {
     const { email, password, name } = req.body;
     const { data, error } = await supabase.auth.signUp({
         email,
-        password
-    })
+        password,
+        options: {
+            emailRedirectTo,
+        },
+    });
     if (error) {
         return res.status(400).json({ error: error.message });
     }
@@ -40,7 +46,7 @@ router.post('/signup', async (req: Request, res: Response) => {
         return res.status(400).json({ error: 'Signup succeeded but no auth user was returned' });
     }
 
-    // Create a Prisma user if not already 
+    // Create a Prisma user if not already
     try {
         const appUser = await prisma.user.upsert({
             where: { id: data.user.id },
@@ -55,12 +61,55 @@ router.post('/signup', async (req: Request, res: Response) => {
                 ...(name !== undefined ? { name } : {}),
             },
         });
-        return res.status(200).json({ data, user: appUser });
+
+        // Confirm-email enabled → no session yet; client should show /check-email
+        const needsConfirmation = !data.session;
+        
+        // Confirm-email disabled → session returned; set cookies like signin
+        if (data.session) {
+            res.cookie('access_token', data.session.access_token, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'lax',
+                maxAge: 60 * 20 * 1000,
+            });
+            res.cookie('refresh_token', data.session.refresh_token, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'lax',
+                maxAge: 60 * 60 * 24 * 30 * 1000,
+            });
+        }
+
+        return res.status(200).json({
+            data,
+            user: appUser,
+            needsConfirmation,
+            email: data.user.email ?? email,
+        });
     } catch (err) {
         return res.status(500).json({
             error: err instanceof Error ? err.message : 'Failed to create app user profile',
         });
     }
+});
+
+// Resend signup confirmation email (Supabase Auth)
+router.post('/resend-confirmation', async (req: Request, res: Response) => {
+    const email = typeof req.body?.email === 'string' ? req.body.email.trim() : '';
+    if (!email) {
+        return res.status(400).json({ error: 'Email is required' });
+    }
+
+    const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email,
+        options: { emailRedirectTo },
+    });
+    if (error) {
+        return res.status(400).json({ error: error.message });
+    }
+    return res.status(200).json({ message: 'Confirmation email sent' });
 });
 
 router.post('/signin', async (req: Request, res: Response) => {
