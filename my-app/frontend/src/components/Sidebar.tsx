@@ -93,7 +93,7 @@ export const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }: SideBarProps ) => {
           className={`font-medium text-white whitespace-nowrap transition-all duration-200 overflow-hidden cursor-pointer
             ${isSidebarOpen ? 'opacity-100 max-w-[160px] mr-auto justify-between' : 'opacity-0 max-w-0 mr-0 pointer-events-none'}`}
         >
-          Queuedex
+          Queueble
         </span>
           <LuPanelLeft 
             size={45} 
