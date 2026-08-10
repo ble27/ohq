@@ -20,39 +20,56 @@ export const Header = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  useEffect(() => {
+  if (isHamburgerMenuOpen) {
+    document.body.classList.add('overflow-hidden');
+  } else {
+    document.body.classList.remove('overflow-hidden');
+  }
+
+  // Cleanup to prevent broken scrolling if the component unmounts
+  return () => document.body.classList.remove('overflow-hidden');
+  }, [isHamburgerMenuOpen]);
+
   return (
     <>
-      <nav className="flex flex-row items-center sticky top-0 z-[100] pr-5 h-15 w-full shadow justify-between bg-white">
+      <nav className="flex sticky top-0 z-[100] pt-2 h-15 bg-yellow-50 w-full justify-between">
         {/* Logo Section */}
-        <Link to="/" className="p-5 flex flex-row items-center gap-3 font-sans text-xl font-semibold">
-          <span>Queuedex</span>
-        </Link>
-
+        <div className='flex flex-1 items-center'>
+          <Link to="/" className="pl-8 md:pl-15 lg:pl-20 items-center gap-3 
+          text-2xl font-medium tracking-tight">
+            <span>Queueble</span>
+          </Link>
+        </div>
         {/* Mobile Hamburger Menu - Only renders on mobile */}
         {windowWidth <= MOBILE_BREAKING_POINT ? (
           isHamburgerMenuOpen ? (
-            <LuX color="black" size="25" className="hover:opacity-80 cursor-pointer" 
-            onClick={() => 
-              setHamburgerMenuOpen(prev => !prev)} />
+            <div className='flex flex-1 items-center justify-end pr-8'>
+              <LuX color="black" size="25" className="hover:opacity-80 cursor-pointer" 
+              onClick={() => 
+                setHamburgerMenuOpen(prev => !prev)} />
+            </div>
           ) : (
-            <LuMenu color="black" size="25" className="hover:opacity-80 cursor-pointer" 
-            onClick={() => 
-              setHamburgerMenuOpen(prev => !prev)} />
+            <div className='flex flex-1 items-center justify-end pr-8'>
+              <LuMenu color="black" size="25" className="hover:opacity-80 cursor-pointer" 
+              onClick={() => 
+                setHamburgerMenuOpen(prev => !prev)} />
+            </div>
           )
         ) : (
           <>
             {/* Desktop Middle Links - Hidden on mobile */}
-            <div className="flex justify-center items-center gap-2 h-full">
-              <Link to="/" className="font-sans text-sm md:text-base text-gray-500 hover:bg-gray-200 p-1 focus:opacity-90">
+            <div className="flex flex-1 justify-center items-center gap-2 h-full">
+              <Link to="/" className="font-sans text-sm text-gray-500 hover:text-black p-1 focus:opacity-90">
                 Docs
               </Link>
-              <Link to="/" className="font-sans text-sm md:text-base text-gray-500 hover:bg-gray-200 p-1 focus:opacity-90">
+              <Link to="/" className="font-sans text-sm text-gray-500 hover:text-black p-1 focus:opacity-90">
                 Source
               </Link>
             </div>
 
             {/* Desktop Right Buttons - Hidden on mobile */}
-            <div className="flex text-sm gap-2 pr-3">
+            <div className="flex flex-1 pr-8 md:pr-15 lg:pr-20 items-center justify-end h-full text-sm gap-2 pr-3">
               <Link to="/signin" className="bg-black text-white transition-colors duration-300 ease-in-out rounded-full px-3 py-2 hover:opacity-80">
                 Log In
               </Link>
@@ -65,18 +82,18 @@ export const Header = () => {
 
         {/* Mobile Dropdown Menu Overlay */}
         {windowWidth <= MOBILE_BREAKING_POINT && isHamburgerMenuOpen && (
-          <div className="transition-all duration-300 ease-in-out absolute top-15 w-full h-60 text-black/70 bg-white border border-black/30 z-[110]">
-            <div className="flex flex-col h-full text-base">
-              <Link to="/" onClick={() => setHamburgerMenuOpen(false)} className="flex items-center flex-1 hover:bg-gray-200 px-5 border-b border-black/30">
+          <div className="transition-all duration-300 ease-in-out absolute top-15 w-full h-screen text-black bg-yellow-50 z-[110]">
+            <div className="sticky flex flex-col h-70 text-base">
+              <Link to="/" onClick={() => setHamburgerMenuOpen(false)} className="flex items-center flex-1 hover:bg-gray-200 px-9 border-b border-black/30">
                 Docs
               </Link>
-              <Link to="/" onClick={() => setHamburgerMenuOpen(false)} className="flex items-center flex-1 hover:bg-gray-200 px-5 border-b border-black/30">
+              <Link to="/" onClick={() => setHamburgerMenuOpen(false)} className="flex items-center flex-1 hover:bg-gray-200 px-9 border-b border-black/30">
                 Source
               </Link>
-              <Link to="/signin" onClick={() => setHamburgerMenuOpen(false)} className="flex items-center flex-1 hover:bg-gray-200 px-5 border-b border-black/30">
+              <Link to="/signin" onClick={() => setHamburgerMenuOpen(false)} className="flex items-center flex-1 hover:bg-gray-200 px-9 border-b border-black/30">
                 Log In
               </Link>
-              <Link to="/signup" onClick={() => setHamburgerMenuOpen(false)} className="flex items-center flex-1 hover:bg-gray-200 px-5">
+              <Link to="/signup" onClick={() => setHamburgerMenuOpen(false)} className="flex items-center flex-1 hover:bg-gray-200 px-9 border-b border-black/30">
                 Sign Up
               </Link>
             </div>
