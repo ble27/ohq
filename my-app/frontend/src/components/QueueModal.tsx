@@ -4,7 +4,7 @@
 // a Join creates a QueueTicket into the current queue
 
 import { useEffect, useState } from 'react'
-import type { Queue, QueueTicket, QueueTicketsListResponse } from '../../../shared/types'
+import type { Queue, QueueTicketsListResponse } from '../../../shared/types'
 import { QueueTicketModal } from './QueueTicketModal';
 import type { QueueTicketWithStudent } from '../../../shared/types';
 import axios from 'axios'
@@ -128,10 +128,11 @@ export const QueueModal = ({
                 </div>
 
                 {/* Leaving disconnects the socket connection */}
-                <div className="mt-3 flex shrink-0 justify-end gap-2">
+                <div className="mt-4 flex shrink-0 flex-wrap justify-end gap-2">
                     {/* Show Leave when the user has already joined this queue (join or view) */}
                     {hasJoined && (
                         <button
+                            type="button"
                             onClick={async () => {
                                 if (!curTicket) {
                                     console.log('No ticket available to leave');
@@ -146,15 +147,16 @@ export const QueueModal = ({
                                     console.log('Failed to leave queue', error);
                                 }
                             }}
-                            className="rounded-md bg-red-500 px-2.5 py-1 text-xs font-medium text-white hover:bg-red-600"
+                            className="min-h-9 rounded-full border border-red-500 bg-white px-4 py-2 text-sm font-medium text-red-600 transition duration-100 ease-in-out hover:bg-red-500 hover:text-white"
                         >
                             Leave
                         </button>
                     )}
                     {/* Closing doesn't leave the queue */}
                     <button
+                        type="button"
                         onClick={() => setModalOpen(false)}
-                        className="rounded-md bg-blue-800 px-2.5 py-1 text-xs font-medium text-white hover:bg-blue-900"
+                        className="min-h-9 rounded-full border border-neutral-900 bg-neutral-900 px-4 py-2 text-sm font-medium text-white transition duration-100 ease-in-out hover:bg-neutral-800"
                     >
                         Close
                     </button>

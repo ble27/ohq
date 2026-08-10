@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import type { QueueTicket, QueueTicketWithStudent } from '@shared/types'
+import type { QueueTicketWithStudent } from '@shared/types'
 
 interface WorkspaceTicketCardProps {
     ticket: QueueTicketWithStudent
@@ -34,14 +34,13 @@ export const WorkspaceTicketCard = ({
     const secs = time ? (time % 60).toLocaleString().padStart(2, '0') : null
     return (
         <div
-            className={`flex w-full items-center gap-3 rounded-xl border px-3 py-3 ${accentStyles[accent]}`}
+            className={`flex w-full items-center gap-2 rounded-xl border px-2.5 py-2.5 sm:gap-3 sm:px-3 sm:py-3 ${accentStyles[accent]}`}
         >
-            {/* Wrapped this container in flex to align left and right sides */}
-            <div className="flex flex-1 items-center justify-between min-w-0 gap-4">
-                <div>
-                    <div className="flex items-center gap-2">
+            <div className="flex min-w-0 flex-1 items-center justify-between gap-2 sm:gap-4">
+                <div className="min-w-0">
+                    <div className="flex min-w-0 items-center gap-2">
                         {ticket.position != null && (
-                            <span className="text-xs font-semibold tabular-nums text-slate-700">
+                            <span className="shrink-0 text-xs font-semibold tabular-nums text-slate-700">
                                 #{ticket.position}
                             </span>
                         )}
@@ -53,11 +52,11 @@ export const WorkspaceTicketCard = ({
                         Joined {formatJoinedAt(ticket.joinedAt)}
                     </p>
                 </div>
-                
-                {time && (
-                    <div className="text-xs text-black shrink-0">
-                        Session length: {mins}:{secs}
-                    </div>
+
+                {time != null && time > 0 && (
+                    <p className="shrink-0 text-xs tabular-nums text-slate-600">
+                        {mins}:{secs}
+                    </p>
                 )}
             </div>
 

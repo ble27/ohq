@@ -92,9 +92,9 @@ export const QueueWorkspace = ({ tickets, onUpdateTickets, completedTickets, onU
     const remSecs = (seconds % 60).toString().padStart(2, '0');
 
     return (
-        <div className="flex min-h-0 flex-1 flex-col gap-3 bg-slate-100 px-4 pb-4 pt-3">
+        <div className="flex min-h-0 flex-1 flex-col gap-3 bg-slate-100 px-3 pb-4 pt-3 sm:px-4">
             {/* Active lane: Next (1) + In Session (1) */}
-            <div className="grid min-h-0 flex-1 grid-cols-2 grid-rows-1 gap-3">
+            <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 sm:grid-cols-2 sm:grid-rows-1">
                 <WorkspaceColumn
                     title="Next"
                     count={nextTicket ? 1 : 0}
@@ -112,7 +112,7 @@ export const QueueWorkspace = ({ tickets, onUpdateTickets, completedTickets, onU
                                     disabled={Boolean(inSession) || busy}
                                     onClick={moveNextToSession}
                                     aria-label="Move ticket into session"
-                                    className="border-blue-300 text-blue-700 hover:bg-blue-100 disabled:opacity-40"
+                                    className="min-h-8 min-w-8 border-blue-300 text-blue-700 hover:bg-blue-100 disabled:opacity-40"
                                 >
                                     <LuCheck size={16} />
                                 </Button>
@@ -136,14 +136,16 @@ export const QueueWorkspace = ({ tickets, onUpdateTickets, completedTickets, onU
                                     size="sm"
                                     onClick={completeSession}
                                     disabled={busy}
-                                    className="bg-emerald-600 text-white hover:bg-emerald-700"
+                                    className="min-h-8 bg-emerald-600 px-3 text-white hover:bg-emerald-700"
                                 >
                                     Complete
                                 </Button>
                             }
                         />
                     ) : null}
-                    <div className='flex absolute top-78 text-sm'> Time elapsed: {mins}:{remSecs} </div>
+                    <p className="mt-auto pt-2 text-xs tabular-nums text-slate-500">
+                        Time elapsed: {mins}:{remSecs}
+                    </p>
                 </WorkspaceColumn>
             </div>
 
@@ -152,7 +154,7 @@ export const QueueWorkspace = ({ tickets, onUpdateTickets, completedTickets, onU
                 title="Completed"
                 count={completedTickets.length}
                 emptyLabel="Completed tickets will appear here"
-                className="min-h-[140px] flex-1"
+                className="min-h-[120px] flex-1 sm:min-h-[140px]"
             >
                 {completedTickets.length > 0
                     ? completedTickets.map((ticket) => (

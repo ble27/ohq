@@ -45,7 +45,7 @@ export const Home = ({ onToggleNotifications }: HomeProps) => {
     }
 
     return (
-        <div className="flex min-h-full w-full flex-col px-4 py-8 sm:px-6 md:px-8 lg:pr-12">
+        <div className="flex bg-white min-h-full w-full flex-col px-4 py-8 sm:px-6 md:px-8 lg:pr-12">
             <div className="flex w-full flex-row items-center justify-between p-3 text-xl font-semibold sm:text-2xl">
                 My Tickets
                 <LuBell

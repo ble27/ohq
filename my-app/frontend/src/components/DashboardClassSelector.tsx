@@ -291,7 +291,7 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ CSCEClasses, selec
               No active queues loaded. Click Enter to fetch.
             </p>
           ) : (
-            <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-1 gap-5 lg:grid-cols-2 xl:grid-cols-3">
               {visibleQueues.map((q) => {
                 const taLabel = q.ta?.name ?? q.ta?.email ?? '—'
                 const courseLabel = q.course?.code ?? selectedClass
@@ -300,7 +300,7 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ CSCEClasses, selec
                 return (
                   <article
                     key={q.id}
-                    className="flex flex-col rounded-2xl border border-black/30 bg-white p-6"
+                    className="flex flex-col rounded-2xl border border-black/20 bg-white p-6"
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">

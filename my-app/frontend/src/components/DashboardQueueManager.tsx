@@ -1,10 +1,9 @@
 import { useState, useEffect, type FormEvent } from 'react'
 import { MapPin, Plus, Settings2, Trash2 } from 'lucide-react'
-import type { Course, Queue, QueueTicket, QueueTicketsListResponse, QueueTicketWithStudent } from '@shared/types'
+import type { Course, Queue, QueueTicketsListResponse, QueueTicketWithStudent } from '@shared/types'
 import { useAuth } from '@/context/AuthContextProvider'
 import { DeleteConfirmation } from './DeleteConfirmationModal'
 import { QueueManagementModal } from './QueueManagementModal'
-import type { NotificationType } from '@shared/types'
 
 import axios from 'axios'
 
@@ -141,39 +140,41 @@ export const QueueManager = ({
     }, [isViewingManagementModal, currentQueue]);
 
     return (
-        <main className="min-h-full bg-slate-50 px-5 py-8 sm:px-8">
+        <main className="min-h-full bg-slate-50 px-4 py-6 sm:px-6 sm:py-8 md:px-8">
             {/* Delete confirmation modal */}
-            { isViewingDeletionModal && (
-                    <DeleteConfirmation 
-                        onClose={() => setIsViewingDeletionModal(false)}
-                        onConfirm={handleConfirmDeleteQueue} 
-                    />
-                )}
-            
-            {/* Queue management modal */}
-            { isViewingManagementModal && (
-                <QueueManagementModal 
-                    setTickets={setTickets} 
-                    tickets={tickets} 
-                    onUpdateQueue={onUpdateQueue} 
-                    queue={currentQueue} 
-                    setIsViewingManagementModal={setIsViewingManagementModal}
-                    onQueueClosing={removeTicketsWhenClosed}/>
+            {isViewingDeletionModal && (
+                <DeleteConfirmation
+                    onClose={() => setIsViewingDeletionModal(false)}
+                    onConfirm={handleConfirmDeleteQueue}
+                />
             )}
 
-            <div className={`mx-auto max-w-5xl`}>
-                <header className="mb-8">
-                    <p className="text-sm font-medium text-blue-600">Queue management</p>
-                    <h1 className="mt-1 text-3xl font-semibold tracking-tight text-slate-900">
+            {/* Queue management modal */}
+            {isViewingManagementModal && (
+                <QueueManagementModal
+                    setTickets={setTickets}
+                    tickets={tickets}
+                    onUpdateQueue={onUpdateQueue}
+                    queue={currentQueue}
+                    setIsViewingManagementModal={setIsViewingManagementModal}
+                    onQueueClosing={removeTicketsWhenClosed}
+                />
+            )}
+
+            <div className="mx-auto w-full max-w-5xl">
+                <header className="mb-6 sm:mb-8">
+                    <h1 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
                         Manage queues
                     </h1>
-                    <p className="mt-2 text-sm text-slate-500">
-                        Create queues for your courses and remove queues you no longer need.
+                    <p className="mt-2 max-w-lg text-sm leading-relaxed text-slate-500">
+                        Create queues for your courses and remove ones you no longer need.
                     </p>
                 </header>
 
-                <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                    <h2 className="text-lg font-semibold text-slate-900">Create a queue</h2>
+                <section className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 md:p-6">
+                    <p className="text-sm font-medium tracking-tight text-slate-900 sm:text-base">
+                        Create a queue
+                    </p>
 
                     {error && (
                         <p role="alert" className="mt-3 text-sm text-red-600">
@@ -182,17 +183,17 @@ export const QueueManager = ({
                     )}
 
                     <form
-                        className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] lg:items-end"
+                        className="mt-4 grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] lg:items-end"
                         onSubmit={handleCreateQueue}
                     >
-                        <label className="grid min-w-0 gap-1.5 text-sm font-medium text-slate-700">
+                        <label className="grid min-w-0 gap-1.5 text-sm font-medium text-slate-600">
                             Course
                             <input
                                 list="active-courses"
                                 value={courseId}
                                 onChange={(event) => setCourseId(event.target.value)}
                                 placeholder="Select or enter a course code"
-                                className="h-10 w-full min-w-0 rounded-lg border border-slate-300 bg-white px-3 font-normal outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                                className="h-11 w-full min-w-0 rounded-xl border border-slate-200 bg-white px-3.5 text-sm font-normal text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400"
                             />
                             {/* List of currently active seeded courses */}
                             <datalist id="active-courses">
@@ -204,20 +205,20 @@ export const QueueManager = ({
                             </datalist>
                         </label>
 
-                        <label className="grid min-w-0 gap-1.5 text-sm font-medium text-slate-700">
+                        <label className="grid min-w-0 gap-1.5 text-sm font-medium text-slate-600">
                             Location
                             <input
                                 value={location}
                                 onChange={(event) => setLocation(event.target.value)}
                                 placeholder="e.g. Zachary - Room 240"
-                                className="h-10 w-full min-w-0 rounded-lg border border-slate-300 bg-white px-3 font-normal outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                                className="h-11 w-full min-w-0 rounded-xl border border-slate-200 bg-white px-3.5 text-sm font-normal text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400"
                             />
                         </label>
 
                         <button
                             type="submit"
                             disabled={isCreating || !courseId || !location.trim() || !user}
-                            className="inline-flex h-10 w-full shrink-0 items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50 md:col-span-2 lg:col-span-1 lg:w-auto"
+                            className="inline-flex h-11 w-full shrink-0 items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50 md:col-span-2 lg:col-span-1 lg:w-auto"
                         >
                             <Plus className="size-4 shrink-0" />
                             <span className="truncate">{isCreating ? 'Creating…' : 'Create queue'}</span>
@@ -226,10 +227,12 @@ export const QueueManager = ({
                 </section>
 
                 <section className="mt-8">
-                    <div className="mb-4 flex items-center justify-between">
-                        <h2 className="text-lg font-semibold text-slate-900">Your queues</h2>
-                        <span className="rounded-full bg-slate-200 px-2.5 py-1 text-xs font-medium text-slate-600">
-                            {createdQueues.length} {createdQueues.length === 1 ? 'queue' : 'queues'}
+                    <div className="mb-4 flex items-baseline justify-between gap-3">
+                        <h2 className="text-lg font-semibold tracking-tight text-slate-900">
+                            Your queues
+                        </h2>
+                        <span className="text-sm tabular-nums text-slate-400">
+                            {createdQueues.length}
                         </span>
                     </div>
 
@@ -242,64 +245,60 @@ export const QueueManager = ({
                             <div className="mx-auto flex size-11 items-center justify-center rounded-full bg-blue-50 text-blue-600">
                                 <Plus className="size-5" />
                             </div>
-                            <h3 className="mt-4 font-medium text-slate-900">No queues yet</h3>
+                            <p className="mt-4 font-medium text-slate-900">No queues yet</p>
                             <p className="mt-1 text-sm text-slate-500">
                                 Use the form above to create your first queue.
                             </p>
                         </div>
                     ) : (
-                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                        <div className="grid grid-cols-1 gap-5 lg:grid-cols-2 xl:grid-cols-3">
                             {createdQueues.map((queue) => (
                                 <article
                                     key={queue.id}
-                                    className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+                                    className="flex flex-col rounded-2xl border border-black/20 bg-white p-6"
                                 >
-                                    <div className="flex items-start justify-between gap-4">
-                                        <div>
-                                            <h3 className="font-semibold text-slate-900">
+                                    <div className="flex items-start justify-between gap-3">
+                                        <div className="min-w-0">
+                                            <h3 className="truncate text-xl font-semibold tracking-tight text-neutral-900">
                                                 {courses.find((course) => course.id === queue.courseId)?.code ?? queue.courseId}
                                             </h3>
-                                            <p className="mt-2 flex items-center gap-1.5 text-sm text-slate-500">
-                                                <MapPin className="size-4" />
-                                                {queue.location}
-                                            </p>
+                                            <div className="mt-1.5 flex min-w-0 items-center gap-1.5 text-sm text-neutral-500">
+                                                <MapPin className="size-3.5 shrink-0 text-neutral-400" strokeWidth={1.75} aria-hidden />
+                                                <span className="truncate">{queue.location}</span>
+                                            </div>
                                         </div>
                                         <span
-                                            className={`rounded-full px-2.5 py-1 text-xs font-medium ${
+                                            className={`shrink-0 text-xs font-medium tracking-wide ${
                                                 queue.isOpen
-                                                    ? 'bg-emerald-50 text-emerald-700'
-                                                    : 'bg-slate-100 text-slate-600'
+                                                    ? 'text-emerald-700'
+                                                    : 'text-neutral-400'
                                             }`}
                                         >
                                             {queue.isOpen ? 'Open' : 'Closed'}
                                         </span>
                                     </div>
-                                    {/* Manage queue */}
-                                    <button
-                                        type="button"
-                                        onClick={() => handleOpenManagementModal(queue)}
-                                        className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-green-900 px-3 py-2 
-                                            transition-background duration-100 ease-in-out hover:bg-green-900 hover:text-white text-sm font-medium text-green-900 transition disabled:cursor-not-allowed disabled:opacity-50"
-                                    >
-                                        <Settings2 className="size-4" />
-                                        <span>Manage</span>
-                                    </button>
 
-                                    {/* Delete queue */}
-                                    <button
-                                        type="button"
-                                        onClick = {() => handleOpenDeleteModal(queue.id)}
-                                        className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-red-500 px-3 py-2 
-                                        duration-100 transition-background ease-in-out text-sm font-medium text-red-600 hover:bg-red-500 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
-                                    >
-                                        <Trash2 className="size-4" />
-                                        <span>Delete</span>
-                                    </button>
+                                    <div className="mt-8 flex flex-col gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => handleOpenManagementModal(queue)}
+                                            className="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg border border-green-900 px-3 py-2.5 text-sm font-medium text-green-900 transition duration-100 ease-in-out hover:bg-green-900 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                                        >
+                                            <Settings2 className="size-4 shrink-0" />
+                                            <span>Manage</span>
+                                        </button>
 
-                                   
+                                        <button
+                                            type="button"
+                                            onClick={() => handleOpenDeleteModal(queue.id)}
+                                            className="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg border border-red-500 px-3 py-2.5 text-sm font-medium text-red-600 transition duration-100 ease-in-out hover:bg-red-500 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                                        >
+                                            <Trash2 className="size-4 shrink-0" />
+                                            <span>Delete</span>
+                                        </button>
+                                    </div>
                                 </article>
                             ))}
-                            
                         </div>
                     )}
                 </section>
