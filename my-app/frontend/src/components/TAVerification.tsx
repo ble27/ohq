@@ -58,21 +58,17 @@ export const VerifyTA = ({ children }: VerifyTAProps) => {
     return (
         // Background
         <div className="flex w-full h-screen m-0 p-0 overflow-hidden items-center justify-center bg-black/70">
-            
             <div className='relative flex flex-col justify-between items-center font-semibold text-black text-xl gap-2 px-6 py-8 bg-white rounded-lg h-1/5 w-[300px] max-w-[684px]'>
-                <div className='flex flex-col text-lg'> Queuedex </div>
-                {(!isLoading && !error) ? <div className='text-base font-normal text-center'> Are you a TA? Click here to manage queues</div> : 
+                {(!isLoading && !error) ? <h1 className='text-base font-medium text-center'> Are you a TA?<br/>Click here to manage queues</h1> : 
                 <div className="text-base font-normal text-red-900">{error}</div>}
-                <Button
-                    size={'lg'}
-                    variant='default'
-                    onClick={() => { void handleVerification(); }}
-                    className={'bg-green-800 hover:bg-green-800/80'}
-                    disabled={isLoading}
-                >
+                <button
+                    className='transition duration-300 ease-in-out rounded-full border-2 border-green-800
+                            hover:bg-green-800 hover:text-white hover:bg-green-800 text-green-800
+                            px-2 py-1 text-base'
+                    onClick={() => { void handleVerification() } }
+                    disabled={isLoading}>
                     {isLoading ? 'Verifying' : 'Verify'}
-                </Button>
-
+                </button>
                 {isLoading && <Spinner />}
             </div>
         </div>

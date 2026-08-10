@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 import axios from 'axios'
+import { ChevronDown, MapPin } from 'lucide-react'
 import { QueueModal } from './QueueModal'
 import type {
   NotificationResponse,
@@ -11,8 +12,8 @@ import type {
   QueueTicketsListResponse,
   QueueWithTA,
 } from '@shared/types';
-import { Button } from './ui/button';
 import { useAuth } from '@/context/AuthContextProvider';
+import { InactiveQueueModal } from './InactiveQueueModal';
 
 const ACTIVE_TICKET_STATUSES = new Set(['WAITING', 'HELPING']);
 
@@ -35,6 +36,7 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ CSCEClasses, selec
     const [myTicketsByQueueId, setMyTicketsByQueueId] = useState<Map<string, QueueTicket>>(
         () => new Map(),
     );
+    const [isInactiveModalOpen, setIsInactiveModalOpen] = useState(false);
 
     // Visible queues that will be displayed (will refresh every time queue changes)
     const visibleQueues = queue;
@@ -89,7 +91,7 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ CSCEClasses, selec
     }
 
     // Fetch queue based on course ID
-    const fetchQueue = async (): Promise<void> => { 
+    const fetchQueue = async () => { 
         try { 
             // selectedClass = course code not courseId
             const courseId = (await axios.get(`/api/courses/${selectedClass}`)).data.courseId;
@@ -101,10 +103,12 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ CSCEClasses, selec
             const response = await axios.get<QueuesListResponse>(`/api/queues/course/${courseId}`); 
             if (response.data.queues.length === 0) {
               setQueue([]);
+              setIsInactiveModalOpen(true);
               console.log('No active queues found');
               await syncJoinedQueuesFromServer();
               return;
             }
+
             const activeQueuesList: Queue[] = response.data.queues;
 
             // Set only active queues from course code
@@ -216,115 +220,156 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ CSCEClasses, selec
 
   return ( 
     <> 
-      {/* Class selector available at /dashboardc#class */} 
-      <div className='flex flex-col w-full h-full pl-8 pt-10'> 
-        <label htmlFor="csce_choices">Select a class</label> 
+      {isInactiveModalOpen && (
+        <InactiveQueueModal
+          selectedClass={selectedClass}
+          setIsInactiveModalOpen={setIsInactiveModalOpen}
+        />
+      )}
 
-        {/* Background around search fields */}
-        <div className='flex flex-row mt-2 items-center'> 
-          <select 
-            name="csce_choices" 
-            id="csce_choices" 
-            className='text-lg w-1/3 border-slate-300 border-1 shadow-inner rounded-lg p-2 outline-none' 
-            value={selectedClass} 
-            onChange={(e) => setSelectedClass(e.target.value)} 
-          > 
-            {CSCEClasses.map((courseNum: string, index: number) => ( 
-              <option key={index} value={courseNum}>{courseNum}</option> 
-            ))} 
-          </select> 
-          <Button 
-            variant={'default'}
-            size={'lg'}
-            // Fetch should only fetch active and selected queues, not queues that are closed
-            // It shouldn't fetch queue that were active from other code when switching
-            onClick={fetchQueue} 
-            className='ml-4 mr-2 pointer-events-auto'
-          > 
-            Enter 
-          </Button> 
+      <div className="flex h-full w-full flex-col bg-neutral-50 px-6 pb-10 pt-10 sm:px-8 md:px-10">
+        <header className="max-w-xl">
+          <h1 className="text-2xl font-semibold tracking-tight text-neutral-900 sm:text-3xl">
+            Select a class
+          </h1>
+          <p className="mt-2 text-sm leading-relaxed text-neutral-500 sm:text-base">
+            Choose a course to load active office hour queues.
+          </p>
+        </header>
 
-           <Button 
-            variant={'default'}
-            size={'lg'}
-            onClick={clearQueue} 
-            className='pointer-events-auto'
-          > 
+        {/* Class search */}
+        <div className="mt-6 flex flex-wrap items-center gap-3">
+          <div className="relative w-full max-w-xs min-w-[12rem] flex-1 sm:max-w-sm">
+            <select
+              name="csce_choices"
+              id="csce_choices"
+              aria-label="Select a class"
+              className="h-11 w-full cursor-pointer appearance-none rounded-full border border-neutral-300 bg-white py-2.5 pl-4 pr-10 text-sm font-medium text-neutral-900 outline-none transition focus:border-neutral-500"
+              value={selectedClass}
+              onChange={(e) => setSelectedClass(e.target.value)}
+            >
+              {CSCEClasses.map((courseNum: string, index: number) => (
+                <option key={index} value={courseNum} className="bg-white text-neutral-900">
+                  {courseNum}
+                </option>
+              ))}
+            </select>
+            <ChevronDown
+              aria-hidden
+              className="pointer-events-none absolute right-3.5 top-1/2 size-4 -translate-y-1/2 text-neutral-400"
+              strokeWidth={1.75}
+            />
+          </div>
+
+          <button
+            type="button"
+            onClick={fetchQueue}
+            className="h-11 rounded-full border border-neutral-900 bg-neutral-900 px-5 text-sm font-medium text-white transition hover:opacity-80"
+          >
+            Enter
+          </button>
+
+          <button
+            type="button"
+            onClick={clearQueue}
+            className="h-11 rounded-full border border-neutral-300 bg-white px-5 text-sm font-medium text-neutral-700 transition hover:border-neutral-400 hover:bg-neutral-50"
+          >
             Clear
-          </Button> 
-        </div> 
+          </button>
+        </div>
 
-        <div className='mt-8 h-full w-full'>
-          <h3 className='text-lg font-medium mb-3'>Active Queue ({visibleQueues.length})</h3>
+        <section className="mt-10 w-full">
+          <div className="mb-5 flex items-baseline justify-between gap-3">
+            <h2 className="text-lg font-semibold tracking-tight text-neutral-900">
+              Active queues
+            </h2>
+            <span className="text-sm text-neutral-400">{visibleQueues.length}</span>
+          </div>
+
           {visibleQueues.length === 0 ? (
-            <p className='text-gray-500 text-sm'>No active queues loaded. Click "Enter" to fetch.</p>
+            <p className="text-sm text-neutral-500">
+              No active queues loaded. Click Enter to fetch.
+            </p>
           ) : (
-            // Background around Queue cards
-            <div className='grid grid-cols-1 justify-center md:grid-cols-2 bg-white lg:grid-cols-3 gap-10 w-100 md:w-full h-80 md:h-50 space-y-2 pr-5 '>
-              {visibleQueues.map((q) => (
-                // Actual Queue card
-                <div key={q.id} className='relative p-3 flex border rounded-lg bg-gray-50 flex justify-between border-gray-300 border-1 shadow-inner'>
-                  <div className='flex flex-col h-40 mb-2'>
-                    <p className='font-semibold text-sm'>TA: {q.ta?.name ?? q.ta?.email}</p>
-                    <p className='font-semibold text-sm'>Course: {q.course?.code}</p>
-                    <p className='text-xs text-gray-500'>Location: {q.location}</p>
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
+              {visibleQueues.map((q) => {
+                const taLabel = q.ta?.name ?? q.ta?.email ?? '—'
+                const courseLabel = q.course?.code ?? selectedClass
+                const hasJoined = joinedQueueIds.has(q.id)
 
-                    <div className='absolute bottom-2 right-2 flex flex-row gap-2'>
-                      
-                      {/* Join queue */}
-                      {
-                        // Only display if the queue hasn't been joined
-                        !joinedQueueIds.has(q.id) &&
-                         <Button
-                         onClick={() => void handleJoinQueue(q)}
-                         disabled={!q.isOpen}
-                         variant='default'
-                         className={'join-btn'}
-                        >
-                          Join
-                        </Button>
-                      }
-                     
-
-                        {/* View a queue modal button */}
-                        <Button
-                          // Pass the ticket along when viewing the queue
-                            onClick={() => handleViewQueue(q)}
-                            variant='outline'
-                        >
-                            View
-                        </Button>
-                        {/* Clear all tickets from a queue modal button */}
-                        <Button
-                            onClick={() => clearAllTickets(q.id)}
-                            variant='destructive'
-                        >
-                            Delete Tickets
-                        </Button>
+                return (
+                  <article
+                    key={q.id}
+                    className="flex flex-col rounded-2xl border border-black/30 bg-white p-6"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <h3 className="truncate text-xl font-semibold tracking-tight text-neutral-900">
+                         {courseLabel}
+                        </h3>
+                        <p className="mt-1 truncate text-sm text-neutral-500">TA: {taLabel}</p>
+                      </div>
+                      <span
+                        className={`shrink-0 text-xs font-medium tracking-wide ${
+                          q.isOpen ? 'text-emerald-700' : 'text-neutral-400'
+                        }`}
+                      >
+                        {q.isOpen ? 'Open' : 'Closed'}
+                      </span>
                     </div>
 
-                  </div>
-                  <span className={`text-xs px-2 py-1 h-fit rounded ${q.isOpen ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                    {q.isOpen ? 'Open' : 'Closed'}
-                  </span>
-                </div>
-              ))}
-              {/* Render a modal for each selected queue and when isModalOpen  */}
-              {isModalOpen && selectedQueue && (
-                <QueueModal
-                  queue={selectedQueue}
-                  ticket={ticket}
-                  isModalOpen={isModalOpen}
-                  isViewingQueue={isViewingQueue}
-                  joinedQueueIds={joinedQueueIds}
-                  setModalOpen={setModalOpen}
-                  onLeaveQueue={handleLeaveQueue}
-                />
-              )}
+                    <div className="mt-6 flex items-center gap-1.5 text-sm text-neutral-600">
+                      <MapPin className="size-3.5 shrink-0 text-neutral-400" strokeWidth={1.75} aria-hidden />
+                      <span className="truncate">{q.location || '—'}</span>
+                    </div>
+
+                    <div className="mt-8 flex flex-wrap gap-2">
+                      {!hasJoined && (
+                        <button
+                          type="button"
+                          onClick={() => void handleJoinQueue(q)}
+                          disabled={!q.isOpen}
+                          className="rounded-full border border-neutral-900 bg-[#500000] px-4 py-2 text-sm font-medium text-white transition 
+                          hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-40"
+                        >
+                          Join
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => handleViewQueue(q)}
+                        className="rounded-full border border-black text-black bg-white px-4 py-2 text-sm font-medium text-neutral-800 transition 
+                        hover:bg-yellow-500" 
+                      >
+                        View
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void clearAllTickets(q.id)}
+                        className="rounded-full border border-neutral-300 bg-white px-4 py-2 text-sm font-medium text-neutral-500 transition hover:border-neutral-400 hover:text-neutral-800"
+                      >
+                        Clear tickets
+                      </button>
+                    </div>
+                  </article>
+                )
+              })}
             </div>
           )}
-        </div>
-      </div> 
-    </> 
+
+          {isModalOpen && selectedQueue && (
+            <QueueModal
+              queue={selectedQueue}
+              ticket={ticket}
+              isModalOpen={isModalOpen}
+              isViewingQueue={isViewingQueue}
+              joinedQueueIds={joinedQueueIds}
+              setModalOpen={setModalOpen}
+              onLeaveQueue={handleLeaveQueue}
+            />
+          )}
+        </section>
+      </div>
+    </>
   );
 };
