@@ -34,6 +34,7 @@ function App() {
             <Route path='/dashboard/home' element={<Dashboard />} />
             <Route path='/dashboard/class' element={<Dashboard />} />
             <Route path='/dashboard/queuemanager' element={<Dashboard />} />
+            <Route path='/dashboard/settings' element={<Dashboard />} />
           </Routes>
         </BrowserRouter>
       </SocketProvider>

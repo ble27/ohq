@@ -123,11 +123,11 @@ export const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }: SideBarProps ) => {
               {isSidebarOpen && <span>Queue Manager</span>}
           </Link>
 
-          <div className={`flex flex-row px-4 py-3 gap-[10px] items-center transition-colors duration-200 w-full 
+          <Link to='/dashboard/settings' onClick={handleNavigation} className={`flex flex-row px-4 py-3 gap-[10px] items-center transition-colors duration-200 w-full 
             ${isSidebarOpen ? 'hover:bg-black/20 hover:opacity-90': 'hover:opacity-0 pointer-events-none'}`}>
               {isSidebarOpen && <LuSettings size={20} color="white" />}
               {isSidebarOpen && <span>Settings</span>}
-          </div>
+          </Link>
         </ul> 
 
 

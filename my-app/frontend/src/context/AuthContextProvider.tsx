@@ -1,10 +1,12 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
-import type { User } from '@supabase/supabase-js';
+import type { User as SupabaseUser } from '@supabase/supabase-js';
+import type { User as PrismaUser } from '@shared/types';
 import type { Role } from '@shared/types';
-import { getMe } from '../services/authService';
+import { getMeSupabase } from '../services/authService';
 
 interface AuthContextValue {
-  user: User | null;
+  user: SupabaseUser | null;
+  prismaUser: PrismaUser | null;
   role: Role | null;
   loading: boolean;
   refreshUser: () => Promise<void>;
@@ -22,18 +24,28 @@ export const useAuth = () => {
 };
 
 export const AuthContextProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [role, setRole] = useState(null);
+  const [user, setUser] = useState<SupabaseUser | null>(null);
+  const [prismaUser, setPrismaUser] = useState<PrismaUser | null>(null);
+  const [role, setRole] = useState<Role | null>(null);
   const [loading, setLoading] = useState(true);
-  
-  // Call getMe() to fetch current user state
+
+  // GET /api/auth/me → { user: SupabaseUser, profile: PrismaUser | null }
   const refreshUser = useCallback(async () => {
     try {
-      const response = await getMe();
-      setUser(response.user);
-      setRole(response.profile?.role);
+      const me = await getMeSupabase();
+      if (!me?.user) {
+        setUser(null);
+        setPrismaUser(null);
+        setRole(null);
+        return;
+      }
+      setUser(me.user);
+      setPrismaUser(me.profile ?? null);
+      setRole(me.profile?.role ?? null);
     } catch {
       setUser(null);
+      setPrismaUser(null);
+      setRole(null);
     } finally {
       setLoading(false);
     }
@@ -46,7 +58,7 @@ export const AuthContextProvider = ({ children }: { children: ReactNode }) => {
   }, [refreshUser]);
 
   return (
-    <AuthContext.Provider value={{ user, role, loading, refreshUser }}>
+    <AuthContext.Provider value={{ user, prismaUser, role, loading, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

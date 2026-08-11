@@ -83,6 +83,32 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
     }
 });
 
+// GET
+router.get('/:id', async (req: Request, res: Response) => {
+    try { 
+        const id = req.params.id;
+        if (!id) {
+            res.status(400).json({ message: 'User ID is required' });
+            return;
+        }
+        const user = await prisma.user.findFirst({
+            where: { id }
+        })
+        const body = {
+            user: user,
+            message: `Successfully fetched user with id ${id}`
+        }
+        res.status(200).json(body);
+    } catch (error) {
+        const id = req.params.id;
+        if (error instanceof Error) {
+            res.status(500).json({ message: error.message });
+            return;
+        }
+        res.status(500).json({ message: `Failed to find user ${id}` });        
+    }
+})
+
 // DELETE /api/users/:id
 router.delete('/:id', async (req: Request, res: Response): Promise<void> => {
     try {

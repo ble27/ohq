@@ -124,13 +124,26 @@ export const signOut = async () => {
     }
 }
 
-// Fetch user from backend in auth.routes.ts
-// Used in AuthContextProvider.tsx to set the user state
-export const getMe = async () => {
-    const response = await axios.get(`/api/auth/me`, {
+// GET /api/auth/me → { user: SupabaseUser, profile: PrismaUser | null }
+export const getMeSupabase = async () => {
+    try {
+        const response = await axios.get(`/api/auth/me`, {
+            withCredentials: true,
+        });
+        return response.data ?? null;
+    } catch (error) {
+        // 401 when no cookie / invalid session — treat as logged out
+        if (axios.isAxiosError(error) && error.response?.status === 401) {
+            return null;
+        }
+        throw error;
+    }
+}
+
+export const getMePrisma = async (id: string) => {
+    const response = await axios.get(`/api/users/${id}`, {
         withCredentials: true,
     });
     return response.data ?? null;
 }
-
 export const PENDING_CONFIRM_EMAIL_KEY = 'pendingConfirmEmail';

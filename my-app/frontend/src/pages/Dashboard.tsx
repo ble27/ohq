@@ -19,13 +19,17 @@ import type {
 import axios from 'axios'
 import { useAuth } from '@/context/AuthContextProvider';
 import { useSocket } from '@/context/SocketProvider';
+import { DashboardSettings } from '@/components/DashboardSettings';
 
 export const Dashboard = () => {
     const location = useLocation();
     const isDashboardClass = location.pathname === '/dashboard/class';
     const isDashboardHome = location.pathname === '/dashboard' || location.pathname === '/dashboard/home';
     const isDashboardQueueManager = location.pathname === '/dashboard/queuemanager';
+    const isDashboardSettings = location.pathname === '/dashboard/settings';
+    // Supabase user
     const { user } = useAuth();
+    
     const userId = user?.id;
     const socket = useSocket();
 
@@ -148,7 +152,7 @@ return (
         <Sidebar isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen}/>
         <div className="relative flex-1 min-w-0 overflow-y-auto">
             {/* Fixed overlay — no layout whitespace. Home places its own bell in the title row. */}
-            {!isDashboardHome && (
+            {!(isDashboardHome || isDashboardSettings) && (
                 <LuBell
                     size={35}
                     className="fixed top-11 right-7 z-30 cursor-pointer p-2 hover:rounded-full hover:bg-gray-100 hover:opacity-80 sm:right-9 md:right-11 lg:right-15"
@@ -177,8 +181,10 @@ return (
                     />
                 </VerifyTA>
             )}
+            
+            {/* Settings */}
+            { isDashboardSettings && <DashboardSettings />}
         </div>
-        {/* Class selector available at /dashboardc#class */}
     </div>
     </>
 )
