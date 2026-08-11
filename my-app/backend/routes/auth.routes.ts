@@ -27,14 +27,34 @@ async function ensureAppUser(authUser: { id: string; email?: string | null }) {
     });
 }
 
+// Include type=signup so the frontend can skip PKCE exchange (server signup has no browser verifier).
 const emailRedirectTo =
-    process.env.EMAIL_CONFIRM_REDIRECT_TO ?? 'http://localhost:5173/auth/callback';
+    process.env.EMAIL_CONFIRM_REDIRECT_TO ?? 'http://localhost:5173/auth/callback?type=signup';
+
+function setAuthCookies(
+    res: Response,
+    session: { access_token: string; refresh_token: string },
+) {
+    res.cookie('access_token', session.access_token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 60 * 20 * 1000,
+    });
+    res.cookie('refresh_token', session.refresh_token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 60 * 60 * 24 * 30 * 1000,
+    });
+}
 
 router.post('/signup', async (req: Request, res: Response) => {
     const { email, password, name } = req.body;
     const { data, error } = await supabase.auth.signUp({
         email,
         password,
+        // This sends the email with the redirect url, it doesn't trigger callback on client 
         options: {
             emailRedirectTo,
         },
@@ -67,18 +87,7 @@ router.post('/signup', async (req: Request, res: Response) => {
         
         // Confirm-email disabled → session returned; set cookies like signin
         if (data.session) {
-            res.cookie('access_token', data.session.access_token, {
-                httpOnly: true,
-                secure: process.env.NODE_ENV === 'production',
-                sameSite: 'lax',
-                maxAge: 60 * 20 * 1000,
-            });
-            res.cookie('refresh_token', data.session.refresh_token, {
-                httpOnly: true,
-                secure: process.env.NODE_ENV === 'production',
-                sameSite: 'lax',
-                maxAge: 60 * 60 * 24 * 30 * 1000,
-            });
+            setAuthCookies(res, data.session);
         }
 
         return res.status(200).json({
@@ -125,26 +134,37 @@ router.post('/signin', async (req: Request, res: Response) => {
         return res.status(400).json({ error: 'Signin succeeded but session was missing' });
     }
     
-    const { access_token, refresh_token } = data.session;
-
-    // Set httpOnly cookie with the access token and refresh token
-    res.cookie('access_token', access_token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: 60 * 20 * 1000, // 20 minutes
-    });
-    res.cookie('refresh_token', refresh_token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: 60 * 60 * 24 * 30 * 1000, // 30 days
-    });
+    setAuthCookies(res, data.session);
 
     try {
         // Backfill profile if user signed up before Prisma wiring existed
         const appUser = await ensureAppUser(data.user);
         return res.status(200).json({ data, user: appUser });
+    } catch (err) {
+        return res.status(500).json({
+            error: err instanceof Error ? err.message : 'Failed to sync app user profile',
+        });
+    }
+});
+
+/** Establish httpOnly cookies from a client-side Supabase session (OAuth PKCE). */
+router.post('/session', async (req: Request, res: Response) => {
+    const access_token = typeof req.body?.access_token === 'string' ? req.body.access_token : '';
+    const refresh_token = typeof req.body?.refresh_token === 'string' ? req.body.refresh_token : '';
+    if (!access_token || !refresh_token) {
+        return res.status(400).json({ error: 'access_token and refresh_token are required' });
+    }
+
+    const { data, error } = await supabase.auth.getUser(access_token);
+    if (error || !data.user) {
+        return res.status(401).json({ error: 'Invalid session' });
+    }
+
+    setAuthCookies(res, { access_token, refresh_token });
+
+    try {
+        const appUser = await ensureAppUser(data.user);
+        return res.status(200).json({ user: appUser });
     } catch (err) {
         return res.status(500).json({
             error: err instanceof Error ? err.message : 'Failed to sync app user profile',

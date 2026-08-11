@@ -117,14 +117,14 @@ function FeatureCard({
   index: number;
 }) {
   const prefersReducedMotion = useReducedMotion();
-  // Slight cascade so later cards sit a bit lower when stuck
+  // Mobile only: cascade so later cards sit a bit lower when stuck
   const stickyTop = `calc(5.5rem + ${index * 0.65}rem)`;
 
   return (
     <motion.div
-      className={`${card.className} sticky`}
+      className={`${card.className} sticky lg:static`}
       style={{ zIndex: index + 1, top: stickyTop }}
-      initial={prefersReducedMotion ? false : { opacity: 0, y: 48 }}
+      initial={prefersReducedMotion ? false : { opacity: 0, y: 56 }}
       whileInView={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
       viewport={{ once: true, amount: 0.25, margin: '0px 0px -40px 0px' }}
       transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1], delay: index * 0.06 }}
@@ -195,7 +195,7 @@ export const Body = () => {
           Built to...{' '}
         </motion.span>
 
-        {/* Cards section — scroll reveal on mobile; sticky stack on desktop */}
+        {/* Cards — sticky stack on mobile; bottom-to-top reveal only on desktop */}
         <div className="grid grid-cols-1 lg:grid-cols-2 p-5 md:px-15 mt-5 gap-15">
           {FEATURE_CARDS.map((card, index) => (
             <FeatureCard key={card.key} card={card} index={index} />

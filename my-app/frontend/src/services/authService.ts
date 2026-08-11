@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { supabase } from './supabase.js'
 
 // API calls to backend @/api/auth/ for authentication
 
@@ -25,6 +26,42 @@ export const signIn = async (email: string, password: string) => {
         throw new Error(response.data.message);
     } catch (error) {
         throw new Error(authErrorMessage(error, 'Sign in failed'), { cause: error });
+    }
+}
+
+export const googleSignIn = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+            // OAuth only — no type=signup (that marks email-confirm callbacks)
+            redirectTo: `${window.location.origin}/auth/callback`,
+            queryParams: {
+                hd: 'tamu.edu',
+                access_type: 'offline', // Google fetches refresh tokens
+                prompt: 'consent' // force Google to show consent screen so the refresh token is actually sent
+            }
+        }
+    })
+    if (error) {
+        console.log('Failed to sign in with Google oAuth', error.message);
+    }
+}
+
+/** Persist a Supabase client session as httpOnly cookies on the Express API. */
+export const establishSession = async (access_token: string, refresh_token: string) => {
+    try {
+        const response = await axios.post(`/api/auth/session`, {
+            access_token,
+            refresh_token,
+        }, {
+            withCredentials: true,
+        });
+        if (response.status === 200) {
+            return response.data;
+        }
+        throw new Error(response.data.message);
+    } catch (error) {
+        throw new Error(authErrorMessage(error, 'Failed to establish session'), { cause: error });
     }
 }
 
