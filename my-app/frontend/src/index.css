@@ -11,9 +11,21 @@
   --font-sans: 'Inter', sans-serif;
 }
 
+/* Full-bleed yellow gutters; page content stays capped at 1500px */
+html {
+  background-color: #fefce8; /* yellow-50 */
+}
+
 body {
-  margin: 0 auto; 
+  margin: 0 auto;
   padding: 0;
+  max-width: 1500px;
+  min-height: 100%;
+  background-color: #fefce8;
+}
+
+#root {
+  min-height: 100%;
 }
 
 @theme inline {
@@ -60,7 +72,7 @@ body {
 }
 
 :root {
-  --background: oklch(1 0 0);
+  --background: #fefce8;
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);

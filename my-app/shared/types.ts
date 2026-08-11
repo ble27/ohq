@@ -13,6 +13,8 @@ export type SessionStatus =
     | 'REMOVED'
     | 'LEFT';
 
+export type NotificationType = 'JOIN' | 'LEAVE' | 'ASSIST' | 'CLOSE';
+
 // --- Prisma models (shared shape) ---
 
 export interface Course {
@@ -33,6 +35,11 @@ export interface Queue {
     updatedAt: string | Date;
 }
 
+export interface QueueWithTA extends Queue {
+    ta?: User
+    course?: Course
+}
+
 export interface QueueTicket {
     id: string;
     studentId: string;
@@ -43,6 +50,9 @@ export interface QueueTicket {
     updatedAt: string | Date;
 }
 
+export interface QueueTicketWithStudent extends QueueTicket {
+    student?: User
+}
 export interface CourseTA {
     id: string;
     courseId: string;
@@ -53,8 +63,19 @@ export interface CourseTA {
 export interface User {
     id: string;
     email: string;
-    name: string | null;
+    name: string; // name
     role: Role;
+}
+
+export interface Notification {
+    id: string;
+    userId: string;
+    type: NotificationType;
+    queueId: string;
+    ticketId: string | null;
+    createdAt: string | Date;
+    readAt: string | Date | null;
+    clearedAt: string | Date | null;
 }
 
 // --- Shared API envelopes ---
@@ -76,7 +97,7 @@ export interface QueueResponse {
 }
 
 export interface QueuesListResponse {
-    queues: Queue[];
+    queues: QueueWithTA[];
     message: string;
 }
 
@@ -124,7 +145,33 @@ export interface QueueTicketResponse {
 }
 
 export interface QueueTicketsListResponse {
-    tickets: QueueTicket[];
+    tickets: QueueTicketWithStudent[];
+    message: string;
+}
+
+// --- Notification responses ---
+// Extension for GET method including forward relations
+export interface NotificationWithDetails extends Notification {
+    ticket: QueueTicketWithStudent | null
+    queue: QueueWithTA | null
+}
+
+export interface NotificationResponse {
+    notification: Notification;
+    message: string;
+}
+
+export interface NotificationsListResponse {
+    notifications: NotificationWithDetails[];
+    message: string;
+}
+
+export interface NotificationsCreateListResponse {
+    notifications: Notification[], 
+    message: string
+}
+export interface NotificationsClearResponse {
+    count: number;
     message: string;
 }
 

@@ -27,12 +27,38 @@ async function ensureAppUser(authUser: { id: string; email?: string | null }) {
     });
 }
 
+// Include type=signup so the frontend can skip PKCE exchange (server signup has no browser verifier).
+const emailRedirectTo =
+    process.env.EMAIL_CONFIRM_REDIRECT_TO ?? 'http://localhost:5173/auth/callback?type=signup';
+
+function setAuthCookies(
+    res: Response,
+    session: { access_token: string; refresh_token: string },
+) {
+    res.cookie('access_token', session.access_token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 60 * 20 * 1000,
+    });
+    res.cookie('refresh_token', session.refresh_token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 60 * 60 * 24 * 30 * 1000,
+    });
+}
+
 router.post('/signup', async (req: Request, res: Response) => {
     const { email, password, name } = req.body;
     const { data, error } = await supabase.auth.signUp({
         email,
-        password
-    })
+        password,
+        // This sends the email with the redirect url, it doesn't trigger callback on client 
+        options: {
+            emailRedirectTo,
+        },
+    });
     if (error) {
         return res.status(400).json({ error: error.message });
     }
@@ -40,6 +66,7 @@ router.post('/signup', async (req: Request, res: Response) => {
         return res.status(400).json({ error: 'Signup succeeded but no auth user was returned' });
     }
 
+    // Create a Prisma user if not already
     try {
         const appUser = await prisma.user.upsert({
             where: { id: data.user.id },
@@ -54,12 +81,44 @@ router.post('/signup', async (req: Request, res: Response) => {
                 ...(name !== undefined ? { name } : {}),
             },
         });
-        return res.status(200).json({ data, user: appUser });
+
+        // Confirm-email enabled → no session yet; client should show /check-email
+        const needsConfirmation = !data.session;
+        
+        // Confirm-email disabled → session returned; set cookies like signin
+        if (data.session) {
+            setAuthCookies(res, data.session);
+        }
+
+        return res.status(200).json({
+            data,
+            user: appUser,
+            needsConfirmation,
+            email: data.user.email ?? email,
+        });
     } catch (err) {
         return res.status(500).json({
             error: err instanceof Error ? err.message : 'Failed to create app user profile',
         });
     }
+});
+
+// Resend signup confirmation email (Supabase Auth)
+router.post('/resend-confirmation', async (req: Request, res: Response) => {
+    const email = typeof req.body?.email === 'string' ? req.body.email.trim() : '';
+    if (!email) {
+        return res.status(400).json({ error: 'Email is required' });
+    }
+
+    const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email,
+        options: { emailRedirectTo },
+    });
+    if (error) {
+        return res.status(400).json({ error: error.message });
+    }
+    return res.status(200).json({ message: 'Confirmation email sent' });
 });
 
 router.post('/signin', async (req: Request, res: Response) => {
@@ -75,26 +134,37 @@ router.post('/signin', async (req: Request, res: Response) => {
         return res.status(400).json({ error: 'Signin succeeded but session was missing' });
     }
     
-    const { access_token, refresh_token } = data.session;
-
-    // Set httpOnly cookie with the access token and refresh token
-    res.cookie('access_token', access_token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: 60 * 20 * 1000, // 20 minutes
-    });
-    res.cookie('refresh_token', refresh_token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: 60 * 60 * 24 * 30 * 1000, // 30 days
-    });
+    setAuthCookies(res, data.session);
 
     try {
         // Backfill profile if user signed up before Prisma wiring existed
         const appUser = await ensureAppUser(data.user);
         return res.status(200).json({ data, user: appUser });
+    } catch (err) {
+        return res.status(500).json({
+            error: err instanceof Error ? err.message : 'Failed to sync app user profile',
+        });
+    }
+});
+
+/** Establish httpOnly cookies from a client-side Supabase session (OAuth PKCE). */
+router.post('/session', async (req: Request, res: Response) => {
+    const access_token = typeof req.body?.access_token === 'string' ? req.body.access_token : '';
+    const refresh_token = typeof req.body?.refresh_token === 'string' ? req.body.refresh_token : '';
+    if (!access_token || !refresh_token) {
+        return res.status(400).json({ error: 'access_token and refresh_token are required' });
+    }
+
+    const { data, error } = await supabase.auth.getUser(access_token);
+    if (error || !data.user) {
+        return res.status(401).json({ error: 'Invalid session' });
+    }
+
+    setAuthCookies(res, { access_token, refresh_token });
+
+    try {
+        const appUser = await ensureAppUser(data.user);
+        return res.status(200).json({ user: appUser });
     } catch (err) {
         return res.status(500).json({
             error: err instanceof Error ? err.message : 'Failed to sync app user profile',

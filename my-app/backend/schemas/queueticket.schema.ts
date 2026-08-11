@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { SessionStatus } from '../generated/prisma/enums.js';
+import { SessionStatus } from '../generated/prisma/client.js';
 
 export const QueueTicketValidationSchema = z.object({
     id: z.uuid({ message: 'Invalid ID format' }),

@@ -4,7 +4,6 @@ import { LuHouse, LuLibraryBig, LuSettings, LuPanelLeft, LuLogOut, LuPackage } f
 import { signOut } from '@/services/authService';
 import { useAuth } from '@/context/AuthContextProvider';
 
-
 export const MOBILE_BREAKPOINT = 640;
 
 interface SideBarProps {
@@ -28,7 +27,7 @@ export const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }: SideBarProps ) => {
       setIsSidebarOpen(false);
     }
   }
-
+  
   // Sync open/closed with viewport; always collapse below breakpoint
   useEffect(() => {
     const handleResize = () => {
@@ -54,7 +53,10 @@ export const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }: SideBarProps ) => {
   // Desktop: spacer matches sidebar so content is pushed.
   const spacerWidth = isDesktop ? sidebarWidth : 'w-[72px]';
 
-
+  let inactivityTimer: any;
+  const TIMEOUT_MINUTES = 100; 
+  const TIMEOUT_MS = TIMEOUT_MINUTES * 60 * 1000;  
+  
   const handleSignout = async () => {
     try {
       await signOut();
@@ -65,6 +67,22 @@ export const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }: SideBarProps ) => {
       console.log(err);
     } 
   }
+
+  const events = ['mousedown', 'load', 'mousemove', 'click', 'scroll', 'keypress'];
+  // Each event reset the timer
+  events.forEach((event) => {
+    window.addEventListener(event, resetTimer);
+  })
+
+  function resetTimer() {
+    // Clear out any previous timer
+    clearTimeout(inactivityTimer);
+    // Reset timer
+    inactivityTimer = setTimeout(handleSignout, TIMEOUT_MS);
+  }
+
+  resetTimer();
+
   return (
     <>
       {/* Spacer keeps main content offset; on mobile it never grows with expand */}
@@ -75,7 +93,7 @@ export const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }: SideBarProps ) => {
           className={`font-medium text-white whitespace-nowrap transition-all duration-200 overflow-hidden cursor-pointer
             ${isSidebarOpen ? 'opacity-100 max-w-[160px] mr-auto justify-between' : 'opacity-0 max-w-0 mr-0 pointer-events-none'}`}
         >
-          Queuedex
+          Queueble
         </span>
           <LuPanelLeft 
             size={45} 
@@ -118,7 +136,7 @@ export const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }: SideBarProps ) => {
             ${isSidebarOpen ? 'hover:bg-black/20 hover:opacity-90': 'hover:opacity-80 justify-center'}`}
             onClick={handleSignout}>
               <LuLogOut size={20} color="white"/>
-              {isSidebarOpen && <span>Signout</span>}
+              {isSidebarOpen && <span>Sign out</span>}
           </div>
         {/* Account and settings */}
         <div 

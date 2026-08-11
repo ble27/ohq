@@ -1,7 +1,7 @@
 import { prisma } from '../prisma.js';
 import { updatePosition } from './queueTicket.services.js';
 import type { QueueTicket } from '../generated/prisma/client.js';
-import { SessionStatus } from '../generated/prisma/enums.js';
+import { SessionStatus } from '../generated/prisma/client.js';
 
 const ACTIVE_STATUSES = [SessionStatus.WAITING, SessionStatus.HELPING] as const;
 
@@ -15,6 +15,7 @@ export const listActiveTickets = async (queueId: string): Promise<QueueTicket[]>
       { position: 'asc' },
       { joinedAt: 'asc' }, // schema has joinedAt, not createdAt
     ],
+    include: { student: true }
   });
 };
 
@@ -85,6 +86,7 @@ export const leaveQueue = async (
   return ticket;
 };
 
+// Move a ticket from WAITING TO HELPING 
 export const startHelping = async (ticketId: string): Promise<QueueTicket> => {
   const existing = await prisma.queueTicket.findUnique({ where: { id: ticketId } });
   if (!existing) {
@@ -103,7 +105,7 @@ export const startHelping = async (ticketId: string): Promise<QueueTicket> => {
     where: { id: ticketId },
     data: { status: SessionStatus.HELPING, position: null },
   });
-
+  // Auto update position of the ticket
   await updatePosition(existing.queueId);
   return ticket;
 };
