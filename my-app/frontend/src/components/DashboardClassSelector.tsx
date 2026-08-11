@@ -300,7 +300,7 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ CSCEClasses, selec
                 return (
                   <article
                     key={q.id}
-                    className="flex flex-col rounded-2xl border border-black/20 bg-white p-6"
+                    className="flex flex-col rounded-2xl border border-black/30 bg-white p-6"
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
@@ -319,7 +319,7 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ CSCEClasses, selec
                     </div>
 
                     <div className="mt-6 flex items-center gap-1.5 text-sm text-neutral-600">
-                      <MapPin className="size-3.5 shrink-0 text-neutral-400" strokeWidth={1.75} aria-hidden />
+                      <MapPin className="size-3.5 shrink-0 text-neutral-400" strokeWidth={2} color='red' aria-hidden />
                       <span className="truncate">{q.location || '—'}</span>
                     </div>
 
@@ -338,18 +338,18 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ CSCEClasses, selec
                       <button
                         type="button"
                         onClick={() => handleViewQueue(q)}
-                        className="rounded-full border border-black text-black bg-white px-4 py-2 text-sm font-medium text-neutral-800 transition 
+                        className="rounded-full border border-neutral-600 text-black bg-white px-4 py-2 text-sm font-medium text-neutral-800 transition 
                         hover:bg-yellow-500" 
                       >
                         View
                       </button>
-                      <button
+                      {/* <button
                         type="button"
                         onClick={() => void clearAllTickets(q.id)}
                         className="rounded-full border border-neutral-300 bg-white px-4 py-2 text-sm font-medium text-neutral-500 transition hover:border-neutral-400 hover:text-neutral-800"
                       >
                         Clear tickets
-                      </button>
+                      </button> */}
                     </div>
                   </article>
                 )

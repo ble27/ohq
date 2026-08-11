@@ -16,7 +16,7 @@ interface QueueWorkspaceProps {
     onNotifyInSession: (studentId: string, type: NotificationType, ticket: QueueTicket) => void 
 }
 
-export const QueueWorkspace = ({ tickets, onUpdateTickets, completedTickets, onUpdateCompleted, onNotifyInSession }: QueueWorkspaceProps) => {
+export const QueueWorkspace = ({ tickets, queue, onUpdateTickets, completedTickets, onUpdateCompleted, onNotifyInSession }: QueueWorkspaceProps) => {
     // sort -> <0: before, =0: no change, >0: after
     const waiting = tickets.filter((t) => t.status === 'WAITING')
                             .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
@@ -91,6 +91,17 @@ export const QueueWorkspace = ({ tickets, onUpdateTickets, completedTickets, onU
     const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
     const remSecs = (seconds % 60).toString().padStart(2, '0');
 
+    // Remove tickets from Completed Workspace
+    const clearALlCompletedTickets = async () => {
+        const queueId = queue?.id;
+        // console.log('Calling clearAllCompletedTickets');
+        const response = await axios.delete(`/api/queueticket/queues/${queueId}/status/completed`);
+        // refresh active tickets
+        await onUpdateCompleted();
+        await onUpdateTickets();
+        return response;
+    }
+
     return (
         <div className="flex min-h-0 flex-1 flex-col gap-3 bg-slate-100 px-3 pb-4 pt-3 sm:px-4">
             {/* Active lane: Next (1) + In Session (1) */}
@@ -155,6 +166,7 @@ export const QueueWorkspace = ({ tickets, onUpdateTickets, completedTickets, onU
                 count={completedTickets.length}
                 emptyLabel="Completed tickets will appear here"
                 className="min-h-[120px] flex-1 sm:min-h-[140px]"
+                onClearCompletedTickets={clearALlCompletedTickets}
             >
                 {completedTickets.length > 0
                     ? completedTickets.map((ticket) => (
