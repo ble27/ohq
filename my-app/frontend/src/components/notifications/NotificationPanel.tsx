@@ -15,7 +15,7 @@ export const NotificationPanel = ({
     return (
         <div
             className="fixed top-20 right-10 z-20 m-0 h-[280px] w-[280px] min-h-0 overflow-x-hidden
-                rounded-lg border border-black/10 bg-gray-50/20 px-4 shadow-xl backdrop-blur-lg
+                rounded-lg border border-black/20 bg-white px-4 shadow-xl backdrop-blur-lg
                 scrollbar-none lg:right-15 xl:right-20 xl:h-80 xl:w-80"
         >
             <div className="flex h-15 flex-row items-center justify-between">
