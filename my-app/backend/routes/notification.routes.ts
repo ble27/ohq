@@ -5,6 +5,10 @@ import { Router } from 'express';
 import { ZodError } from 'zod';
 import { NotificationType as PrismaNotificationType } from '../generated/prisma/index.js';
 import { listActiveTickets } from '../services/queue.services.js';
+import {
+    filterRecipientsByNotificationPreference,
+    isNotificationEnabledForUser,
+} from '../services/notification.services.js';
 import type {
     NotificationResponse,
     NotificationsClearResponse,
@@ -66,6 +70,14 @@ router.post('/queues/:queueId/user/:recipientId/type/:type', async (req: Request
             ticketId,
         });
 
+        const enabled = await isNotificationEnabledForUser(recipientId, type);
+        if (!enabled) {
+            res.status(200).json({
+                message: `Notification not sent; recipient has disabled ${type} alerts`,
+            });
+            return;
+        }
+
         const response = await prisma.notification.create({
             data: {
                 queueId: body.queueId,
@@ -117,9 +129,21 @@ router.post('/queues/:queueId/type/close', async (req: Request, res: Response) =
 
         const tickets = await listActiveTickets(queueId);
         const recipientIds = [...tickets.map((t) => t.studentId), queue.taId];
+        const enabledRecipientIds = await filterRecipientsByNotificationPreference(
+            recipientIds,
+            type,
+        );
+
+        if (enabledRecipientIds.length === 0) {
+            res.status(200).json({
+                notifications: [],
+                message: 'No recipients have CLOSE alerts enabled',
+            });
+            return;
+        }
 
         const response = await prisma.$transaction(
-            recipientIds.map((userId) =>
+            enabledRecipientIds.map((userId) =>
                 prisma.notification.create({
                     data: { queueId, type, userId },
                     include: {
