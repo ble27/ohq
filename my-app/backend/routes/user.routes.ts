@@ -1,12 +1,20 @@
 import { Router } from 'express';
 import type { Request, Response } from 'express';
 import { prisma } from '../prisma.js';
+import type { NotificationType, User } from '../../shared/types.js';
 import type {
     ApiMessageResponse,
     UserResponse,
 } from '../../shared/types.js';
 import { ZodError } from 'zod';
-import { UserValidatedSchema } from '../schemas/user.schema.js';
+import { UserValidatedSchema, NotificationAlertUpdateSchema } from '../schemas/user.schema.js';
+
+const NOTIFY_FIELD_BY_TYPE = {
+    JOIN: 'notifyJoin',
+    LEAVE: 'notifyLeave',
+    ASSIST: 'notifyAssist',
+    CLOSE: 'notifyClose',
+} as const satisfies Record<NotificationType, keyof Pick<User, 'notifyJoin' | 'notifyLeave' | 'notifyAssist' | 'notifyClose'>>;
 
 const router: Router = Router();
 
@@ -28,7 +36,7 @@ router.get('/:id', async (req: Request, res: Response): Promise<void> => {
         }
 
         const body: UserResponse = {
-            user,
+            user, 
             message: `Successfully fetched user ${userId}`,
         };
         res.status(200).json(body);
@@ -83,20 +91,18 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
     }
 });
 
-// GET
-router.get('/:id', async (req: Request, res: Response) => {
-    try { 
-        const id = req.params.id;
-        if (!id) {
-            res.status(400).json({ message: 'User ID is required' });
-            return;
-        }
-        const user = await prisma.user.findFirst({
-            where: { id }
+// PATCH user name /api/users/:id/name
+router.patch('/:id/name', async (req: Request, res: Response) => {
+    try {
+        const id = req.params.id as string;
+        const name = req.body.name as string;
+        const response = await prisma.user.update({
+            where: { id: id }, 
+            data: { name }
         })
         const body = {
-            user: user,
-            message: `Successfully fetched user with id ${id}`
+            user: response,
+            message: `Successfully updated user name to ${name}`
         }
         res.status(200).json(body);
     } catch (error) {
@@ -105,9 +111,58 @@ router.get('/:id', async (req: Request, res: Response) => {
             res.status(500).json({ message: error.message });
             return;
         }
-        res.status(500).json({ message: `Failed to find user ${id}` });        
+        res.status(500).json({ message: `Failed to update user name with id ${id}` });        
     }
 })
+
+// PATCH notification alerts based on types /api/users/:id/notifications/type/:type
+router.patch('/:id/notifications/type/:type', async (req: Request, res: Response) => {
+    try {
+        const id = req.params.id as string;
+        const type = req.params.type as NotificationType;
+        const { status } = NotificationAlertUpdateSchema.parse(req.body);
+
+        const notifyField = NOTIFY_FIELD_BY_TYPE[type];
+        if (!notifyField) {
+            res.status(400).json({ message: 'Invalid notification type' });
+            return;
+        }
+
+        // JOIN/LEAVE preferences are TA-only
+        if (type === 'JOIN' || type === 'LEAVE') {
+            const taUser = await prisma.user.findFirst({
+                where: { id, role: 'TA' },
+            });
+            if (!taUser) {
+                res.status(403).json({ message: 'Only TAs can update JOIN/LEAVE notification preferences' });
+                return;
+            }
+        }
+
+        const response = await prisma.user.update({
+            where: { id },
+            data: { [notifyField]: status }, // use the value of notifyField as the key
+        });
+
+        const body = {
+            user: response,
+            message: `Successfully updated ${notifyField} to ${status}`,
+        };
+        res.status(200).json(body);
+    } catch (error) {
+        if (error instanceof ZodError) {
+            res.status(400).json({ message: 'Invalid input', errors: error.issues });
+            return;
+        }
+        const id = req.params.id;
+        if (error instanceof Error) {
+            res.status(500).json({ message: error.message });
+            return;
+        }
+        res.status(500).json({ message: `Failed to update notification alert for user ${id}` });
+    }
+});
+
 
 // DELETE /api/users/:id
 router.delete('/:id', async (req: Request, res: Response): Promise<void> => {

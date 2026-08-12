@@ -15,6 +15,10 @@ export const QueueValidationSchema = z.object({
 
     isOpen: z.boolean({ message: 'Status must be a boolean' }),
 
+    startsAt: z.coerce.date().optional().default(() => new Date()),
+
+    endsAt: z.coerce.date({ message: 'End time must be a valid date' }).optional().nullable(),
+
     createdAt: z.coerce.date().default(() => new Date()),
 
     updatedAt: z.coerce.date().optional(),

@@ -28,7 +28,10 @@ model Queue {
     isOpen      Boolean     @default(false)
     createdAt   DateTime    @default(now())
     updatedAt   DateTime    @updatedAt
-    
+
+    startsAt    DateTime
+    endsAt      DateTime?
+
     // Relations
     course          Course          @relation(fields: [courseId], references: [id], onDelete: Cascade)
     ta              User            @relation(fields: [taId], references: [id], onDelete: Cascade)
@@ -91,10 +94,18 @@ model CourseTA {
 
 // id MUST match auth.users.id from Supabase Auth (no @default — Auth is source of truth)
 model User {
-    id          String      @id @db.Uuid
-    email       String      @unique
-    name        String?     
-    role        Role        @default(STUDENT)
+    id               String      @id @db.Uuid
+    email            String      @unique
+    name             String?     
+    role             Role        @default(STUDENT)
+
+    // Notification alerts (notification type based on NotificationType)
+    notifyAssist    Boolean     @default(true)     // Student assisted by TA
+    notifyClose     Boolean     @default(true)     // Queue closing
+    notifyJoin      Boolean     @default(true)     // TA only
+    notifyLeave     Boolean     @default(true)     // TA only
+
+    defaultLocation String?     // TA default location
 
     // Reverse relations
     taQueues        Queue[]    

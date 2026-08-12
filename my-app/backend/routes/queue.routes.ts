@@ -112,7 +112,13 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
             ...req.body,
             courseId: course.id,
         });
-        const newQueue = await prisma.queue.create({ data: validatedQueue });
+        const { endsAt, ...queueData } = validatedQueue;
+        const newQueue = await prisma.queue.create({
+            data: {
+                ...queueData,
+                ...(endsAt != null ? { endsAt } : {}),
+            },
+        });
 
         console.log(`[QUEUE] Successfully created queue object`);
 

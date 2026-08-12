@@ -13,7 +13,7 @@ import type {
     QueueTicketWithStudent,
 } from '../../shared/types.js';
 
-import { CreateQueueTicketValidationSchema } from '../schemas/queueTicket.schema.js';
+import { CreateQueueTicketValidationSchema } from '../schemas/queueticket.schema.js';
 import { date, ZodError } from 'zod';
 import { start } from 'repl';
 const router: Router = Router();

@@ -31,6 +31,8 @@ export interface Queue {
     taId: string;
     location: string;
     isOpen: boolean;
+    startsAt: string | Date;
+    endsAt?: string | Date | null;
     createdAt: string | Date;
     updatedAt: string | Date;
 }
@@ -63,8 +65,13 @@ export interface CourseTA {
 export interface User {
     id: string;
     email: string;
-    name: string; // name
+    name?: string | null;
     role: Role;
+    notifyAssist?: boolean;
+    notifyClose?: boolean;
+    notifyJoin?: boolean;
+    notifyLeave?: boolean;
+    defaultLocation?: string | null;
 }
 
 export interface Notification {
