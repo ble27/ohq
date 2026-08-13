@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react" 
 import { useAuth } from "@/context/AuthContextProvider"
-import { signOut } from "@/services/authService";
+import { DeleteUserAccountConfirmation } from "./DeleteUserAccountConfirmation";
+import { deleteAccount, signOut } from "@/services/authService";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import type { User as PrismaUser } from "@shared/types";
@@ -17,6 +18,7 @@ export const DashboardSettings = ({ prismaUser, supabaseUser, onUpdateSaveChange
     const [studentAlertYourTurn, setStudentAlertYourTurn] = useState(prismaUser?.notifyAssist ?? null)
     const [taAlertStudentJoinQueue, setTaAlertStudentJoinQueue] = useState(prismaUser?.notifyJoin ?? null)
     const [taAlertStudentLeaveQueue, setTaAlertStudentLeaveQueue] = useState(prismaUser?.notifyLeave ?? null)
+    const [isDeleteUserAccountModalOpen, setIsDeleteUserAccountModalOpen] = useState(false);
 
     // Update state every time prismaUser changes
     useEffect(() => {
@@ -29,9 +31,18 @@ export const DashboardSettings = ({ prismaUser, supabaseUser, onUpdateSaveChange
     }, [prismaUser])
 
     const navigate = useNavigate();
+    const { refreshUser } = useAuth();
 
+    // Permanently delete user account
     const handleDeleteAccount = async () => {
-
+        const id = prismaUser?.id ?? supabaseUser?.id;
+        if (!id) {
+            throw new Error('No user id available to delete');
+        }
+        await deleteAccount(id);
+        await signOut();
+        await refreshUser();
+        navigate('/');
     }
 
     const handleSignout = async () => {
@@ -195,9 +206,10 @@ export const DashboardSettings = ({ prismaUser, supabaseUser, onUpdateSaveChange
                                         className='flex justify-center w-30 text-xs md:text-sm 
                                         font-medium bg-neutral-400 hover:bg-red-700 hover:text-white px-1 py-2 rounded-lg
                                         hover:opacity-80'
-                                        onClick={handleDeleteAccount}
+                                        onClick={() => setIsDeleteUserAccountModalOpen(true)}
                                     > Delete Account </button>                   
                                 </div> 
+                                {isDeleteUserAccountModalOpen && <DeleteUserAccountConfirmation onClose={() => setIsDeleteUserAccountModalOpen(false)} onConfirm={handleDeleteAccount}/>}
                             </div>   
                         </div>
                     </div>

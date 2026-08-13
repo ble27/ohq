@@ -31,7 +31,7 @@ async function ensureAppUser(authUser: { id: string; email?: string | null }) {
 const emailRedirectTo =
     process.env.EMAIL_CONFIRM_REDIRECT_TO ?? 'http://localhost:5173/auth/callback?type=signup';
 
-function setAuthCookies(
+export function setAuthCookies(
     res: Response,
     session: { access_token: string; refresh_token: string },
 ) {
@@ -203,5 +203,6 @@ router.post('/signout', async (req: Request, res: Response) => {
     await supabase.auth.signOut({ scope: 'local' });
     return res.status(200).json({ message: 'Signed out successfully' });
 });
+
 
 export const authRouter = router;

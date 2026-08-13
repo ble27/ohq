@@ -146,4 +146,15 @@ export const getMePrisma = async (id: string) => {
     });
     return response.data ?? null;
 }
+
+export const deleteAccount = async (id: string) => {
+    try {
+        const response = await axios.delete(`/api/users/${id}`, {
+            withCredentials: true,
+        });
+        return response.data ?? null;
+    } catch (error) {
+        throw new Error(authErrorMessage(error, 'Failed to delete account'), { cause: error });
+    }
+}
 export const PENDING_CONFIRM_EMAIL_KEY = 'pendingConfirmEmail';

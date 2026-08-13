@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import type { Request, Response } from 'express';
 import { prisma } from '../prisma.js';
+import { supabaseAdmin } from '../config/supabase.js';
 import type { NotificationType, User } from '../../shared/types.js';
 import type {
     ApiMessageResponse,
@@ -174,16 +175,35 @@ router.delete('/:id', async (req: Request, res: Response): Promise<void> => {
             return;
         }
 
-        const user = await prisma.user.findUnique({
-            where: { id: userId },
-        });
-        if (!user) {
-            res.status(404).json({ message: 'User cannot be deleted due to not found' });
+        const authUser = (req as Request & { user?: { id: string } }).user;
+        if (!authUser?.id) {
+            res.status(401).json({ message: 'Unauthorized' });
             return;
         }
-        await prisma.user.delete({
+        if (authUser.id !== userId) {
+            res.status(403).json({ message: 'You can only delete your own account' });
+            return;
+        }
+
+        // App data first so a failed Auth delete can be retried while still signed in.
+        const prismaUser = await prisma.user.findUnique({
             where: { id: userId },
         });
+        if (prismaUser) {
+            await prisma.user.delete({
+                where: { id: userId },
+            });
+        }
+
+        const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userId);
+        if (deleteError) {
+            console.error('Failed to delete user from Supabase Auth', deleteError);
+            res.status(500).json({ message: 'Failed to delete user from authentication' });
+            return;
+        }
+
+        res.clearCookie('access_token');
+        res.clearCookie('refresh_token');
 
         const body: ApiMessageResponse = {
             message: `User ${userId} successfully deleted`,
