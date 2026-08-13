@@ -1,16 +1,33 @@
-import { useState } from "react" 
+import { useState, useEffect } from "react" 
 import { useAuth } from "@/context/AuthContextProvider"
 import { signOut } from "@/services/authService";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import type { User as PrismaUser } from "@shared/types";
+import type { User  as SupabaseUser } from "@supabase/supabase-js";
+interface DashboardSettingsProps {
+    prismaUser: PrismaUser | null
+    supabaseUser: SupabaseUser | null
+    onUpdateSaveChanges: () => Promise<void>     // refreshUser from Context Provider which updates both Prisma and Supabase models
+}
+export const DashboardSettings = ({ prismaUser, supabaseUser, onUpdateSaveChanges }: DashboardSettingsProps) => {
+    // useState only use the inital prop once and doesn't refresh
+    const [displayName, setDisplayName] = useState(prismaUser?.name ?? '');
+    const [studentAlertQueueClosing, setStudentAlertQueueClosing] = useState(prismaUser?.notifyClose ?? null)
+    const [studentAlertYourTurn, setStudentAlertYourTurn] = useState(prismaUser?.notifyAssist ?? null)
+    const [taAlertStudentJoinQueue, setTaAlertStudentJoinQueue] = useState(prismaUser?.notifyJoin ?? null)
+    const [taAlertStudentLeaveQueue, setTaAlertStudentLeaveQueue] = useState(prismaUser?.notifyLeave ?? null)
 
-export const DashboardSettings = () => {
-    const { user, prismaUser } = useAuth();
-    const [displayName, setDisplayName] = useState('');
-    const [studentAlertQueueClosing, setStudentAlertQueueClosing] = useState(true)
-    const [studentAlertYourTurn, setStudentAlertYourTurn] = useState(true)
-    const [taAlertStudentJoinQueue, setTaAlertStudentJoinQueue] = useState(true)
-    const [taAlertStudentLeaveQueue, setTaAlertStudentLeaveQueue] = useState(true)
+    // Update state every time prismaUser changes
+    useEffect(() => {
+        if (!prismaUser) return;
+        setDisplayName(prismaUser?.name ?? '');
+        setStudentAlertYourTurn(prismaUser?.notifyAssist ?? null);
+        setStudentAlertQueueClosing(prismaUser?.notifyClose ?? null);
+        setTaAlertStudentJoinQueue(prismaUser?.notifyJoin ?? null);
+        setTaAlertStudentLeaveQueue(prismaUser?.notifyLeave ?? null);
+    }, [prismaUser])
+
     const navigate = useNavigate();
 
     const handleDeleteAccount = async () => {
@@ -33,20 +50,22 @@ export const DashboardSettings = () => {
         }
         // Student
         if (prismaUser?.notifyAssist !== studentAlertYourTurn) {
-            await axios.patch(`/api/users/${id}/type/ASSIST`, {status: studentAlertYourTurn});
+            await axios.patch(`/api/users/${id}/notifications/type/ASSIST`, {status: studentAlertYourTurn});
         }
         if (prismaUser?.notifyClose !== studentAlertQueueClosing) {
-            await axios.patch(`/api/users/${id}/type/CLOSE`, {status: studentAlertQueueClosing});
+            await axios.patch(`/api/users/${id}/notifications/type/CLOSE`, {status: studentAlertQueueClosing});
         }
         // TA
         if (prismaUser?.role === 'TA') {
             if (prismaUser.notifyJoin !== taAlertStudentJoinQueue) {
-                await axios.patch(`/api/users/${id}/type/JOIN`, {status: taAlertStudentJoinQueue});
+                // /api/users/:id/notifications/type/:type
+                await axios.patch(`/api/users/${id}/notifications/type/JOIN`, {status: taAlertStudentJoinQueue});
             }
             if (prismaUser.notifyLeave !== taAlertStudentLeaveQueue) {
-                await axios.patch(`/api/users/${id}/type/LEAVE`, {status: taAlertStudentLeaveQueue});
+                await axios.patch(`/api/users/${id}/notifications/type/LEAVE`, {status: taAlertStudentLeaveQueue});
             }
         }
+        await onUpdateSaveChanges(); // sync current user status 
     }
 
     const handleCancelChanges = async () => {
@@ -69,6 +88,7 @@ export const DashboardSettings = () => {
         }
         return;
     }
+
     return (
         <>
             <div className="flex inset-0 bg-white h-full w-full flex-col px-6 pb-10 pt-10 sm:px-8 md:px-10">
@@ -88,7 +108,7 @@ export const DashboardSettings = () => {
                                     <input 
                                         className='border-1 border-neutral-400 rounded-sm px-2 py-1 text-xs
                                         md:text-sm lg:text-md w-24 focus:outline-none focus:border-blue-500 overflow-hidden'
-                                        placeholder={prismaUser?.name ?? user?.email}
+                                        placeholder={prismaUser?.name ?? supabaseUser?.email}
                                         value={displayName}
                                         onChange={e => setDisplayName(e.target.value)}
                                     />

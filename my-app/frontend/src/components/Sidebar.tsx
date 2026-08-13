@@ -54,7 +54,7 @@ export const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }: SideBarProps ) => {
   const spacerWidth = isDesktop ? sidebarWidth : 'w-[72px]';
 
   let inactivityTimer: any;
-  const TIMEOUT_MINUTES = 100; 
+  const TIMEOUT_MINUTES = 10; 
   const TIMEOUT_MS = TIMEOUT_MINUTES * 60 * 1000;  
   
   const handleSignout = async () => {
@@ -65,14 +65,25 @@ export const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }: SideBarProps ) => {
     }
     catch(err: unknown) {
       console.log(err);
-    } 
+    } finally {
+      removeEventListeners();
+    }
   }
 
   const events = ['mousedown', 'load', 'mousemove', 'click', 'scroll', 'keypress'];
   // Each event reset the timer
-  events.forEach((event) => {
-    window.addEventListener(event, resetTimer);
-  })
+  function addEventListeners() {
+    events.forEach((event) => {
+      window.addEventListener(event, resetTimer);
+    })
+  }
+
+  function removeEventListeners() {
+    events.forEach((event) => {
+      window.removeEventListener(event, resetTimer);
+    })
+    clearTimeout(inactivityTimer);
+  }
 
   function resetTimer() {
     // Clear out any previous timer
@@ -81,6 +92,7 @@ export const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }: SideBarProps ) => {
     inactivityTimer = setTimeout(handleSignout, TIMEOUT_MS);
   }
 
+  addEventListeners();
   resetTimer();
 
   return (

@@ -28,8 +28,8 @@ export const Dashboard = () => {
     const isDashboardQueueManager = location.pathname === '/dashboard/queuemanager';
     const isDashboardSettings = location.pathname === '/dashboard/settings';
     // Supabase user
-    const { user } = useAuth();
-    
+    const { user, prismaUser, refreshUser } = useAuth();
+
     const userId = user?.id;
     const socket = useSocket();
 
@@ -48,6 +48,7 @@ export const Dashboard = () => {
 
     // This include ticket.student and queue.ta from forward relations
     const [notifications, setNotifications] = useState<NotificationWithDetails[]>([]);
+
 
     useEffect(() => {
         if (!socket) return;
@@ -144,7 +145,7 @@ export const Dashboard = () => {
             prev.map((q) => updated.id === q.id ? updated : q)
         )
     }
-    
+
 return (
     <>
     <div className="flex w-full h-screen m-0 p-0 overflow-hidden">
@@ -183,7 +184,7 @@ return (
             )}
             
             {/* Settings */}
-            { isDashboardSettings && <DashboardSettings />}
+            { isDashboardSettings && <DashboardSettings prismaUser={prismaUser} supabaseUser={user} onUpdateSaveChanges={refreshUser}/>}
         </div>
     </div>
     </>

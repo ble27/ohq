@@ -30,6 +30,7 @@ export const AuthContextProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   // GET /api/auth/me → { user: SupabaseUser, profile: PrismaUser | null }
+  // Update both the Prisma and Supababse user models
   const refreshUser = useCallback(async () => {
     try {
       const me = await getMeSupabase();

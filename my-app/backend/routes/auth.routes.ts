@@ -199,7 +199,8 @@ router.post('/signout', async (req: Request, res: Response) => {
     console.log('Backend signout route');
     res.clearCookie('access_token');
     res.clearCookie('refresh_token');
-    await supabase.auth.signOut();
+    // log out only current user
+    await supabase.auth.signOut({ scope: 'local' });
     return res.status(200).json({ message: 'Signed out successfully' });
 });
 
