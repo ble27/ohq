@@ -42,6 +42,7 @@ export async function filterRecipientsByNotificationPreference(
     const field = getNotifyPreferenceField(type);
     const users = await prisma.user.findMany({
         where: { id: { in: userIds } },
+        // select field returns the id + 4 preferences (it doesn't modify original status)
         select: {
             id: true,
             notifyJoin: true,
@@ -50,6 +51,7 @@ export async function filterRecipientsByNotificationPreference(
             notifyClose: true,
         },
     });
-
+    // user[field] = user.field
+    // filter by each object then for each user in the object return the id
     return users.filter((user) => user[field]).map((user) => user.id);
 }

@@ -2,6 +2,7 @@ import { useState } from "react"
 import { useAuth } from "@/context/AuthContextProvider"
 import { signOut } from "@/services/authService";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 export const DashboardSettings = () => {
     const { user, prismaUser } = useAuth();
@@ -10,36 +11,63 @@ export const DashboardSettings = () => {
     const [studentAlertYourTurn, setStudentAlertYourTurn] = useState(true)
     const [taAlertStudentJoinQueue, setTaAlertStudentJoinQueue] = useState(true)
     const [taAlertStudentLeaveQueue, setTaAlertStudentLeaveQueue] = useState(true)
-
+    const navigate = useNavigate();
 
     const handleDeleteAccount = async () => {
 
     }
 
     const handleSignout = async () => {
+        console.log('Calling handleSignout');
         await signOut();
+        navigate('/');
         return;
     }
 
     const handleSaveChanges = async () => {
-        // Name change
-        if (displayName === prismaUser?.name) return;
-        else {
-            try {
-                const response = await axios.patch('/api/users/:id/name', {
-                    name: displayName
-                })
-            } catch (error) {
-                console.log('Unable to change display name', error);
-                return;
+        const id = prismaUser?.id;
+        // Name
+        if (displayName !== prismaUser?.name) {
+            await axios.patch(`/api/users/${id}/name`, {
+                name: displayName })
+        }
+        // Student
+        if (prismaUser?.notifyAssist !== studentAlertYourTurn) {
+            await axios.patch(`/api/users/${id}/type/ASSIST`, {status: studentAlertYourTurn});
+        }
+        if (prismaUser?.notifyClose !== studentAlertQueueClosing) {
+            await axios.patch(`/api/users/${id}/type/CLOSE`, {status: studentAlertQueueClosing});
+        }
+        // TA
+        if (prismaUser?.role === 'TA') {
+            if (prismaUser.notifyJoin !== taAlertStudentJoinQueue) {
+                await axios.patch(`/api/users/${id}/type/JOIN`, {status: taAlertStudentJoinQueue});
+            }
+            if (prismaUser.notifyLeave !== taAlertStudentLeaveQueue) {
+                await axios.patch(`/api/users/${id}/type/LEAVE`, {status: taAlertStudentLeaveQueue});
             }
         }
-        // Notifications change
-
-
     }
-    const handleCancelChanges = async () => {
 
+    const handleCancelChanges = async () => {
+        if (prismaUser?.name) {
+            setDisplayName('');
+        }
+        if (prismaUser?.role === 'TA') {
+            if (prismaUser.notifyJoin) {
+                setTaAlertStudentJoinQueue(prismaUser.notifyJoin);
+            }
+            if (prismaUser.notifyLeave) {
+                setTaAlertStudentLeaveQueue(prismaUser.notifyLeave);
+            }
+        }
+        if (prismaUser?.notifyAssist) {
+            setStudentAlertYourTurn(prismaUser.notifyAssist);
+        }
+        if (prismaUser?.notifyClose) {
+            setStudentAlertQueueClosing(prismaUser.notifyClose);
+        }
+        return;
     }
     return (
         <>

@@ -129,6 +129,8 @@ router.post('/queues/:queueId/type/close', async (req: Request, res: Response) =
 
         const tickets = await listActiveTickets(queueId);
         const recipientIds = [...tickets.map((t) => t.studentId), queue.taId];
+
+        // Check which user which type of notification enabled
         const enabledRecipientIds = await filterRecipientsByNotificationPreference(
             recipientIds,
             type,
