@@ -85,14 +85,16 @@ router.post('/queues/:queueId/user/:recipientId/type/:type', async (req: Request
                 type: body.type,
                 ticketId: body.ticketId ?? null,
             },
-            include: {
+            include: { 
                 ticket: { include: { student: true } },
                 queue: { include: { ta: true } },
             },
         });
 
         // Send event to frontend (same nested shape as GET inbox)
+        // Notify only to recipientId 
         getIo().to(`user:${recipientId}`).emit('notification-created', response);
+        
         console.log(`[Socket] Sent notification to ${recipientId}`);
 
         const payload: NotificationResponse = {

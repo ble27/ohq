@@ -14,6 +14,7 @@ import type {
 } from '@shared/types';
 import { useAuth } from '@/context/AuthContextProvider';
 import { InactiveQueueModal } from './InactiveQueueModal';
+import { toast } from 'sonner';
 
 const ACTIVE_TICKET_STATUSES = new Set(['WAITING', 'HELPING']);
 

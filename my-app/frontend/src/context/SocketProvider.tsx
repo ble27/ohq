@@ -7,7 +7,7 @@ const SocketContext = createContext<Socket | null>(null);
 export function SocketProvider ({ children }: { children: ReactNode } ) {
     const [socket, setSocket] = useState<Socket | null>(null);
     const { user, loading } = useAuth();
-
+    
     useEffect(() => {
         // Only connect socket if user is signed in
         if (loading || !user) {

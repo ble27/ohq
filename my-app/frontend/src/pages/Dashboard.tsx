@@ -20,6 +20,7 @@ import axios from 'axios'
 import { useAuth } from '@/context/AuthContextProvider';
 import { useSocket } from '@/context/SocketProvider';
 import { DashboardSettings } from '@/components/DashboardSettings';
+import { toast } from 'sonner';
 
 export const Dashboard = () => {
     const location = useLocation();
@@ -54,9 +55,24 @@ export const Dashboard = () => {
         if (!socket) return;
         const onCreated = (n: NotificationWithDetails) => {
             setNotifications((prev) => [n, ...prev]);
+            if (n.type === 'JOIN') {
+                toast(`student ${n.ticket?.student?.name ?? n.ticket?.student?.email ?? ''} just joined your queue.`);
+            }
+            else if (n.type === 'LEAVE') {
+                toast(`student ${n.ticket?.student?.name ?? n.ticket?.student?.email ?? ''} just left your queue.`);
+            }
+            else if (n.type === 'ASSIST') {
+                toast(`TA ${n.queue?.ta?.name} is ready to assist you. Please head to location ${n.queue?.location}!`)
+            }
+            else if (n.type === 'CLOSE') {
+                toast(`TA's ${n.queue?.ta?.name ?? n.queue?.ta?.email} closes at ${n.queue?.endsAt}!`)
+            }
         };
+        // socket auto pass in params to onCreated
+        // Each notification is already routed to a specific id on the backend using .to().emit()
         socket.on('notification-created', onCreated);
         return () => {
+            // onCreated(n);
             socket.off('notification-created', onCreated);
         };
     }, [socket]);

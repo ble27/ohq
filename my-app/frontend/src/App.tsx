@@ -8,6 +8,7 @@ import { Signin } from './components/Signin'
 import { Signup } from './components/Signup'
 import { EmailConfirmation } from './components/EmailConfirmation'
 import { AuthCallback } from './components/AuthCallback'
+import { Toaster } from '@/components/ui/sonner'
 
 import './index.css'
 
@@ -16,6 +17,7 @@ function App() {
     <AuthContextProvider>
       <SocketProvider>
         <BrowserRouter>
+          <Toaster position='top-right' richColors/>
           <Routes>
             <Route path='/'
               element={
