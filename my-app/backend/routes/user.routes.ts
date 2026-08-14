@@ -165,6 +165,35 @@ router.patch('/:id/notifications/type/:type', async (req: Request, res: Response
     }
 });
 
+// PATCH /api/users/:id/notifications/sound
+router.patch('/:id/notifications/sound', async (req: Request, res: Response) => {
+    try {
+        const id = req.params.id as string;
+        const { status } = NotificationAlertUpdateSchema.parse(req.body);
+
+        const response = await prisma.user.update({
+            where: { id },
+            data: { notifySound: status },
+        });
+
+        res.status(200).json({
+            user: response,
+            message: `Successfully updated notifySound to ${status}`,
+        });
+    } catch (error) {
+        if (error instanceof ZodError) {
+            res.status(400).json({ message: 'Invalid input', errors: error.issues });
+            return;
+        }
+        const id = req.params.id;
+        if (error instanceof Error) {
+            res.status(500).json({ message: error.message });
+            return;
+        }
+        res.status(500).json({ message: `Failed to update sound preference for user ${id}` });
+    }
+});
+
 
 // DELETE /api/users/:id
 router.delete('/:id', async (req: Request, res: Response): Promise<void> => {

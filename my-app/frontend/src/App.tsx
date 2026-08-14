@@ -17,7 +17,18 @@ function App() {
     <AuthContextProvider>
       <SocketProvider>
         <BrowserRouter>
-          <Toaster position='top-right' richColors/>
+          <Toaster 
+              position='top-right'  
+              toastOptions={{
+              style: {
+                background: 'white',
+                color: 'black',
+                borderColor: 'black',
+              },
+              classNames: {
+                description: 'text-gray-700' // 
+              }
+            }} />
           <Routes>
             <Route path='/'
               element={

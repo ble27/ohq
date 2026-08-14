@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { ClassSelector } from '../components/DashboardClassSelector'
 import { Home } from '@/components/DashboardHome';
 import { Sidebar, MOBILE_BREAKPOINT } from '../components/Sidebar'
@@ -21,6 +21,7 @@ import { useAuth } from '@/context/AuthContextProvider';
 import { useSocket } from '@/context/SocketProvider';
 import { DashboardSettings } from '@/components/DashboardSettings';
 import { toast } from 'sonner';
+import notificationAlert from '../sounds/notification_alert.mp3'
 
 export const Dashboard = () => {
     const location = useLocation();
@@ -50,23 +51,89 @@ export const Dashboard = () => {
     // This include ticket.student and queue.ta from forward relations
     const [notifications, setNotifications] = useState<NotificationWithDetails[]>([]);
 
+    const liveDate = new Date();
+
+    const formattedDynamicDate = new Intl.DateTimeFormat('en-US', {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true
+    }).format(liveDate);
+
+    // Inserts the word "at" naturally into the string
+    const finalDisplayString = formattedDynamicDate.replace(/,([^,]*)$/, ' at$1');
+
+    const notificationAudioRef = useRef<HTMLAudioElement | null>(null);
+    const notificationSoundUnlockedRef = useRef(false);
+
+    // Load on mount, setup, and teardown
+    useEffect(() => {
+        const audio = new Audio(notificationAlert);
+        audio.preload = 'auto';
+        audio.volume = 1;
+        notificationAudioRef.current = audio;
+        return () => {
+            audio.pause();
+            notificationAudioRef.current = null;
+        };
+    }, []);
+
+    // First call with unlockOnly=true must happen from a user gesture (browser autoplay policy).
+    // Later calls play the alert for real.
+    const playNotificationsSound = (unlockOnly = false) => {
+        const audio = notificationAudioRef.current;
+        if (!audio) return;
+
+        // Browser blocks by default
+        if (unlockOnly) {
+            if (notificationSoundUnlockedRef.current) return;
+            notificationSoundUnlockedRef.current = true;
+            void audio.play()
+                .then(() => {
+                    audio.pause();
+                    audio.currentTime = 0;
+                })
+                .catch(() => {
+                    notificationSoundUnlockedRef.current = false;
+                });
+            return;
+        }
+
+        // Play the sound if unlocked already and user enabled sound in settings
+        if (prismaUser?.notifySound === false) return;
+        audio.currentTime = 0;
+        void audio.play().catch((error) => {
+            console.warn('Failed to play notification sound', error);
+        });
+    };
 
     useEffect(() => {
         if (!socket) return;
         const onCreated = (n: NotificationWithDetails) => {
             setNotifications((prev) => [n, ...prev]);
             if (n.type === 'JOIN') {
-                toast(`student ${n.ticket?.student?.name ?? n.ticket?.student?.email ?? ''} just joined your queue.`);
+                toast(`student ${n.ticket?.student?.name ?? n.ticket?.student?.email ?? ''} just joined your queue.`, 
+                    { description: finalDisplayString }
+                );
             }
             else if (n.type === 'LEAVE') {
-                toast(`student ${n.ticket?.student?.name ?? n.ticket?.student?.email ?? ''} just left your queue.`);
+                toast(`student ${n.ticket?.student?.name ?? n.ticket?.student?.email ?? ''} just left your queue.`, 
+                    { description: finalDisplayString }
+                );
             }
             else if (n.type === 'ASSIST') {
-                toast(`TA ${n.queue?.ta?.name} is ready to assist you. Please head to location ${n.queue?.location}!`)
+                toast(`TA ${n.queue?.ta?.name} is ready to assist you. Please head to location ${n.queue?.location}!`, 
+                    { description: finalDisplayString }
+                )
             }
             else if (n.type === 'CLOSE') {
-                toast(`TA's ${n.queue?.ta?.name ?? n.queue?.ta?.email} closes at ${n.queue?.endsAt}!`)
+                toast(`TA's ${n.queue?.ta?.name ?? n.queue?.ta?.email} closes at ${n.queue?.endsAt}!`, 
+                    { description: finalDisplayString }
+                )
             }
+            playNotificationsSound();
         };
         // socket auto pass in params to onCreated
         // Each notification is already routed to a specific id on the backend using .to().emit()
@@ -164,7 +231,7 @@ export const Dashboard = () => {
 
 return (
     <>
-    <div className="flex w-full h-screen m-0 p-0 overflow-hidden">
+    <div className="flex w-full h-screen m-0 p-0 overflow-hidden" onPointerDown={() => playNotificationsSound(true)}>
         {/* Sidebar */}
         <Sidebar isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen}/>
         <div className="relative flex-1 min-w-0 overflow-y-auto">

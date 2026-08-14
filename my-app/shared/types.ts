@@ -71,6 +71,7 @@ export interface User {
     notifyClose?: boolean;
     notifyJoin?: boolean;
     notifyLeave?: boolean;
+    notifySound?: boolean;
     defaultLocation?: string | null;
 }
 

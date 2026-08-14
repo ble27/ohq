@@ -6,6 +6,7 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import type { User as PrismaUser } from "@shared/types";
 import type { User  as SupabaseUser } from "@supabase/supabase-js";
+import { Spinner } from "./ui/spinner";
 interface DashboardSettingsProps {
     prismaUser: PrismaUser | null
     supabaseUser: SupabaseUser | null
@@ -18,7 +19,9 @@ export const DashboardSettings = ({ prismaUser, supabaseUser, onUpdateSaveChange
     const [studentAlertYourTurn, setStudentAlertYourTurn] = useState(prismaUser?.notifyAssist ?? null)
     const [taAlertStudentJoinQueue, setTaAlertStudentJoinQueue] = useState(prismaUser?.notifyJoin ?? null)
     const [taAlertStudentLeaveQueue, setTaAlertStudentLeaveQueue] = useState(prismaUser?.notifyLeave ?? null)
+    const [notificationSoundEnabled, setNotificationSoundEnabled] = useState(prismaUser?.notifySound ?? true)
     const [isDeleteUserAccountModalOpen, setIsDeleteUserAccountModalOpen] = useState(false);
+    const [pending, setPending] = useState(false);
 
     // Update state every time prismaUser changes
     useEffect(() => {
@@ -28,6 +31,7 @@ export const DashboardSettings = ({ prismaUser, supabaseUser, onUpdateSaveChange
         setStudentAlertQueueClosing(prismaUser?.notifyClose ?? null);
         setTaAlertStudentJoinQueue(prismaUser?.notifyJoin ?? null);
         setTaAlertStudentLeaveQueue(prismaUser?.notifyLeave ?? null);
+        setNotificationSoundEnabled(prismaUser?.notifySound ?? true);
     }, [prismaUser])
 
     const navigate = useNavigate();
@@ -53,6 +57,7 @@ export const DashboardSettings = ({ prismaUser, supabaseUser, onUpdateSaveChange
     }
 
     const handleSaveChanges = async () => {
+        setPending(true);
         const id = prismaUser?.id;
         // Name
         if (displayName !== prismaUser?.name) {
@@ -76,12 +81,16 @@ export const DashboardSettings = ({ prismaUser, supabaseUser, onUpdateSaveChange
                 await axios.patch(`/api/users/${id}/notifications/type/LEAVE`, {status: taAlertStudentLeaveQueue});
             }
         }
+        if (prismaUser?.notifySound !== notificationSoundEnabled) {
+            await axios.patch(`/api/users/${id}/notifications/sound`, { status: notificationSoundEnabled });
+        }
         await onUpdateSaveChanges(); // sync current user status 
+        setPending(false);
     }
 
     const handleCancelChanges = async () => {
         if (prismaUser?.name) {
-            setDisplayName('');
+            setDisplayName(prismaUser?.name);
         }
         if (prismaUser?.role === 'TA') {
             if (prismaUser.notifyJoin) {
@@ -97,7 +106,7 @@ export const DashboardSettings = ({ prismaUser, supabaseUser, onUpdateSaveChange
         if (prismaUser?.notifyClose) {
             setStudentAlertQueueClosing(prismaUser.notifyClose);
         }
-        return;
+        setNotificationSoundEnabled(prismaUser?.notifySound ?? true);
     }
 
     return (
@@ -119,7 +128,7 @@ export const DashboardSettings = ({ prismaUser, supabaseUser, onUpdateSaveChange
                                     <input 
                                         className='border-1 border-neutral-400 rounded-sm px-2 py-1 text-xs
                                         md:text-sm lg:text-md w-24 focus:outline-none focus:border-blue-500 overflow-hidden'
-                                        placeholder={prismaUser?.name ?? supabaseUser?.email}
+                                        placeholder={prismaUser?.name ?? displayName ?? supabaseUser?.email}
                                         value={displayName}
                                         onChange={e => setDisplayName(e.target.value)}
                                     />
@@ -180,6 +189,18 @@ export const DashboardSettings = ({ prismaUser, supabaseUser, onUpdateSaveChange
                                         </button>
                                     </div>
                                 </div>}
+                                <h3 className='font-semibold text-sm md:text-base lg:text-md'> Sound </h3>
+                                <div className='flex flex-col gap-2 text-sm'>
+                                    <div className='flex flex-row justify-between bg-neutral-400 px-2 py-2 rounded-lg'>
+                                        Play sound when a notification arrives
+                                        <button
+                                            className='pr-3'
+                                            onClick={() => setNotificationSoundEnabled(!notificationSoundEnabled)}
+                                        >
+                                            {notificationSoundEnabled ? 'ON' : 'OFF'}
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         
@@ -220,7 +241,11 @@ export const DashboardSettings = ({ prismaUser, supabaseUser, onUpdateSaveChange
                             className="bg-green-600 text-white px-3 py-1 text-sm rounded-sm
                                         hover:opacity-80"
                             >
-                            Save
+                            <div className='flex flex-row items-center gap-2'>
+                                {pending ? 'Saving' : 'Save'}
+                                {pending && <Spinner />}
+                            </div>
+                            
                         </button>
                         {/* Cancel changes button */}
                         <button
@@ -228,7 +253,7 @@ export const DashboardSettings = ({ prismaUser, supabaseUser, onUpdateSaveChange
                             className="bg-neutral-300 text-black border border-neutral-400/30 px-3 py-1 text-sm rounded-sm
                                         hover:opacity-80"
                             >
-                            Cancel
+                           Cancel
                         </button>
                     </div>
                 </div>
