@@ -112,9 +112,20 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
             ...req.body,
             courseId: course.id,
         });
-        const { endsAt, ...queueData } = validatedQueue;
+        const { taId, courseId, endsAt, ...queueData } = validatedQueue;
+
+        // 1 queue per course for each TA / PT
+        const queueCheck = await prisma.queue.findFirst({
+            where: { taId , courseId }
+        })
+        if (queueCheck) {
+            res.status(400).json({ message: 'Only 1 queue can be created per course' });
+            return;
+        }
         const newQueue = await prisma.queue.create({
             data: {
+                courseId, 
+                taId,
                 ...queueData,
                 ...(endsAt != null ? { endsAt } : {}),
             },

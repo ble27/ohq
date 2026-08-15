@@ -89,7 +89,7 @@ export const QueueManager = ({
             setCourseId('')
             setLocation('')
         } catch {
-            setError('Unable to create the queue. Please try again.')
+            setError('Unable to create the queue due to failed input validation or another queue of the same course already exists. Please try again.')
         } finally {
             setIsCreating(false)
         }
