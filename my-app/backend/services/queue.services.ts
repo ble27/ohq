@@ -5,6 +5,16 @@ import { SessionStatus } from '../generated/prisma/client.js';
 
 const ACTIVE_STATUSES = [SessionStatus.WAITING, SessionStatus.HELPING] as const;
 
+export const closeExpiredQueues = async (): Promise<void> => {
+  await prisma.queue.updateMany({
+    where: {
+      isOpen: true,
+      endsAt: { lte: new Date() },
+    },
+    data: { isOpen: false },
+  });
+};
+
 export const listActiveTickets = async (queueId: string): Promise<QueueTicket[]> => {
   return prisma.queueTicket.findMany({
     where: {
@@ -23,6 +33,7 @@ export const joinQueue = async (
   queueId: string,
   studentId: string
 ): Promise<QueueTicket> => {
+  await closeExpiredQueues();
   const queue = await prisma.queue.findUnique({ where: { id: queueId } });
   if (!queue || !queue.isOpen) {
     throw new Error('Queue is closed or does not exist');
@@ -96,6 +107,7 @@ export const startHelping = async (ticketId: string): Promise<QueueTicket> => {
     throw new Error('Only WAITING tickets can be moved to HELPING');
   }
 
+  await closeExpiredQueues();
   const queue = await prisma.queue.findUnique({ where: { id: existing.queueId } });
   if (!queue || !queue.isOpen) {
     throw new Error('Queue is closed or does not exist');

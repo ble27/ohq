@@ -10,12 +10,14 @@ import type {
 } from '../../shared/types.js';
 import { CreateQueueValidationSchema, TimeValidationSchema } from '../schemas/queue.schema.js';
 import { ZodError } from 'zod';
+import { closeExpiredQueues } from '../services/queue.services.js';
 
 const router: Router = Router();
 
 // GET /api/queues — list all queues that are open
 router.get('/', async (req: Request, res: Response): Promise<void> => {
     try {
+        await closeExpiredQueues();
         const queues = await prisma.queue.findMany({
             where: { isOpen: true}
         });
@@ -67,6 +69,7 @@ router.get('/:id', async (req: Request, res: Response): Promise<void> => {
 router.get('/course/:courseId', async (req: Request, res: Response): Promise<void> => { 
     try { 
         const courseId = req.params.courseId as string; 
+        await closeExpiredQueues();
         const activeQueues = await prisma.queue.findMany({ 
             where: { courseId, isOpen: true }, 
             include: { ta: true , course: true} 

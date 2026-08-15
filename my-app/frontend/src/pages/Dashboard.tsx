@@ -231,12 +231,12 @@ export const Dashboard = () => {
 
     // Replace Created queue with new instance 
     // Need to constantly pass down createdQueues to props that need this
-    const handleQueueUpdated = async (updated: Queue) => {
+    const handleQueueUpdated = useCallback(async (updated: Queue) => {
         // if queue is updated the old queue becomes updated else remaining queues
         setCreatedQueues((prev) => 
             prev.map((q) => updated.id === q.id ? updated : q)
         )
-    }
+    }, []);
 
 return (
     <>

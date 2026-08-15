@@ -167,6 +167,36 @@ export const QueueManager = ({
         };
     }, [isViewingManagementModal, currentQueue]);
 
+    // One timeout per open queue — fires at endsAt (or immediately if already past).
+    useEffect(() => {
+        const timers: number[] = [];
+
+        for (const queue of createdQueues) {
+            if (!queue.isOpen || !queue.endsAt) continue;
+            const delay = new Date(queue.endsAt).getTime() - Date.now();
+
+            const closeQueue = async () => {
+                try {
+                    const response = await axios.patch(`/api/queues/${queue.id}/status/false`);
+                    const updated = response.data?.queue;
+                    if (updated) await onUpdateQueue(updated); // call onUpdate to update the queue opening / closing status for all created queues
+                } catch (err) {
+                    console.error(`Failed to auto-close queue ${queue.id}`, err);
+                }
+            };
+
+            if (delay <= 0) {
+                void closeQueue();
+            } else {
+                timers.push(window.setTimeout(() => { void closeQueue(); }, delay));
+            }
+        }
+
+        return () => {
+            for (const id of timers) window.clearTimeout(id);
+        };
+    }, [createdQueues, onUpdateQueue]);
+
     const handleUpdateQueueTime = async (start: string, end: string) => {
         const queueId = currentQueue?.id;
         try {

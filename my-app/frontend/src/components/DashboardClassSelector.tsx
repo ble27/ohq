@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import axios from 'axios'
 import { ChevronDown, MapPin } from 'lucide-react'
 import { QueueModal } from './QueueModal'
@@ -76,6 +76,25 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ CSCEClasses, selec
             return null;
         });
     };
+
+    useEffect(() => {
+        const timers: number[] = [];
+        for (const q of queue) {
+            if (!q.isOpen || !q.endsAt) continue;
+            // each queue gets its own countdown timer
+            const delay = new Date(q.endsAt).getTime() - Date.now();
+            const markClosed = () => {
+                setQueue((prev) =>
+                    prev.map((item) => (item.id === q.id ? { ...item, isOpen: false } : item)),
+                );
+            };
+            if (delay <= 0) markClosed();
+            else timers.push(window.setTimeout(markClosed, delay));
+        }
+        return () => {
+            for (const id of timers) window.clearTimeout(id);
+        };
+    }, [queue]);
 
     // Pass in queue id of the ticket before even joining the queue
     const createTicket = async (queueId: string) =>  {
