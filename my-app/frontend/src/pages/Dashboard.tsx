@@ -238,12 +238,42 @@ export const Dashboard = () => {
         )
     }, []);
 
+    const paneBackgroundClass = isDashboardHome || isDashboardSettings
+        ? 'bg-white'
+        : isDashboardClass
+            ? 'bg-neutral-50'
+            : isDashboardQueueManager
+                ? 'bg-slate-50'
+                : '';
+
+    const paneBackgroundColor = isDashboardHome || isDashboardSettings
+        ? '#ffffff'
+        : isDashboardClass
+            ? '#fafafa'
+            : isDashboardQueueManager
+                ? '#f8fafc'
+                : '';
+
+    // html/body stay max-width: 1500px; paint the xl gutters to match this view.
+    useEffect(() => {
+        if (!paneBackgroundColor) return;
+        const html = document.documentElement;
+        const previousHtml = html.style.backgroundColor;
+        const previousBody = document.body.style.backgroundColor;
+        html.style.backgroundColor = paneBackgroundColor;
+        document.body.style.backgroundColor = paneBackgroundColor;
+        return () => {
+            html.style.backgroundColor = previousHtml;
+            document.body.style.backgroundColor = previousBody;
+        };
+    }, [paneBackgroundColor]);
+
 return (
     <>
-    <div className="flex w-full h-screen m-0 p-0 overflow-hidden" onPointerDown={() => playNotificationsSound(true)}>
+    <div className={`flex h-screen w-full overflow-hidden m-0 p-0 ${paneBackgroundClass}`} onPointerDown={() => playNotificationsSound(true)}>
         {/* Sidebar */}
         <Sidebar isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen}/>
-        <div className="relative flex-1 min-w-0 overflow-y-auto">
+        <div className={`relative min-h-0 min-w-0 flex-1 overflow-y-auto ${paneBackgroundClass}`}>
             {/* Fixed overlay — no layout whitespace. Home places its own bell in the title row. */}
             {!(isDashboardHome || isDashboardSettings) && (
                 <LuBell

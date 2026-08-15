@@ -120,7 +120,7 @@ export const DashboardSettings = ({ prismaUser, supabaseUser, onUpdateSaveChange
 
     return (
         <>
-            <div className="flex inset-0 bg-white h-220 w-full flex-col px-6 pb-10 pt-10 sm:px-8 md:px-10">
+            <div className="flex min-h-full w-full flex-col bg-white px-6 pb-10 pt-10 sm:px-8 md:px-10">
                 {/* Settings and below layout */}
                 <div className='flex flex-col gap-5 md:gap-6 lg:gap-7'>
                     <h1 className='text-xl md:text-2xl font-semibold'>Settings</h1>

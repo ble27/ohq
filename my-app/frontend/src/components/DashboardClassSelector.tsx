@@ -256,7 +256,7 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ CSCEClasses, selec
         />
       )}
 
-      <div className="flex h-full w-full flex-col bg-neutral-50 px-6 pb-10 pt-10 sm:px-8 md:px-10">
+      <div className="flex min-h-full w-full flex-col bg-neutral-50 px-6 pb-10 pt-10 sm:px-8 md:px-10">
         <header className="max-w-xl">
           <h1 className="text-2xl font-semibold tracking-tight text-neutral-900 sm:text-3xl">
             Select a class
