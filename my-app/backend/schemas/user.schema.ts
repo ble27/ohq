@@ -12,5 +12,10 @@ export const NotificationAlertUpdateSchema = z.object({
     status: z.boolean({ message: 'status must be a boolean' }),
 });
 
+export const DefaultLocationUpdateSchema = z.object({
+    defaultLocation: z.string().trim().min(2).max(50) 
+})
+
 export type UserInput = z.infer<typeof UserValidatedSchema>;
 export type NotificationAlertUpdateInput = z.infer<typeof NotificationAlertUpdateSchema>;
+export type DefaultLocationUpdateInput = z.infer<typeof DefaultLocationUpdateSchema>

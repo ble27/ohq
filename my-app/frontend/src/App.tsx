@@ -26,7 +26,7 @@ function App() {
                 borderColor: 'black',
               },
               classNames: {
-                description: 'text-gray-700' // 
+                description: 'text-gray-700'
               }
             }} />
           <Routes>

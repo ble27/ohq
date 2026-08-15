@@ -28,7 +28,10 @@ export const CreateQueueValidationSchema = QueueValidationSchema.omit({
     id: true,
     createdAt: true,
     updatedAt: true,
-});
+}).refine(
+    (queue) => queue.endsAt == null || queue.endsAt > queue.startsAt,
+    { message: 'End time must be after start time', path: ['endsAt'] },
+);
 
 export type QueueInput = z.infer<typeof QueueValidationSchema>;
 export type CreateQueueInput = z.infer<typeof CreateQueueValidationSchema>;

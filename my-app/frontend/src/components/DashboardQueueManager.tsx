@@ -4,14 +4,32 @@ import type { Course, Queue, QueueTicketsListResponse, QueueTicketWithStudent } 
 import { useAuth } from '@/context/AuthContextProvider'
 import { DeleteConfirmation } from './DeleteConfirmationModal'
 import { QueueManagementModal } from './QueueManagementModal'
-
 import axios from 'axios'
+
+// Date requires hour, min, s, ms
+function parseTimeOnToday(time: string): Date {
+    const [hours, minutes] = time.split(':').map(Number) // ['14', '30'] -> [14, 30]
+    const date = new Date()
+    date.setHours(hours, minutes, 0, 0)
+    return date
+}
+
+function formatQueueTime(value: string | Date | null | undefined): string {
+    if (!value) return ''
+    return new Date(value).toLocaleTimeString(undefined, {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+    })
+}
 
 export interface CreateQueueInput {
     courseId: string
     taId:     string
     location: string
     isOpen:   boolean
+    startsAt: Date
+    endsAt: Date
 }
 
 interface QueueManagerProps {
@@ -38,6 +56,10 @@ export const QueueManager = ({
     const [deletingQueueId, setDeletingQueueId] = useState<string | null>(null)
     const [error, setError] = useState<string | null>(null)
     const [isViewingDeletionModal, setIsViewingDeletionModal] = useState(false);
+
+    // Queue Start and End Times
+    const [startTime, setStartTime] = useState('08:00');
+    const [endTime, setEndTime] = useState('09:00');
     // TA workspace
     const [isViewingManagementModal, setIsViewingManagementModal] = useState(false);
     const [currentQueue, setCurrentQueue] = useState<Queue | null>(null);
@@ -52,11 +74,17 @@ export const QueueManager = ({
         try {
             setIsCreating(true)
             setError(null)
+            if (endTime <= startTime) {
+                setError('End time cannot be before start time.')
+                return;
+            }
             await onCreateQueue({
                 courseId,
                 taId: user.id,
                 location: location.trim().toUpperCase(),
                 isOpen: true,
+                startsAt: parseTimeOnToday(startTime),
+                endsAt: parseTimeOnToday(endTime),
             })
             setCourseId('')
             setLocation('')
@@ -213,6 +241,31 @@ export const QueueManager = ({
                                 placeholder="e.g. Zachary - Room 240"
                                 className="h-11 w-full min-w-0 rounded-xl border border-slate-200 bg-white px-3.5 text-sm font-normal text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400"
                             />
+                            
+                        </label>
+                        {/* Start Time */}
+                        <label className="grid min-w-0 gap-1.5 text-sm font-medium text-slate-600">
+                            Start Time
+                            <input
+                                type='time'
+                                value={startTime}
+                                onChange={(event) => setStartTime(event.target.value)}
+                                placeholder="e.g. Zachary - Room 240"
+                                className="h-11 w-full min-w-0 rounded-xl border border-slate-200 bg-white px-3.5 text-sm font-normal text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400"
+                            />
+                            
+                        </label>
+
+                        {/* End Time */}
+                        <label className="grid min-w-0 gap-1.5 text-sm font-medium text-slate-600">
+                            End Time
+                            <input
+                                type='time'
+                                value={endTime}
+                                onChange={(event) => setEndTime(event.target.value)}
+                                placeholder="e.g. Zachary - Room 240"
+                                className="h-11 w-full min-w-0 rounded-xl border border-slate-200 bg-white px-3.5 text-sm font-normal text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400"
+                            />
                         </label>
 
                         <button
@@ -263,9 +316,13 @@ export const QueueManager = ({
                                                 {courses.find((course) => course.id === queue.courseId)?.code ?? queue.courseId}
                                             </h3>
                                             <div className="mt-1.5 flex min-w-0 items-center gap-1.5 text-sm text-neutral-500">
-                                                <MapPin className="size-3.5 shrink-0 text-neutral-400" strokeWidth={1.75} aria-hidden />
-                                                <span className="truncate">{queue.location}</span>
+                                                <MapPin color='red' className="size-3.5 shrink-0 text-neutral-400" strokeWidth={1.75} aria-hidden />
+                                                <span className="truncate">Location: {queue.location}</span>
                                             </div>
+                                            <span className="mt-1 block text-sm text-neutral-500">
+                                                Time: {formatQueueTime(queue.startsAt)}
+                                                {queue.endsAt ? ` – ${formatQueueTime(queue.endsAt)}` : ''}
+                                            </span>
                                         </div>
                                         <span
                                             className={`shrink-0 text-xs font-medium tracking-wide ${

@@ -42,6 +42,15 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ CSCEClasses, selec
     // Visible queues that will be displayed (will refresh every time queue changes)
     const visibleQueues = queue;
 
+    function formatQueueTime(value: string | Date | null | undefined): string {
+      if (!value) return ''
+      return new Date(value).toLocaleTimeString(undefined, {
+          hour: 'numeric',
+          minute: '2-digit',
+          hour12: true,
+      })
+    }
+  
     // Membership must come from the server — client Set alone is lost on remount / Clear+Enter.
     const syncJoinedQueuesFromServer = async () => {
         if (!user?.id) return;
@@ -319,10 +328,14 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ CSCEClasses, selec
                       </span>
                     </div>
 
-                    <div className="mt-6 flex items-center gap-1.5 text-sm text-neutral-600">
+                    <div className="mt-2 flex items-center gap-1.5 text-sm text-neutral-600">
                       <MapPin className="size-3.5 shrink-0 text-neutral-400" strokeWidth={2} color='red' aria-hidden />
-                      <span className="truncate">{q.location || '—'}</span>
+                      <span className="truncate">Location: {q.location || '—'}</span>
                     </div>
+                    <span className="mt-1 block text-sm text-neutral-500">
+                        Time: {formatQueueTime(q.startsAt)}
+                        {q.endsAt ? ` – ${formatQueueTime(q.endsAt)}` : ''}
+                    </span>
 
                     <div className="mt-8 flex flex-wrap gap-2">
                       {!hasJoined && (

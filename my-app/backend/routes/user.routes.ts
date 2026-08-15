@@ -8,7 +8,7 @@ import type {
     UserResponse,
 } from '../../shared/types.js';
 import { ZodError } from 'zod';
-import { UserValidatedSchema, NotificationAlertUpdateSchema } from '../schemas/user.schema.js';
+import { UserValidatedSchema, NotificationAlertUpdateSchema, DefaultLocationUpdateSchema } from '../schemas/user.schema.js';
 
 const NOTIFY_FIELD_BY_TYPE = {
     JOIN: 'notifyJoin',
@@ -194,6 +194,44 @@ router.patch('/:id/notifications/sound', async (req: Request, res: Response) => 
     }
 });
 
+// PATCH api/users/${id}/defaultlocation
+router.patch('/:id/defaultlocation', async (req: Request, res: Response) => {
+    try {
+        const id = req.params.id as string;
+        const { defaultLocation } = DefaultLocationUpdateSchema.parse(req.body);
+
+        const taUser = await prisma.user.findFirst({
+            where: { id, role: 'TA' },
+        });
+        if (!taUser) {
+            res.status(403).json({ message: 'Only TAs can update a default queue location' });
+            return;
+        }
+
+        const response = await prisma.user.update({
+            where: { id },
+            data: { defaultLocation },
+        });
+        res.status(200).json({
+            user: response,
+            message: `Successfully updated default location to ${defaultLocation}`,
+        });
+    } catch (error) {
+        const id = req.params.id;
+        if (error instanceof ZodError) {
+            res.status(400).json({ 
+             message: 'Validation failed', 
+             errors: error.message
+           });
+            return;
+         }
+        if (error instanceof Error) {
+            res.status(500).json({ message: error.message });
+            return;
+        }
+        res.status(500).json({ message: `Failed to update default location for ${id}` });
+    }
+})
 
 // DELETE /api/users/:id
 router.delete('/:id', async (req: Request, res: Response): Promise<void> => {

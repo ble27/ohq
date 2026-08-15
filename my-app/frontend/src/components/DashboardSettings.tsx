@@ -15,6 +15,7 @@ interface DashboardSettingsProps {
 export const DashboardSettings = ({ prismaUser, supabaseUser, onUpdateSaveChanges }: DashboardSettingsProps) => {
     // useState only use the inital prop once and doesn't refresh
     const [displayName, setDisplayName] = useState(prismaUser?.name ?? '');
+    const [defaultLocation, setDefaultLocation] = useState(prismaUser?.defaultLocation ?? '')
     const [studentAlertQueueClosing, setStudentAlertQueueClosing] = useState(prismaUser?.notifyClose ?? null)
     const [studentAlertYourTurn, setStudentAlertYourTurn] = useState(prismaUser?.notifyAssist ?? null)
     const [taAlertStudentJoinQueue, setTaAlertStudentJoinQueue] = useState(prismaUser?.notifyJoin ?? null)
@@ -32,6 +33,7 @@ export const DashboardSettings = ({ prismaUser, supabaseUser, onUpdateSaveChange
         setTaAlertStudentJoinQueue(prismaUser?.notifyJoin ?? null);
         setTaAlertStudentLeaveQueue(prismaUser?.notifyLeave ?? null);
         setNotificationSoundEnabled(prismaUser?.notifySound ?? true);
+        setDefaultLocation(prismaUser?.defaultLocation ?? '');
     }, [prismaUser])
 
     const navigate = useNavigate();
@@ -58,34 +60,40 @@ export const DashboardSettings = ({ prismaUser, supabaseUser, onUpdateSaveChange
 
     const handleSaveChanges = async () => {
         setPending(true);
-        const id = prismaUser?.id;
-        // Name
-        if (displayName !== prismaUser?.name) {
-            await axios.patch(`/api/users/${id}/name`, {
-                name: displayName })
-        }
-        // Student
-        if (prismaUser?.notifyAssist !== studentAlertYourTurn) {
-            await axios.patch(`/api/users/${id}/notifications/type/ASSIST`, {status: studentAlertYourTurn});
-        }
-        if (prismaUser?.notifyClose !== studentAlertQueueClosing) {
-            await axios.patch(`/api/users/${id}/notifications/type/CLOSE`, {status: studentAlertQueueClosing});
-        }
-        // TA
-        if (prismaUser?.role === 'TA') {
-            if (prismaUser.notifyJoin !== taAlertStudentJoinQueue) {
-                // /api/users/:id/notifications/type/:type
-                await axios.patch(`/api/users/${id}/notifications/type/JOIN`, {status: taAlertStudentJoinQueue});
+        try {
+            const id = prismaUser?.id;
+            // Name
+            if (displayName !== prismaUser?.name) {
+                await axios.patch(`/api/users/${id}/name`, {
+                    name: displayName })
             }
-            if (prismaUser.notifyLeave !== taAlertStudentLeaveQueue) {
-                await axios.patch(`/api/users/${id}/notifications/type/LEAVE`, {status: taAlertStudentLeaveQueue});
+            // Student
+            if (prismaUser?.notifyAssist !== studentAlertYourTurn) {
+                await axios.patch(`/api/users/${id}/notifications/type/ASSIST`, {status: studentAlertYourTurn});
             }
+            if (prismaUser?.notifyClose !== studentAlertQueueClosing) {
+                await axios.patch(`/api/users/${id}/notifications/type/CLOSE`, {status: studentAlertQueueClosing});
+            }
+            // TA
+            if (prismaUser?.role === 'TA') {
+                if (prismaUser.notifyJoin !== taAlertStudentJoinQueue) {
+                    await axios.patch(`/api/users/${id}/notifications/type/JOIN`, {status: taAlertStudentJoinQueue});
+                }
+                if (prismaUser.notifyLeave !== taAlertStudentLeaveQueue) {
+                    await axios.patch(`/api/users/${id}/notifications/type/LEAVE`, {status: taAlertStudentLeaveQueue});
+                }
+            }
+            if (prismaUser?.notifySound !== notificationSoundEnabled) {
+                await axios.patch(`/api/users/${id}/notifications/sound`, { status: notificationSoundEnabled });
+            }
+            // Default location (TA)
+            if (prismaUser?.role === 'TA' && prismaUser.defaultLocation !== defaultLocation) {
+                await axios.patch(`/api/users/${id}/defaultlocation`, { defaultLocation });
+            }
+            await onUpdateSaveChanges();
+        } finally {
+            setPending(false);
         }
-        if (prismaUser?.notifySound !== notificationSoundEnabled) {
-            await axios.patch(`/api/users/${id}/notifications/sound`, { status: notificationSoundEnabled });
-        }
-        await onUpdateSaveChanges(); // sync current user status 
-        setPending(false);
     }
 
     const handleCancelChanges = async () => {
@@ -107,11 +115,12 @@ export const DashboardSettings = ({ prismaUser, supabaseUser, onUpdateSaveChange
             setStudentAlertQueueClosing(prismaUser.notifyClose);
         }
         setNotificationSoundEnabled(prismaUser?.notifySound ?? true);
+        setDefaultLocation(prismaUser?.defaultLocation ?? '');
     }
 
     return (
         <>
-            <div className="flex inset-0 bg-white h-full w-full flex-col px-6 pb-10 pt-10 sm:px-8 md:px-10">
+            <div className="flex inset-0 bg-white h-220 w-full flex-col px-6 pb-10 pt-10 sm:px-8 md:px-10">
                 {/* Settings and below layout */}
                 <div className='flex flex-col gap-5 md:gap-6 lg:gap-7'>
                     <h1 className='text-xl md:text-2xl font-semibold'>Settings</h1>
@@ -138,8 +147,19 @@ export const DashboardSettings = ({ prismaUser, supabaseUser, onUpdateSaveChange
                                     Current role: 
                                     <span className='font-normal text-md text-neutral-600'>
                                         {prismaUser?.role === 'TA' ? 'Teaching Assistant (TA)' : prismaUser?.role}
-                                    </span> 
+                                    </span>      
                                 </span>
+                                {/* Default queue location */}
+                                {prismaUser?.role === 'TA' &&  <div className='flex flex-row gap-2 items-center'>
+                                    <label htmlFor="display_name" className='font-medium text-sm md:text-md'>Default Queue Location: </label>
+                                    <input 
+                                        className='border-1 border-neutral-400 rounded-sm px-2 py-1 text-xs
+                                        md:text-sm lg:text-md w-24 focus:outline-none focus:border-blue-500 overflow-hidden'
+                                        placeholder={prismaUser?.defaultLocation ?? 'e.g. Zach 420'}
+                                        value={defaultLocation}
+                                        onChange={e => setDefaultLocation(e.target.value)}
+                                    />
+                                </div>}
                             </div>
                         </div>
 

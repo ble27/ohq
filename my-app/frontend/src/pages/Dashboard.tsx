@@ -129,7 +129,14 @@ export const Dashboard = () => {
                 )
             }
             else if (n.type === 'CLOSE') {
-                toast(`TA's ${n.queue?.ta?.name ?? n.queue?.ta?.email} closes at ${n.queue?.endsAt}!`, 
+                const closesAt = n.queue?.endsAt
+                    ? new Date(n.queue.endsAt).toLocaleTimeString(undefined, {
+                        hour: 'numeric',
+                        minute: '2-digit',
+                        hour12: true,
+                    })
+                    : 'soon';
+                toast(`TA's ${n.queue?.ta?.name ?? n.queue?.ta?.email} closes at ${closesAt}!`, 
                     { description: finalDisplayString }
                 )
             }

@@ -100,7 +100,7 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
                         // fix later: code is always text and can never equal courseId
                         { code: { equals: requestedCourse.trim(), mode: 'insensitive' } },
                     ],
-                },
+                }
             })
             : null;
         if (!course) {

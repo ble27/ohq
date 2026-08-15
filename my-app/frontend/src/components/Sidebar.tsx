@@ -144,8 +144,8 @@ export const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }: SideBarProps ) => {
 
 
 
-        <div className={`flex flex-row absolute bottom-25 px-4 py-3 gap-[10px] items-center transition-colors duration-200 w-full 
-            ${isSidebarOpen ? 'hover:bg-black/20 hover:opacity-90': 'hover:opacity-80 justify-center'}`}
+        <div className={`flex flex-row absolute bottom-25 px-4 py-3 gap-[10px] items-center transition-colors duration-200 w-full pointer-events-auto 
+            cursor-pointer ${isSidebarOpen ? 'hover:bg-black/20 hover:opacity-90': 'hover:opacity-80 justify-center'}`}
             onClick={handleSignout}>
               <LuLogOut size={20} color="white"/>
               {isSidebarOpen && <span>Sign out</span>}
