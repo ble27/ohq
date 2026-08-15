@@ -167,6 +167,29 @@ export const QueueManager = ({
         };
     }, [isViewingManagementModal, currentQueue]);
 
+    const handleUpdateQueueTime = async (start: string, end: string) => {
+        const queueId = currentQueue?.id;
+        try {
+            if (end <= start) {
+                console.log('End time cannot be before start time');
+                return;
+            }
+            const formattedStartTime = parseTimeOnToday(start);
+            const formattedEndTime = parseTimeOnToday(end);
+    
+            const response = await axios.patch(`/api/queues/${queueId}/time`, {
+                startsAt: formattedStartTime, endsAt: formattedEndTime
+            })
+            if (!response.data) {
+                console.log('Unable to update queue\'s time');
+                return;
+            }
+            await onUpdateQueue(response.data.queue);
+        } catch (error) {
+            setError(error as string);
+        }
+    }
+
     return (
         <main className="min-h-full bg-slate-50 px-4 py-6 sm:px-6 sm:py-8 md:px-8">
             {/* Delete confirmation modal */}
@@ -186,6 +209,7 @@ export const QueueManager = ({
                     queue={currentQueue}
                     setIsViewingManagementModal={setIsViewingManagementModal}
                     onQueueClosing={removeTicketsWhenClosed}
+                    onTimeChange={handleUpdateQueueTime}
                 />
             )}
 

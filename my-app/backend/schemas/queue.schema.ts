@@ -33,5 +33,12 @@ export const CreateQueueValidationSchema = QueueValidationSchema.omit({
     { message: 'End time must be after start time', path: ['endsAt'] },
 );
 
+// passed in new Date()
+export const TimeValidationSchema = z.object({
+    startsAt: z.coerce.date(), // convert to Date object
+    endsAt: z.coerce.date()
+})
+
 export type QueueInput = z.infer<typeof QueueValidationSchema>;
 export type CreateQueueInput = z.infer<typeof CreateQueueValidationSchema>;
+export type TimeValidationInput = z.infer<typeof TimeValidationSchema>

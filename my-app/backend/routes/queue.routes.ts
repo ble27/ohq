@@ -8,7 +8,7 @@ import type {
     QueueResponse,
     QueuesListResponse,
 } from '../../shared/types.js';
-import { CreateQueueValidationSchema } from '../schemas/queue.schema.js';
+import { CreateQueueValidationSchema, TimeValidationSchema } from '../schemas/queue.schema.js';
 import { ZodError } from 'zod';
 
 const router: Router = Router();
@@ -247,6 +247,34 @@ router.patch('/:id', async (req: Request, res: Response): Promise<void> => {
         res.status(500).json({ message: 'Failed to toggle queue' });
     }
 });
+
+// PATCH time `/api/queues/${queueId}/time`
+router.patch(`/:queueId/time`, async (req: Request, res: Response) => {
+    try {
+        const queueId = req.params.queueId as string;
+        const validatedTimeSchema = TimeValidationSchema.parse(req.body);
+        const { startsAt, endsAt } = validatedTimeSchema;
+        const response = await prisma.queue.update({
+            where: { id: queueId },
+            data: { startsAt, endsAt }
+        })
+        const body = { 
+            queue: response, 
+            message: 'SUCCESS'
+        }
+        res.status(200).json(body);
+    } catch (error) {
+        if (error instanceof ZodError) {
+            res.status(400).json({ message: 'Invalid input', errors: error.issues });
+            return;
+        }
+        if (error instanceof Error) {
+            res.status(500).json({ message: error.message });
+            return;
+        }
+        res.status(500).json({ message: 'Failed to toggle queue' });
+    }
+})
 
 // DELETE /api/queues/:id
 router.delete('/:id', async (req: Request, res: Response): Promise<void> => {

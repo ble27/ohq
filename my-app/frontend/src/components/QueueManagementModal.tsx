@@ -15,6 +15,7 @@ interface QueueManagementModalProps {
     onUpdateQueue: (updated: Queue) => void | Promise<void>
     // remove tickets when closed
     onQueueClosing: () => | Promise<void>
+    onTimeChange: (start: string, end: string) => void | Promise<void>
 }
 
 export const QueueManagementModal = ({
@@ -23,10 +24,26 @@ export const QueueManagementModal = ({
     setTickets,
     onUpdateQueue,
     setIsViewingManagementModal,
-    onQueueClosing
+    onQueueClosing, 
+    onTimeChange
 }: QueueManagementModalProps) => {
-    // Has 3 tabs - Settings, Waitlist (QueueTicketModal), Workspace
+    const toTimeInput = (value: any) => {
+    if (!value || value === 'null' || value === 'undefined') {
+        return '';
+    }
+    const date = value instanceof Date ? value : new Date(value);
+
+    if (isNaN(date.getTime()) || date.getTime() === 0) {
+        return '';
+    }
+
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
     
+    return `${hours}:${minutes}`;
+    };
+
+    // Has 3 tabs - Settings, Waitlist (QueueTicketModal), Workspace
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [isQueueModalOpen, setIsQueueModalOpen] = useState(false);
     const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(true);
@@ -34,8 +51,8 @@ export const QueueManagementModal = ({
     // Save all these settings at once
     const [isQueueOpen, setIsQueueOpen] = useState(queue?.isOpen ?? true);
     const [roomLocation, setRoomLocation] = useState(queue?.location ?? '');
-    const [startTime, setStartTime] = useState('08:00');
-    const [endTime, setEndTime] = useState('09:00');
+    const [startTime, setStartTime] = useState(toTimeInput(queue?.startsAt) ?? '08:00');
+    const [endTime, setEndTime] = useState(toTimeInput(queue?.endsAt) ?? '09:00');
 
     // Every time this refreshes it doesn't sync the state
     const [completedTickets, setCompletedTickets] = useState<QueueTicket[]>([]);
@@ -93,14 +110,13 @@ export const QueueManagementModal = ({
     }
    
     const handleSaveChanges = async () => {
-        // Check if time is valid
-        if (endTime < startTime) {
-            console.log('Invalid start and end time.');
-            setStartTime('08:00');
-            setEndTime('09:00');
-            return;
+        // Time update
+        // Compare only HH:MM format not Date format
+        if (startTime !== toTimeInput(queue?.startsAt) || endTime !== toTimeInput(queue?.endsAt)) {
+            await onTimeChange(startTime, endTime);
         }
 
+        // Location and Room update
         const trimmedLocation = roomLocation.trim();
         let updatedQueue: Queue | null = queue;
         let didUpdate = false;
@@ -154,8 +170,8 @@ export const QueueManagementModal = ({
     const handleCancelChanges = () => {
         setIsQueueOpen(queue?.isOpen ?? true);
         setRoomLocation(queue?.location ?? '');
-        setStartTime('08:00');
-        setEndTime('09:00');
+        setStartTime(toTimeInput(queue?.startsAt));
+        setEndTime(toTimeInput(queue?.endsAt));
         setIsViewingManagementModal(false);
     }
 
