@@ -2,20 +2,14 @@ import { Router } from 'express';
 import type { Request, Response } from 'express';
 import { prisma } from '../prisma.js';
 import { supabaseAdmin } from '../config/supabase.js';
-import type { NotificationType, User } from '../../shared/types.js';
+import type { NotificationType } from '../../shared/types.js';
 import type {
     ApiMessageResponse,
     UserResponse,
 } from '../../shared/types.js';
 import { ZodError } from 'zod';
 import { UserValidatedSchema, NotificationAlertUpdateSchema, DefaultLocationUpdateSchema } from '../schemas/user.schema.js';
-
-const NOTIFY_FIELD_BY_TYPE = {
-    JOIN: 'notifyJoin',
-    LEAVE: 'notifyLeave',
-    ASSIST: 'notifyAssist',
-    CLOSE: 'notifyClose',
-} as const satisfies Record<NotificationType, keyof Pick<User, 'notifyJoin' | 'notifyLeave' | 'notifyAssist' | 'notifyClose'>>;
+import { getNotifyPreferenceField } from '../services/notification.services.js';
 
 const router: Router = Router();
 
@@ -127,7 +121,7 @@ router.patch('/:id/notifications/type/:type', async (req: Request, res: Response
         const type = req.params.type as NotificationType;
         const { status } = NotificationAlertUpdateSchema.parse(req.body);
 
-        const notifyField = NOTIFY_FIELD_BY_TYPE[type];
+        const notifyField = getNotifyPreferenceField(type);
         if (!notifyField) {
             res.status(400).json({ message: 'Invalid notification type' });
             return;

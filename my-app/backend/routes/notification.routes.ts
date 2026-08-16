@@ -200,7 +200,7 @@ router.post('/queues/:queueId/type/close', requireQueueOwnership('queueId'), asy
     }
 });
 
-// PATCH
+// PATCH /api/notifications/:id — reserved for future read/unread tracking; not implemented yet.
 router.patch('/:id', async (req: Request, res: Response) => {
     res.status(501).json({ message: 'Not implemented' });
 });

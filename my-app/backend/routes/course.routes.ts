@@ -2,10 +2,10 @@ import { Router } from 'express';
 import type { Request, Response } from 'express';
 import { prisma } from '../prisma.js';
 import type { CoursesListResponse } from '../../shared/types.js';
-import { success } from 'zod';
 
 const router: Router = Router();
 
+// GET /api/courses — list all active courses
 router.get('/', async (_req: Request, res: Response): Promise<void> => {
     try {
         const courses = await prisma.course.findMany({

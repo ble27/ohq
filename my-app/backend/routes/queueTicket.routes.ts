@@ -193,46 +193,6 @@ router.get('/user/:studentId', async (req: Request, res: Response): Promise<void
 });
 
 
-// POST /api/queueticket — create ticket
-// router.post('/', async (req: Request, res: Response): Promise<void> => {
-//     try {
-//         // The request body was attached from middleware with user
-//         const studentId = (req as any).user.id;
-
-//         // The server owns student identity; never trust a client-supplied user ID.
-//         const validatedTicket = CreateQueueTicketValidationSchema.parse({
-//             ...req.body, studentId
-//         });
-//         const { queueId } = validatedTicket;
-
-//         // Ticket id, joinedAt, updatedAt are set by the server
-//         // Call joinQueue service to create the ticket
-//         const newTicket = await joinQueue(queueId, studentId);
-
-//         console.log(`[QUEUE TICKET] Successfully created ticket object: ${JSON.stringify(newTicket, null, 2)}`)
-
-//         const body: QueueTicketResponse = {
-//             ticket: newTicket,
-//             message: 'SUCCESS',
-//         };
-//         console.log('Successfully created a new ticket');
-//         console.log(JSON.stringify(body.ticket));
-//         res.status(201).json(body);
-//     }
-//     catch (error: unknown) {
-//         if (error instanceof ZodError) {
-//             res.status(400).json({ message: 'Invalid input', errors: error.issues });
-//             return;
-//         }
-//         if (error instanceof Error) {
-//             res.status(500).json({ message: error.message });
-//             return;
-//         }
-//         console.log('Failed to create a new ticket');
-//         res.status(500).json({ message: 'Failed to create ticket' });
-//     }
-// });
-
 // POST /api/queueticket/:queueId — create ticket based on queue ID
 router.post('/queues/:queueId', async (req: Request, res: Response): Promise<void> => {
     try {

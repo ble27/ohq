@@ -132,6 +132,7 @@ router.post('/resend-confirmation', async (req: Request, res: Response) => {
     return res.status(200).json({ message: 'Confirmation email sent' });
 });
 
+// POST /api/auth/signin — email/password sign-in; sets httpOnly session cookies on success
 router.post('/signin', async (req: Request, res: Response) => {
     let email: string, password: string;
     try {

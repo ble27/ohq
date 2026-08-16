@@ -4,6 +4,7 @@ import type { HealthCheckResponse } from '../../shared/types.js';
 
 const router: Router = Router();
 
+// GET /health — liveness probe; always public, never behind authMiddleware
 router.get('/health', async (req: Request, res: Response): Promise<void> => {
     const healthcheck: HealthCheckResponse = {
         uptime: process.uptime(),
