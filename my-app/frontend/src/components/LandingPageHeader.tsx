@@ -60,11 +60,8 @@ export const Header = () => {
           <>
             {/* Desktop Middle Links - Hidden on mobile */}
             <div className="flex flex-1 justify-center items-center gap-2 h-full">
-              <Link to="/" className="font-sans text-sm text-gray-500 hover:text-black p-1 focus:opacity-90">
-                Docs
-              </Link>
-              <Link to="/" className="font-sans text-sm text-gray-500 hover:text-black p-1 focus:opacity-90">
-                Source
+               <Link to="/" className="font-sans text-sm text-gray-500 hover:text-black p-1 focus:opacity-90">
+                Privacy
               </Link>
             </div>
 
@@ -84,17 +81,14 @@ export const Header = () => {
         {windowWidth <= MOBILE_BREAKING_POINT && isHamburgerMenuOpen && (
           <div className="transition-all duration-300 ease-in-out absolute top-15 w-full h-screen text-black bg-yellow-50 z-[110]">
             <div className="sticky flex flex-col h-70 text-base">
-              <Link to="/" onClick={() => setHamburgerMenuOpen(false)} className="flex items-center flex-1 hover:bg-gray-200 px-9 border-b border-black/30">
-                Docs
-              </Link>
-              <Link to="/" onClick={() => setHamburgerMenuOpen(false)} className="flex items-center flex-1 hover:bg-gray-200 px-9 border-b border-black/30">
-                Source
-              </Link>
               <Link to="/signin" onClick={() => setHamburgerMenuOpen(false)} className="flex items-center flex-1 hover:bg-gray-200 px-9 border-b border-black/30">
                 Log In
               </Link>
               <Link to="/signup" onClick={() => setHamburgerMenuOpen(false)} className="flex items-center flex-1 hover:bg-gray-200 px-9 border-b border-black/30">
                 Sign Up
+              </Link>
+              <Link to="#privacy" onClick={() => setHamburgerMenuOpen(false)} className="flex items-center flex-1 hover:bg-gray-200 px-9 border-b border-black/30">
+                Privacy
               </Link>
             </div>
           </div>

@@ -36,7 +36,7 @@ export const googleSignIn = async () => {
             // OAuth only — no type=signup (that marks email-confirm callbacks)
             redirectTo: `${window.location.origin}/auth/callback`,
             queryParams: {
-                hd: 'tamu.edu',
+                // hd: 'tamu.edu',
                 access_type: 'offline', // Google fetches refresh tokens
                 prompt: 'consent' // force Google to show consent screen so the refresh token is actually sent
             }

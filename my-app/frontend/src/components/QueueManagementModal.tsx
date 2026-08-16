@@ -8,7 +8,7 @@ import { QueueWorkspace } from './workspace/QueueWorkspace';
 import type { NotificationType } from '@shared/types';
 
 interface QueueManagementModalProps {
-    queue: Queue | null
+    queue: Queue 
     tickets: QueueTicketWithStudent[]
     setTickets: (value: QueueTicket[]) => void
     setIsViewingManagementModal: (value : boolean) => void
@@ -343,7 +343,7 @@ export const QueueManagementModal = ({
                 {isQueueModalOpen && (
                     <div className="min-h-0 flex-1 overflow-y-auto px-5 pt-5">
                         {tickets.length > 0 
-                            ? <QueueTicketModal queueTickets={tickets} /> 
+                            ? <QueueTicketModal queueTickets={tickets} queue={queue} /> 
                             : 'No tickets in the waitlist'}
                     </div>
                 )}

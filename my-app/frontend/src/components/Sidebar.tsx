@@ -7,7 +7,7 @@ import { useAuth } from '@/context/AuthContextProvider';
 export const MOBILE_BREAKPOINT = 640;
 
 const INACTIVITY_EVENTS = ['mousedown', 'mousemove', 'click', 'scroll', 'keypress'] as const;
-const INACTIVITY_TIMEOUT_MINUTES = 10;
+const INACTIVITY_TIMEOUT_MINUTES = 30;
 const INACTIVITY_TIMEOUT_MS = INACTIVITY_TIMEOUT_MINUTES * 60 * 1000;
 
 interface SideBarProps {
@@ -57,6 +57,7 @@ export const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }: SideBarProps ) => {
   // Desktop: spacer matches sidebar so content is pushed.
   const spacerWidth = isDesktop ? sidebarWidth : 'w-[72px]';
 
+  // Build a new function whenever a user is refreshed or whenever a new page is navigated to
   const handleSignout = useCallback(async () => {
     try {
       await signOut();
@@ -72,6 +73,7 @@ export const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }: SideBarProps ) => {
   // body) — otherwise every re-render re-adds these listeners without
   // removing the previous set and resets the timer regardless of whether
   // the user was actually active.
+  // handleSignout is called in useEffect therefore is also in in dependency list 
   useEffect(() => {
     let inactivityTimer: ReturnType<typeof setTimeout>;
 

@@ -265,7 +265,7 @@ export const QueueManager = ({
                     )}
 
                     <form
-                        className="mt-4 grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] lg:items-end"
+                        className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1.4fr)_minmax(0,0.9fr)_minmax(0,0.9fr)_auto] xl:items-end"
                         onSubmit={handleCreateQueue}
                     >
                         <label className="grid min-w-0 gap-1.5 text-sm font-medium text-slate-600">
@@ -295,37 +295,32 @@ export const QueueManager = ({
                                 placeholder="e.g. Zachary - Room 240"
                                 className="h-11 w-full min-w-0 rounded-xl border border-slate-200 bg-white px-3.5 text-sm font-normal text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400"
                             />
-                            
-                        </label>
-                        {/* Start Time */}
-                        <label className="grid min-w-0 gap-1.5 text-sm font-medium text-slate-600">
-                            Start Time
-                            <input
-                                type='time'
-                                value={startTime}
-                                onChange={(event) => setStartTime(event.target.value)}
-                                placeholder="e.g. Zachary - Room 240"
-                                className="h-11 w-full min-w-0 rounded-xl border border-slate-200 bg-white px-3.5 text-sm font-normal text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400"
-                            />
-                            
                         </label>
 
-                        {/* End Time */}
                         <label className="grid min-w-0 gap-1.5 text-sm font-medium text-slate-600">
-                            End Time
+                            Start time
                             <input
-                                type='time'
+                                type="time"
+                                value={startTime}
+                                onChange={(event) => setStartTime(event.target.value)}
+                                className="h-11 w-full min-w-0 max-w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-normal text-slate-900 outline-none transition focus:border-slate-400"
+                            />
+                        </label>
+
+                        <label className="grid min-w-0 gap-1.5 text-sm font-medium text-slate-600">
+                            End time
+                            <input
+                                type="time"
                                 value={endTime}
                                 onChange={(event) => setEndTime(event.target.value)}
-                                placeholder="e.g. Zachary - Room 240"
-                                className="h-11 w-full min-w-0 rounded-xl border border-slate-200 bg-white px-3.5 text-sm font-normal text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400"
+                                className="h-11 w-full min-w-0 max-w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-normal text-slate-900 outline-none transition focus:border-slate-400"
                             />
                         </label>
 
                         <button
                             type="submit"
                             disabled={isCreating || !courseId || !location.trim() || !user}
-                            className="inline-flex h-11 w-full shrink-0 items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50 md:col-span-2 lg:col-span-1 lg:w-auto"
+                            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50 sm:col-span-2 xl:col-span-1 xl:w-auto xl:min-w-40"
                         >
                             <Plus className="size-4 shrink-0" />
                             <span className="truncate">{isCreating ? 'Creating…' : 'Create queue'}</span>
