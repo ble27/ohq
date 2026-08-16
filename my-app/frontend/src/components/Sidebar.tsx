@@ -1,10 +1,14 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { LuHouse, LuLibraryBig, LuSettings, LuPanelLeft, LuLogOut, LuPackage } from "react-icons/lu";
 import { signOut } from '@/services/authService';
 import { useAuth } from '@/context/AuthContextProvider';
 
 export const MOBILE_BREAKPOINT = 640;
+
+const INACTIVITY_EVENTS = ['mousedown', 'mousemove', 'click', 'scroll', 'keypress'] as const;
+const INACTIVITY_TIMEOUT_MINUTES = 10;
+const INACTIVITY_TIMEOUT_MS = INACTIVITY_TIMEOUT_MINUTES * 60 * 1000;
 
 interface SideBarProps {
   isSidebarOpen: boolean
@@ -53,11 +57,7 @@ export const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }: SideBarProps ) => {
   // Desktop: spacer matches sidebar so content is pushed.
   const spacerWidth = isDesktop ? sidebarWidth : 'w-[72px]';
 
-  let inactivityTimer: any;
-  const TIMEOUT_MINUTES = 10; 
-  const TIMEOUT_MS = TIMEOUT_MINUTES * 60 * 1000;  
-  
-  const handleSignout = async () => {
+  const handleSignout = useCallback(async () => {
     try {
       await signOut();
       await refreshUser();
@@ -65,35 +65,29 @@ export const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }: SideBarProps ) => {
     }
     catch(err: unknown) {
       console.log(err);
-    } finally {
-      removeEventListeners();
     }
-  }
+  }, [refreshUser, navigate]);
 
-  const events = ['mousedown', 'load', 'mousemove', 'click', 'scroll', 'keypress'];
-  // Each event reset the timer
-  function addEventListeners() {
-    events.forEach((event) => {
-      window.addEventListener(event, resetTimer);
-    })
-  }
+  // Auto sign-out after inactivity. Must live in an effect (not the render
+  // body) — otherwise every re-render re-adds these listeners without
+  // removing the previous set and resets the timer regardless of whether
+  // the user was actually active.
+  useEffect(() => {
+    let inactivityTimer: ReturnType<typeof setTimeout>;
 
-  function removeEventListeners() {
-    events.forEach((event) => {
-      window.removeEventListener(event, resetTimer);
-    })
-    clearTimeout(inactivityTimer);
-  }
+    const resetTimer = () => {
+      clearTimeout(inactivityTimer);
+      inactivityTimer = setTimeout(() => { void handleSignout(); }, INACTIVITY_TIMEOUT_MS);
+    };
 
-  function resetTimer() {
-    // Clear out any previous timer
-    clearTimeout(inactivityTimer);
-    // Reset timer
-    inactivityTimer = setTimeout(handleSignout, TIMEOUT_MS);
-  }
+    INACTIVITY_EVENTS.forEach((event) => window.addEventListener(event, resetTimer));
+    resetTimer();
 
-  addEventListeners();
-  resetTimer();
+    return () => {
+      INACTIVITY_EVENTS.forEach((event) => window.removeEventListener(event, resetTimer));
+      clearTimeout(inactivityTimer);
+    };
+  }, [handleSignout]);
 
   return (
     <>

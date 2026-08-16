@@ -8,6 +8,7 @@ import { Signin } from './components/Signin'
 import { Signup } from './components/Signup'
 import { EmailConfirmation } from './components/EmailConfirmation'
 import { AuthCallback } from './components/AuthCallback'
+import { ProtectedRoute } from './components/ProtectedRoute'
 import { Toaster } from '@/components/ui/sonner'
 
 import './index.css'
@@ -42,12 +43,12 @@ function App() {
             <Route path='/signup' element={<Signup />} />
             <Route path='/check-email' element={<EmailConfirmation />} />
             <Route path='/auth/callback' element={<AuthCallback />} />
-            {/* Dashboard routes — QueueManager is gated by VerifyTA inside Dashboard */}
-            <Route path='/dashboard' element={<Dashboard />} />
-            <Route path='/dashboard/home' element={<Dashboard />} />
-            <Route path='/dashboard/class' element={<Dashboard />} />
-            <Route path='/dashboard/queuemanager' element={<Dashboard />} />
-            <Route path='/dashboard/settings' element={<Dashboard />} />
+            {/* Dashboard routes — require auth; QueueManager is further gated by VerifyTA inside Dashboard */}
+            <Route path='/dashboard' element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path='/dashboard/home' element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path='/dashboard/class' element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path='/dashboard/queuemanager' element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path='/dashboard/settings' element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           </Routes>
         </BrowserRouter>
       </SocketProvider>
