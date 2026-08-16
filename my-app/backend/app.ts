@@ -1,6 +1,8 @@
 import 'dotenv/config';
 import express from 'express';
 import cookieParser from 'cookie-parser';
+import helmet from 'helmet';
+import cors from 'cors';
 import { queueRouter } from './routes/queue.routes.js';
 import { healthRouter } from './routes/health.routes.js';
 import { userRouter } from './routes/user.routes.js';
@@ -10,12 +12,19 @@ import { courseRouter } from './routes/course.routes.js';
 import { taRouter } from './routes/ta.routes.js';
 import { notificationRouter } from './routes/notification.routes.js';
 import authMiddleware from './middlewares/auth.middleware.js';
+import { authRateLimiter, apiRateLimiter } from './middlewares/rateLimit.middleware.js';
 import { Server, Socket } from 'socket.io';
 import http from 'http';
 import { socketMiddleware } from './middlewares/socket.middleware.js';
 import { setIo } from './socket.js';
 import { prisma } from './prisma.js';
 import { isQueueManager } from './middlewares/authz.middleware.js';
+
+// Comma-separated list of allowed browser origins (both HTTP CORS and Socket.IO CORS).
+const ALLOWED_ORIGINS = (process.env.CORS_ORIGINS ?? 'http://localhost:5173,http://localhost:5174')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
 
 // Socket Services helpers
 import { listActiveTickets } from './services/queue.services.js';
@@ -45,7 +54,7 @@ const server = http.createServer(app);
 // Initialize SOCKET.IO with CORS enabled
 const io = new Server(server, {
   cors: {
-    origin: ["http://localhost:5173", "http://localhost:5174"],
+    origin: ALLOWED_ORIGINS,
     methods: ["GET", "POST"],
     credentials: true
   }
@@ -133,17 +142,22 @@ io.on('connection', async (socket: Socket) => {
   });
 });
 
+// Security headers + explicit HTTP CORS policy (Socket.IO has its own above).
+app.use(helmet());
+app.use(cors({ origin: ALLOWED_ORIGINS, credentials: true }));
+
 app.use(express.json());
 app.use(cookieParser());
 app.use(healthRouter);
 
-app.use('/api/auth', authRouter);
-app.use('/api/courses', authMiddleware, courseRouter);
-app.use('/api/queues', authMiddleware, queueRouter);
-app.use('/api/queueticket/', authMiddleware, queueTicketRouter);
-app.use('/api/users', authMiddleware, userRouter);
-app.use('/api/tas/', authMiddleware, taRouter);
-app.use('/api/notifications', authMiddleware, notificationRouter);
+// Auth endpoints get a tighter rate limit (credential guessing / signup spam).
+app.use('/api/auth', authRateLimiter, authRouter);
+app.use('/api/courses', apiRateLimiter, authMiddleware, courseRouter);
+app.use('/api/queues', apiRateLimiter, authMiddleware, queueRouter);
+app.use('/api/queueticket/', apiRateLimiter, authMiddleware, queueTicketRouter);
+app.use('/api/users', apiRateLimiter, authMiddleware, userRouter);
+app.use('/api/tas/', apiRateLimiter, authMiddleware, taRouter);
+app.use('/api/notifications', apiRateLimiter, authMiddleware, notificationRouter);
 
 server.listen(PORT, () => {
   console.log(`Server is runnning on port ${PORT}`);

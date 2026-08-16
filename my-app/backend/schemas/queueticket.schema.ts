@@ -33,5 +33,12 @@ export const CreateQueueTicketValidationSchema = QueueTicketValidationSchema.omi
     updatedAt: true,
 });
 
+// PATCH /api/queueticket/:queueTicketId only supports transitioning a ticket to LEFT.
+export const LeaveTicketStatusSchema = z.object({
+    status: z.literal(SessionStatus.LEFT, {
+        message: 'This endpoint only supports leaving a queue',
+    }),
+});
+
 export type QueueTicketInput = z.infer<typeof QueueTicketValidationSchema>;
 export type CreateQueueTicketInput = z.infer<typeof CreateQueueTicketValidationSchema>;

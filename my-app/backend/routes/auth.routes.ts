@@ -1,7 +1,9 @@
 import { Router } from 'express';
 import type { Request, Response } from 'express';
+import { ZodError } from 'zod';
 import { supabase } from '../config/supabase.js';
 import { prisma } from '../prisma.js';
+import { SigninSchema, SignupSchema } from '../schemas/auth.schema.js';
 
 const router: Router = Router();
 
@@ -50,7 +52,16 @@ export function setAuthCookies(
 }
 
 router.post('/signup', async (req: Request, res: Response) => {
-    const { email, password, name } = req.body;
+    let email: string, password: string, name: string | undefined;
+    try {
+        ({ email, password, name } = SignupSchema.parse(req.body));
+    } catch (err) {
+        if (err instanceof ZodError) {
+            return res.status(400).json({ error: 'Invalid input', errors: err.issues });
+        }
+        return res.status(400).json({ error: 'Invalid input' });
+    }
+
     const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -122,7 +133,16 @@ router.post('/resend-confirmation', async (req: Request, res: Response) => {
 });
 
 router.post('/signin', async (req: Request, res: Response) => {
-    const { email, password } = req.body;
+    let email: string, password: string;
+    try {
+        ({ email, password } = SigninSchema.parse(req.body));
+    } catch (err) {
+        if (err instanceof ZodError) {
+            return res.status(400).json({ error: 'Invalid input', errors: err.issues });
+        }
+        return res.status(400).json({ error: 'Invalid input' });
+    }
+
     const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password

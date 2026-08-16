@@ -9,7 +9,12 @@ import type {
     QueueResponse,
     QueuesListResponse,
 } from '../../shared/types.js';
-import { CreateQueueValidationSchema, TimeValidationSchema } from '../schemas/queue.schema.js';
+import {
+    CreateQueueValidationSchema,
+    QueueOpenParamSchema,
+    RoomLocationParamSchema,
+    TimeValidationSchema,
+} from '../schemas/queue.schema.js';
 import { ZodError } from 'zod';
 import { closeExpiredQueues } from '../services/queue.services.js';
 import { requireQueueOwnership, requireRole } from '../middlewares/authz.middleware.js';
@@ -161,7 +166,7 @@ router.post('/', requireRole(Role.TA, Role.PROFESSOR), async (req: Request, res:
 router.patch('/:queueId/status/:isQueueOpen', requireQueueOwnership('queueId'), async (req: Request, res: Response): Promise<void> => {
     try {
         const queueId = req.params.queueId as string;
-        const isQueueOpen = req.params.isQueueOpen === 'true';
+        const isQueueOpen = QueueOpenParamSchema.parse(req.params.isQueueOpen) === 'true';
 
         const result: Queue = await prisma.queue.update({
             where: { id: queueId },
@@ -174,6 +179,10 @@ router.patch('/:queueId/status/:isQueueOpen', requireQueueOwnership('queueId'), 
         };
         res.status(200).json(body);
     } catch (error) {
+        if (error instanceof ZodError) {
+            res.status(400).json({ message: 'Invalid input', errors: error.issues });
+            return;
+        }
         if (error instanceof Error) {
             res.status(500).json({ message: error.message });
             return;
@@ -186,12 +195,7 @@ router.patch('/:queueId/status/:isQueueOpen', requireQueueOwnership('queueId'), 
 router.patch('/:queueId/location/:roomLocation', requireQueueOwnership('queueId'), async (req: Request, res: Response): Promise<void> => {
     try {
         const queueId = req.params.queueId as string;
-        const roomLocation = decodeURIComponent(req.params.roomLocation as string).trim();
-
-        if (!roomLocation) {
-            res.status(400).json({ message: 'Room location is required' });
-            return;
-        }
+        const roomLocation = RoomLocationParamSchema.parse(decodeURIComponent(req.params.roomLocation as string));
 
         const result: Queue = await prisma.queue.update({
             where: { id: queueId },
@@ -204,6 +208,10 @@ router.patch('/:queueId/location/:roomLocation', requireQueueOwnership('queueId'
         };
         res.status(200).json(body);
     } catch (error) {
+        if (error instanceof ZodError) {
+            res.status(400).json({ message: 'Invalid input', errors: error.issues });
+            return;
+        }
         if (error instanceof Error) {
             res.status(500).json({ message: error.message });
             return;

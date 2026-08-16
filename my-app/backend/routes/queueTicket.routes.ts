@@ -13,7 +13,7 @@ import type {
     QueueTicketWithStudent,
 } from '../../shared/types.js';
 
-import { CreateQueueTicketValidationSchema } from '../schemas/queueticket.schema.js';
+import { CreateQueueTicketValidationSchema, LeaveTicketStatusSchema } from '../schemas/queueticket.schema.js';
 import { ZodError } from 'zod';
 import { requireQueueOwnership, requireRole, requireTicketQueueOwnership } from '../middlewares/authz.middleware.js';
 const router: Router = Router();
@@ -274,7 +274,7 @@ router.post('/queues/:queueId', async (req: Request, res: Response): Promise<voi
     }
 });
 
-// PATCH /api/queueticket/:id — update status
+// PATCH /api/queueticket/:id — leaves a queue (the only status transition this endpoint supports). Ticket owner only.
 router.patch('/:queueTicketId', async (req: Request, res: Response): Promise<void> => {
     try {
         const ticketId = req.params.queueTicketId;
@@ -283,11 +283,7 @@ router.patch('/:queueTicketId', async (req: Request, res: Response): Promise<voi
             return;
         }
 
-        const status = req.body.status as SessionStatus;
-        if (status !== SessionStatus.LEFT) {
-            res.status(400).json({ message: 'This endpoint only supports leaving a queue' });
-            return;
-        }
+        LeaveTicketStatusSchema.parse(req.body);
 
         const existingTicket = await prisma.queueTicket.findUnique({
             where: { id: ticketId },

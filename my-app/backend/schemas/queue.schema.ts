@@ -39,6 +39,16 @@ export const TimeValidationSchema = z.object({
     endsAt: z.coerce.date()
 })
 
+// Route params are always strings; coerce/validate before use.
+export const QueueOpenParamSchema = z.enum(['true', 'false'], {
+    message: "isQueueOpen must be 'true' or 'false'",
+});
+
+export const RoomLocationParamSchema = z
+    .string()
+    .trim()
+    .min(3, { message: 'Location must be at least 3 characters' });
+
 export type QueueInput = z.infer<typeof QueueValidationSchema>;
 export type CreateQueueInput = z.infer<typeof CreateQueueValidationSchema>;
 export type TimeValidationInput = z.infer<typeof TimeValidationSchema>
