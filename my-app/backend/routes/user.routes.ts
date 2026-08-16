@@ -72,7 +72,10 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
             data: {
                 id: validatedUser.id, // must be Supabase auth.users.id
                 email: validatedUser.email,
-                role: validatedUser.role,
+                // Never trust a client-supplied role: it would let any caller
+                // self-promote to TA/PROFESSOR. New profiles always start as
+                // STUDENT; elevate roles via admin tooling only.
+                role: 'STUDENT',
                 name: validatedUser.name ?? null,
             },
         });

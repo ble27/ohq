@@ -14,11 +14,28 @@ import { Server, Socket } from 'socket.io';
 import http from 'http';
 import { socketMiddleware } from './middlewares/socket.middleware.js';
 import { setIo } from './socket.js';
+import { prisma } from './prisma.js';
+import { isQueueManager } from './middlewares/authz.middleware.js';
 
 // Socket Services helpers
 import { listActiveTickets } from './services/queue.services.js';
 import { startHelping, completeTicket } from './services/queue.services.js';
-import { findQueueIdByTicketId } from './services/queueTicket.services.js';
+
+/**
+ * Loads the queue a ticket belongs to and confirms the caller manages it
+ * (queue TA or PROFESSOR). Throws if the ticket/queue is missing or the
+ * caller isn't authorized — callers should catch and report via
+ * `reportSocketError` instead of mutating ticket state.
+ */
+async function authorizeQueueManagerForTicket(ticketId: string, userId: string) {
+  const ticket = await prisma.queueTicket.findUnique({ where: { id: ticketId } });
+  if (!ticket) throw new Error('Ticket not found');
+  const queue = await prisma.queue.findUnique({ where: { id: ticket.queueId } });
+  if (!queue) throw new Error('Queue not found');
+  const allowed = await isQueueManager(queue, userId);
+  if (!allowed) throw new Error('You do not manage this queue');
+  return queue;
+}
 
 const app = express();
 const PORT: number = Number(process.env.PORT) || 3000;
@@ -88,26 +105,27 @@ io.on('connection', async (socket: Socket) => {
     }
   });
 
-  // Need ticket id and expect ticket id
+  // Need ticket id and expect ticket id. Only the queue's TA (or a PROFESSOR)
+  // may move a ticket into HELPING.
   socket.on('start-helping', async (ticketId: string) => {
     try {
+      const queue = await authorizeQueueManagerForTicket(ticketId, userId);
       await startHelping(ticketId);
-      const queueId = await findQueueIdByTicketId(ticketId);
-      const tickets = await listActiveTickets(queueId);
-      io.to(queueId).emit('queue-updated', tickets);
-      console.log(`User ${userId} started helping in room ${queueId}`);
+      const tickets = await listActiveTickets(queue.id);
+      io.to(queue.id).emit('queue-updated', tickets);
+      console.log(`User ${userId} started helping in room ${queue.id}`);
     } catch (error: unknown) {
       reportSocketError('start-helping', error);
     }
   });
 
-  // Expect ticket id
+  // Expect ticket id. Only the queue's TA (or a PROFESSOR) may complete a ticket.
   socket.on('complete-ticket', async (ticketId: string) => {
     try {
+      const queue = await authorizeQueueManagerForTicket(ticketId, userId);
       await completeTicket(ticketId);
-      const queueId = await findQueueIdByTicketId(ticketId);
-      const tickets = await listActiveTickets(queueId);
-      io.to(queueId).emit('queue-updated', tickets);
+      const tickets = await listActiveTickets(queue.id);
+      io.to(queue.id).emit('queue-updated', tickets);
       console.log(`User ${userId} completed ticket ${ticketId}`);
     } catch (error: unknown) {
       reportSocketError('complete-ticket', error);

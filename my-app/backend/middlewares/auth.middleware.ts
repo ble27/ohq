@@ -11,7 +11,8 @@ export default async function authMiddleware (req: Request, res: Response, next:
     
     // attempt to refresh the current session using refresh token
     const { data, error } = await supabase.auth.refreshSession({ refresh_token: refreshToken });
-    if (!data.session) {
+    if (error || !data.session) {
+      console.error('Failed to refresh session:', error?.message ?? 'no session returned');
       return res.status(401).json({ error: 'Unauthorized' });
     }
     setAuthCookies(res, data.session);

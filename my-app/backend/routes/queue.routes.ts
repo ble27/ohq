@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import type { Request, Response } from 'express';
 import { prisma } from '../prisma.js';
+import { Role } from '../generated/prisma/client.js';
 
 import type {
     ApiMessageResponse,
@@ -11,6 +12,8 @@ import type {
 import { CreateQueueValidationSchema, TimeValidationSchema } from '../schemas/queue.schema.js';
 import { ZodError } from 'zod';
 import { closeExpiredQueues } from '../services/queue.services.js';
+import { requireQueueOwnership, requireRole } from '../middlewares/authz.middleware.js';
+import type { AuthedRequest } from '../middlewares/authz.middleware.js';
 
 const router: Router = Router();
 
@@ -89,9 +92,9 @@ router.get('/course/:courseId', async (req: Request, res: Response): Promise<voi
     
 });
 
-// POST /api/queues — create a queue
+// POST /api/queues — create a queue. TA/PROFESSOR only; the caller becomes the queue's TA.
 // Get requested course code and course ID
-router.post('/', async (req: Request, res: Response): Promise<void> => {
+router.post('/', requireRole(Role.TA, Role.PROFESSOR), async (req: Request, res: Response): Promise<void> => {
     try {
         const requestedCourse = req.body?.courseId;
         const course = typeof requestedCourse === 'string'
@@ -114,6 +117,8 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
         const validatedQueue = CreateQueueValidationSchema.parse({
             ...req.body,
             courseId: course.id,
+            // Never trust a client-supplied taId — the caller always owns the queue they create.
+            taId: (req as any).user.id,
         });
         const { taId, courseId, endsAt, ...queueData } = validatedQueue;
 
@@ -152,8 +157,8 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
     }
 });
 
-// PATCH /api/queues/:queueId/status/:isQueueOpen — set isOpen
-router.patch('/:queueId/status/:isQueueOpen', async (req: Request, res: Response): Promise<void> => {
+// PATCH /api/queues/:queueId/status/:isQueueOpen — opens or closes a queue. TA-owner only.
+router.patch('/:queueId/status/:isQueueOpen', requireQueueOwnership('queueId'), async (req: Request, res: Response): Promise<void> => {
     try {
         const queueId = req.params.queueId as string;
         const isQueueOpen = req.params.isQueueOpen === 'true';
@@ -177,8 +182,8 @@ router.patch('/:queueId/status/:isQueueOpen', async (req: Request, res: Response
     }
 });
 
-// PATCH /api/queues/:queueId/location/:roomLocation — set location
-router.patch('/:queueId/location/:roomLocation', async (req: Request, res: Response): Promise<void> => {
+// PATCH /api/queues/:queueId/location/:roomLocation — sets the queue's room location. TA-owner only.
+router.patch('/:queueId/location/:roomLocation', requireQueueOwnership('queueId'), async (req: Request, res: Response): Promise<void> => {
     try {
         const queueId = req.params.queueId as string;
         const roomLocation = decodeURIComponent(req.params.roomLocation as string).trim();
@@ -207,23 +212,12 @@ router.patch('/:queueId/location/:roomLocation', async (req: Request, res: Respo
     }
 });
 
-// PATCH /api/queues/:id — toggle isOpen
-router.patch('/:id', async (req: Request, res: Response): Promise<void> => {
+// PATCH /api/queues/:id — toggles isOpen. TA-owner only.
+router.patch('/:id', requireQueueOwnership('id'), async (req: AuthedRequest, res: Response): Promise<void> => {
     try {
-        const queueId = req.params.id;
-        if (!queueId) {
-            res.status(400).json({ message: 'Queue ID is required' });
-            return;
-        }
-
-        // Check whether the queue exists based on queueId
-        const queueToToggle = await prisma.queue.findUnique({
-            where: { id: queueId },
-        });
-        if (!queueToToggle) {
-            res.status(404).json({ message: 'Queue not found' });
-            return;
-        }
+        // requireQueueOwnership already fetched and authorized the queue.
+        const queueToToggle = req.queue!;
+        const queueId = queueToToggle.id;
 
         // Update the queue's status here
         const updatedQueue = await prisma.queue.update({
@@ -251,8 +245,8 @@ router.patch('/:id', async (req: Request, res: Response): Promise<void> => {
     }
 });
 
-// PATCH time `/api/queues/${queueId}/time`
-router.patch(`/:queueId/time`, async (req: Request, res: Response) => {
+// PATCH /api/queues/:queueId/time — updates the queue's start/end time. TA-owner only.
+router.patch(`/:queueId/time`, requireQueueOwnership('queueId'), async (req: Request, res: Response) => {
     try {
         const queueId = req.params.queueId as string;
         const validatedTimeSchema = TimeValidationSchema.parse(req.body);
@@ -279,22 +273,11 @@ router.patch(`/:queueId/time`, async (req: Request, res: Response) => {
     }
 })
 
-// DELETE /api/queues/:id
-router.delete('/:id', async (req: Request, res: Response): Promise<void> => {
+// DELETE /api/queues/:id — TA-owner only.
+router.delete('/:id', requireQueueOwnership('id'), async (req: AuthedRequest, res: Response): Promise<void> => {
     try {
-        const queueId = req.params.id;
-        if (!queueId) {
-            res.status(400).json({ message: 'Queue ID is required' });
-            return;
-        }
-
-        const queueToDelete = await prisma.queue.findUnique({
-            where: { id: queueId },
-        });
-        if (!queueToDelete) {
-            res.status(404).json({ message: 'Queue not found' });
-            return;
-        }
+        // requireQueueOwnership already fetched and authorized the queue.
+        const queueId = req.queue!.id;
 
         const deletedQueue = await prisma.queue.delete({
             where: { id: queueId },

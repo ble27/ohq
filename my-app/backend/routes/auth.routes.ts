@@ -172,6 +172,9 @@ router.post('/session', async (req: Request, res: Response) => {
     }
 });
 
+// GET /api/auth/me — intentionally NOT behind authMiddleware: it reads the
+// short-lived access_token directly instead of triggering a refresh, so the
+// frontend can silently probe "am I logged in?" without rotating cookies.
 router.get('/me', async (req: Request, res: Response) => {
     // Look in frontend @ src/routes/auth.routes.ts for withCredentials, where cookie is sent along with
     const accessToken = req.cookies?.access_token;
@@ -195,6 +198,9 @@ router.get('/me', async (req: Request, res: Response) => {
     }
 });
 
+// POST /api/auth/signout — intentionally public/no-op if already signed out:
+// it only clears the caller's own cookies and signs out the local Supabase
+// session, so it cannot affect any other user's account.
 router.post('/signout', async (req: Request, res: Response) => {
     console.log('Backend signout route');
     res.clearCookie('access_token');

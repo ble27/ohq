@@ -17,11 +17,12 @@ import type {
     NotificationType,
 } from '../../shared/types.js';
 import { getIo } from '../socket.js';
+import { requireQueueOwnership, requireSelf } from '../middlewares/authz.middleware.js';
 
 const router = Router();
 
-// GET /api/notifications/user/:userId — inbox for recipient
-router.get('/user/:userId', async (req, res) => {
+// GET /api/notifications/user/:userId — inbox for recipient. Self only.
+router.get('/user/:userId', requireSelf('userId'), async (req, res) => {
     try {
         const userId = req.params.userId;
         if (!userId) {
@@ -62,6 +63,27 @@ router.post('/queues/:queueId/user/:recipientId/type/:type', async (req: Request
         const recipientId = req.params.recipientId as string;
         const type = req.params.type as NotificationType;
         const ticketId = req.body?.ticketId as string | undefined;
+
+        // Only participants of this queue may trigger a notification: the TA who
+        // owns it (e.g. a student notifying their TA on JOIN/LEAVE), or the
+        // student on the referenced ticket (e.g. a TA notifying a student on
+        // ASSIST). This prevents an arbitrary caller from spamming notifications
+        // to any recipient of their choosing.
+        const queue = await prisma.queue.findFirst({ where: { id: queueId } });
+        if (!queue) {
+            res.status(404).json({ message: 'Queue not found' });
+            return;
+        }
+        const callerId = (req as any).user.id;
+        const ticket = ticketId
+            ? await prisma.queueTicket.findUnique({ where: { id: ticketId } })
+            : null;
+        const isCallerQueueTA = queue.taId === callerId;
+        const isCallerTicketOwner = ticket?.studentId === callerId;
+        if (!isCallerQueueTA && !isCallerTicketOwner) {
+            res.status(403).json({ message: 'You are not part of this queue' });
+            return;
+        }
 
         const body = CreateNotificationValidationSchema.parse({
             userId: recipientId,
@@ -115,8 +137,8 @@ router.post('/queues/:queueId/user/:recipientId/type/:type', async (req: Request
     }
 });
 
-// POST /api/notifications/queues/:queueId/type/close — fan-out to active students + TA
-router.post('/queues/:queueId/type/close', async (req: Request, res: Response) => {
+// POST /api/notifications/queues/:queueId/type/close — fan-out to active students + TA. TA-owner only.
+router.post('/queues/:queueId/type/close', requireQueueOwnership('queueId'), async (req: Request, res: Response) => {
     try {
         const queueId = req.params.queueId as string;
         const type = PrismaNotificationType.CLOSE;
@@ -183,8 +205,8 @@ router.patch('/:id', async (req: Request, res: Response) => {
     res.status(501).json({ message: 'Not implemented' });
 });
 
-// DELETE /api/notifications/user/:userId — clear all for recipient
-router.delete('/user/:userId', async (req: Request, res: Response) => {
+// DELETE /api/notifications/user/:userId — clear all for recipient. Self only.
+router.delete('/user/:userId', requireSelf('userId'), async (req: Request, res: Response) => {
     console.log('Calling delete /api/notifications/user/:userId');
     try {
         const userId = req.params.userId as string;
@@ -213,7 +235,7 @@ router.delete('/user/:userId', async (req: Request, res: Response) => {
     }
 });
 
-// DELETE /api/notifications/:id — dismiss one
+// DELETE /api/notifications/:id — dismiss one. Recipient only.
 router.delete('/:id', async (req: Request, res: Response) => {
     try {
         const id = req.params.id as string;
@@ -221,6 +243,18 @@ router.delete('/:id', async (req: Request, res: Response) => {
             res.status(400).json({ message: 'Missing required parameter' });
             return;
         }
+
+        const existing = await prisma.notification.findUnique({ where: { id } });
+        if (!existing) {
+            res.status(404).json({ message: 'Notification not found' });
+            return;
+        }
+        const callerId = (req as any).user.id;
+        if (existing.userId !== callerId) {
+            res.status(403).json({ message: 'You can only dismiss your own notifications' });
+            return;
+        }
+
         const notificationResponse = await prisma.notification.delete({
             where: { id },
         });

@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import type { Request, Response } from 'express';
 import { prisma } from '../prisma.js';
-import { Prisma, PrismaClient, SessionStatus } from '@prisma/client';
+import { Prisma, SessionStatus, Role } from '@prisma/client';
 import { joinQueue, leaveQueue, listActiveTickets } from '../services/queue.services.js';
 import { startHelping } from '../services/queue.services.js';
 
@@ -14,12 +14,12 @@ import type {
 } from '../../shared/types.js';
 
 import { CreateQueueTicketValidationSchema } from '../schemas/queueticket.schema.js';
-import { date, ZodError } from 'zod';
-import { start } from 'repl';
+import { ZodError } from 'zod';
+import { requireQueueOwnership, requireRole, requireTicketQueueOwnership } from '../middlewares/authz.middleware.js';
 const router: Router = Router();
 
-// GET /api/queueticket — list all tickets
-router.get('/', async (_req: Request, res: Response): Promise<void> => {
+// GET /api/queueticket — list every ticket across all queues. TA/PROFESSOR only (admin-style view).
+router.get('/', requireRole(Role.TA, Role.PROFESSOR), async (_req: Request, res: Response): Promise<void> => {
     try {
         const tickets = await prisma.queueTicket.findMany();
         const body: QueueTicketsListResponse = { tickets, message: 'SUCCESS' };
@@ -326,8 +326,8 @@ router.patch('/:queueTicketId', async (req: Request, res: Response): Promise<voi
     }
 });
 
-// PATCH /api/queueticket/:queueTicketId/status/helping
-router.patch('/:queueTicketId/status/helping', async (req: Request, res: Response) => {
+// PATCH /api/queueticket/:queueTicketId/status/helping — moves a ticket to HELPING. TA who owns the queue only.
+router.patch('/:queueTicketId/status/helping', requireTicketQueueOwnership('queueTicketId'), async (req: Request, res: Response) => {
     try {
         const queueTicketId = req.params.queueTicketId as string;
         const ticketResponse = await startHelping(queueTicketId);
@@ -346,9 +346,9 @@ router.patch('/:queueTicketId/status/helping', async (req: Request, res: Respons
     }
 })
 
-// PATCH /api/queueticket/:queueTicketId/status/completed -> Move ticket from helping to completed
+// PATCH /api/queueticket/:queueTicketId/status/completed -> Move ticket from helping to completed. TA who owns the queue only.
 // Do not update position since each ticket's status must be from helping (update position already)
-router.patch('/:queueTicketId/status/completed', async (req: Request, res: Response) => {
+router.patch('/:queueTicketId/status/completed', requireTicketQueueOwnership('queueTicketId'), async (req: Request, res: Response) => {
     try {
         const queueTicketId = req.params.queueTicketId as string;
 
@@ -379,8 +379,8 @@ router.patch('/:queueTicketId/status/completed', async (req: Request, res: Respo
     }
 })
 
-// DELETE /api/queueticket/:id
-router.delete('/:queueTicketId', async (req: Request, res: Response): Promise<void> => {
+// DELETE /api/queueticket/:id — removes a single ticket. TA who owns the queue only.
+router.delete('/:queueTicketId', requireTicketQueueOwnership('queueTicketId'), async (req: Request, res: Response): Promise<void> => {
     try {
         const ticketId = req.params.queueTicketId;
         if (!ticketId) {
@@ -416,7 +416,8 @@ router.delete('/:queueTicketId', async (req: Request, res: Response): Promise<vo
     }
 });
 
-router.delete('/queues/:queueId', async (req: Request, res: Response): Promise<void> => {
+// DELETE /api/queueticket/queues/:queueId — removes all tickets in a queue. TA-owner only.
+router.delete('/queues/:queueId', requireQueueOwnership('queueId'), async (req: Request, res: Response): Promise<void> => {
     try {
         const queueId = req.params.queueId as string;
 
@@ -450,8 +451,8 @@ router.delete('/queues/:queueId', async (req: Request, res: Response): Promise<v
     }
 });
 
-// `/api/queueticket/queues/${queueId}/status/completed`
-router.delete(`/queues/:queueId/status/completed`, async (req: Request, res: Response) => {
+// DELETE /api/queueticket/queues/:queueId/status/completed — clears completed tickets. TA-owner only.
+router.delete(`/queues/:queueId/status/completed`, requireQueueOwnership('queueId'), async (req: Request, res: Response) => {
     try {
         // console.log('Clear all completed tickets api');
         const queueId = req.params.queueId as string;
@@ -474,9 +475,8 @@ router.delete(`/queues/:queueId/status/completed`, async (req: Request, res: Res
     }
 })
 
-// DELETE waiting and helping tickets
-// /api/queueticket/queues/${queueId}/status/closed
-router.delete('/queues/:queueId/status/closed', async (req: Request, res: Response) => {
+// DELETE /api/queueticket/queues/:queueId/status/closed — clears waiting and helping tickets. TA-owner only.
+router.delete('/queues/:queueId/status/closed', requireQueueOwnership('queueId'), async (req: Request, res: Response) => {
     try {
         const queueId = req.params.queueId as string;
         const deletedTickets = await prisma.queueTicket.deleteMany({
