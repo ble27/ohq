@@ -20,12 +20,12 @@ const ACTIVE_TICKET_STATUSES = new Set(['WAITING', 'HELPING']);
 
 // Props type interface with setter
 interface ClassSelectorProps { 
-  CSCEClasses: string[]; 
+  Classes: string[]; 
   selectedClass: string; 
   setSelectedClass: (value: string) => void; 
 }
 
-export const ClassSelector: React.FC<ClassSelectorProps> = ({ CSCEClasses, selectedClass, setSelectedClass }) => { 
+export const ClassSelector: React.FC<ClassSelectorProps> = ({ Classes, selectedClass, setSelectedClass }) => { 
     const { user } = useAuth();
     const [queue, setQueue] = useState<QueueWithTA[]>([]);
     // Load a modal only for selected queue
@@ -38,6 +38,8 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ CSCEClasses, selec
         () => new Map(),
     );
     const [isInactiveModalOpen, setIsInactiveModalOpen] = useState(false);
+    // Tracks the queue currently being joined so a double-click can't fire two join requests.
+    const [joiningQueueId, setJoiningQueueId] = useState<string | null>(null);
 
     // Visible queues that will be displayed (will refresh every time queue changes)
     const visibleQueues = queue;
@@ -116,6 +118,10 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ CSCEClasses, selec
         }
         catch (error) {
             console.log(`Failed to create a ticket ${error}`);
+            const message = axios.isAxiosError(error)
+                ? (error.response?.data as { message?: string } | undefined)?.message
+                : undefined;
+            toast(message ?? 'Failed to join queue. Please try again.');
         }
     }
 
@@ -200,19 +206,27 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ CSCEClasses, selec
 
     // Remove Join button after a user has joined a queue
     const handleJoinQueue = async (selectedQueue: Queue) => {
-      // createTicket returns ticket and ticketId from joinQueue
-      const response = await createTicket(selectedQueue.id);
-      if (!response) return;
+      // Already joining this (or another) queue — ignore extra clicks until it resolves.
+      if (joiningQueueId) return;
 
-      // Add joined queue ids
-      setJoinedQueueIds((prev) => new Set(prev).add(selectedQueue.id));
+      setJoiningQueueId(selectedQueue.id);
+      try {
+        // createTicket returns ticket and ticketId from joinQueue
+        const response = await createTicket(selectedQueue.id);
+        if (!response) return;
 
-      setIsViewingQueue(false);
-      setSelectedQueue(selectedQueue);
-      setModalOpen(true);
+        // Add joined queue ids
+        setJoinedQueueIds((prev) => new Set(prev).add(selectedQueue.id));
 
-      // Create notification to TA on join
-      await createNotification(selectedQueue, 'JOIN', response.ticketId);
+        setIsViewingQueue(false);
+        setSelectedQueue(selectedQueue);
+        setModalOpen(true);
+
+        // Create notification to TA on join
+        await createNotification(selectedQueue, 'JOIN', response.ticketId);
+      } finally {
+        setJoiningQueueId(null);
+      }
     }
 
     const handleViewQueue = (selectedQueue: Queue) => {
@@ -277,7 +291,7 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ CSCEClasses, selec
               value={selectedClass}
               onChange={(e) => setSelectedClass(e.target.value)}
             >
-              {CSCEClasses.map((courseNum: string, index: number) => (
+              {Classes.map((courseNum: string, index: number) => (
                 <option key={index} value={courseNum} className="bg-white text-neutral-900">
                   {courseNum}
                 </option>
@@ -361,11 +375,11 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ CSCEClasses, selec
                         <button
                           type="button"
                           onClick={() => void handleJoinQueue(q)}
-                          disabled={!q.isOpen}
+                          disabled={!q.isOpen || joiningQueueId !== null}
                           className="rounded-full border border-neutral-900 bg-[#500000] px-4 py-2 text-sm font-medium text-white transition 
                           hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-40"
                         >
-                          Join
+                          {joiningQueueId === q.id ? 'Joining…' : 'Join'}
                         </button>
                       )}
                       <button
