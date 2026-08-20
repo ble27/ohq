@@ -12,6 +12,8 @@ const authErrorMessage = (error: unknown, fallback: string) => {
     return fallback;
 };
 
+/*
+// [email/password — disabled for Google-only auth]
 export const signIn = async (email: string, password: string) => {
     try {
         const response = await axios.post(`/api/auth/signin`, {
@@ -28,24 +30,24 @@ export const signIn = async (email: string, password: string) => {
         throw new Error(authErrorMessage(error, 'Sign in failed'), { cause: error });
     }
 }
+*/
 
+/** Primary auth entry — Google OAuth (any Google account; no domain restriction). */
 export const googleSignIn = async () => {
     const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-            // OAuth only — no type=signup (that marks email-confirm callbacks)
             redirectTo: `${window.location.origin}/auth/callback`,
             queryParams: {
-                // hd: 'tamu.edu',
-                access_type: 'offline', // Google fetches refresh tokens
-                prompt: 'consent' // force Google to show consent screen so the refresh token is actually sent
-            }
-        }
-    })
+                access_type: 'offline',
+                prompt: 'consent',
+            },
+        },
+    });
     if (error) {
-        console.log('Failed to sign in with Google oAuth', error.message);
+        throw new Error(error.message);
     }
-}
+};
 
 /** Persist a Supabase client session as httpOnly cookies on the Express API. */
 export const establishSession = async (access_token: string, refresh_token: string) => {
@@ -63,8 +65,10 @@ export const establishSession = async (access_token: string, refresh_token: stri
     } catch (error) {
         throw new Error(authErrorMessage(error, 'Failed to establish session'), { cause: error });
     }
-}
+};
 
+/*
+// [email/password — disabled for Google-only auth]
 export type SignUpResult = {
     data: {
         user: unknown;
@@ -91,7 +95,7 @@ export const signUp = async (email: string, password: string, name: string): Pro
     } catch (error) {
         throw new Error(authErrorMessage(error, 'Sign up failed'), { cause: error });
     }
-}
+};
 
 export const resendConfirmation = async (email: string) => {
     try {
@@ -107,7 +111,10 @@ export const resendConfirmation = async (email: string) => {
     } catch (error) {
         throw new Error(authErrorMessage(error, 'Failed to resend confirmation email'), { cause: error });
     }
-}
+};
+
+export const PENDING_CONFIRM_EMAIL_KEY = 'pendingConfirmEmail';
+*/
 
 export const signOut = async () => {
     try {
@@ -122,7 +129,7 @@ export const signOut = async () => {
     } catch (error) {
         throw new Error(authErrorMessage(error, 'Sign out failed'), { cause: error });
     }
-}
+};
 
 // GET /api/auth/me → { user: SupabaseUser, profile: PrismaUser | null }
 export const getMeSupabase = async () => {
@@ -138,14 +145,14 @@ export const getMeSupabase = async () => {
         }
         throw error;
     }
-}
+};
 
 export const getMePrisma = async (id: string) => {
     const response = await axios.get(`/api/users/${id}`, {
         withCredentials: true,
     });
     return response.data ?? null;
-}
+};
 
 export const deleteAccount = async (id: string) => {
     try {
@@ -156,5 +163,4 @@ export const deleteAccount = async (id: string) => {
     } catch (error) {
         throw new Error(authErrorMessage(error, 'Failed to delete account'), { cause: error });
     }
-}
-export const PENDING_CONFIRM_EMAIL_KEY = 'pendingConfirmEmail';
+};

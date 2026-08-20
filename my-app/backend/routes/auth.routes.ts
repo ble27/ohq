@@ -1,37 +1,42 @@
 import { Router } from 'express';
 import type { Request, Response } from 'express';
-import { ZodError } from 'zod';
 import { supabase } from '../config/supabase.js';
 import { prisma } from '../prisma.js';
-import { SigninSchema, SignupSchema } from '../schemas/auth.schema.js';
+import { parseGoogleDisplayName } from '../services/authUser.services.js';
 
 const router: Router = Router();
 
-// Supabase auth users creates the auth user rows
-// User table is the actual user model that Prisma defines
+/*
+ * Supabase dashboard (Google OAuth only):
+ * 1. Authentication → Providers → Google: enabled; redirect URL includes {origin}/auth/callback
+ * 2. Authentication → Providers → Email: disable sign-ups (or disable email provider)
+ * 3. Authentication → URL Configuration: Site URL + Redirect URLs match dev/production origins
+ */
 
 /** Ensure a public.User row exists with the same id as auth.users */
-async function ensureAppUser(authUser: { id: string; email?: string | null }) {
+async function ensureAppUser(authUser: {
+    id: string;
+    email?: string | null;
+    user_metadata?: Record<string, unknown>;
+}) {
     if (!authUser.email) {
         throw new Error('Auth user is missing an email');
     }
-    // Create or update the user in the database
+    const { displayName } = parseGoogleDisplayName(authUser.user_metadata);
     return prisma.user.upsert({
         where: { id: authUser.id },
         create: {
-            id: authUser.id, // must equal Supabase auth.users.id
+            id: authUser.id,
             email: authUser.email,
+            name: displayName,
             role: 'STUDENT',
         },
         update: {
             email: authUser.email,
+            ...(displayName ? { name: displayName } : {}),
         },
     });
 }
-
-// Include type=signup so the frontend can skip PKCE exchange (server signup has no browser verifier).
-const emailRedirectTo =
-    process.env.EMAIL_CONFIRM_REDIRECT_TO ?? 'http://localhost:5173/auth/callback?type=signup';
 
 export function setAuthCookies(
     res: Response,
@@ -51,122 +56,18 @@ export function setAuthCookies(
     });
 }
 
-router.post('/signup', async (req: Request, res: Response) => {
-    let email: string, password: string, name: string | undefined;
-    try {
-        ({ email, password, name } = SignupSchema.parse(req.body));
-    } catch (err) {
-        if (err instanceof ZodError) {
-            return res.status(400).json({ error: 'Invalid input', errors: err.issues });
-        }
-        return res.status(400).json({ error: 'Invalid input' });
-    }
+/*
+// [email/password — disabled for Google-only auth]
+import { ZodError } from 'zod';
+import { SigninSchema, SignupSchema } from '../schemas/auth.schema.js';
 
-    const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        // This sends the email with the redirect url, it doesn't trigger callback on client 
-        options: {
-            emailRedirectTo,
-        },
-    });
-    if (error) {
-        return res.status(400).json({ error: error.message });
-    }
-    if (!data.user) {
-        return res.status(400).json({ error: 'Signup succeeded but no auth user was returned' });
-    }
+const emailRedirectTo =
+    process.env.EMAIL_CONFIRM_REDIRECT_TO ?? 'http://localhost:5173/auth/callback?type=signup';
 
-    // Create a Prisma user if not already
-    try {
-        const appUser = await prisma.user.upsert({
-            where: { id: data.user.id },
-            create: {
-                id: data.user.id,
-                email: data.user.email ?? email,
-                name: name ?? null,
-                role: 'STUDENT',
-            },
-            update: {
-                email: data.user.email ?? email,
-                ...(name !== undefined ? { name } : {}),
-            },
-        });
-
-        // Confirm-email enabled → no session yet; client should show /check-email
-        const needsConfirmation = !data.session;
-        
-        // Confirm-email disabled → session returned; set cookies like signin
-        if (data.session) {
-            setAuthCookies(res, data.session);
-        }
-
-        return res.status(200).json({
-            data,
-            user: appUser,
-            needsConfirmation,
-            email: data.user.email ?? email,
-        });
-    } catch (err) {
-        return res.status(500).json({
-            error: err instanceof Error ? err.message : 'Failed to create app user profile',
-        });
-    }
-});
-
-// Resend signup confirmation email (Supabase Auth)
-router.post('/resend-confirmation', async (req: Request, res: Response) => {
-    const email = typeof req.body?.email === 'string' ? req.body.email.trim() : '';
-    if (!email) {
-        return res.status(400).json({ error: 'Email is required' });
-    }
-
-    const { error } = await supabase.auth.resend({
-        type: 'signup',
-        email,
-        options: { emailRedirectTo },
-    });
-    if (error) {
-        return res.status(400).json({ error: error.message });
-    }
-    return res.status(200).json({ message: 'Confirmation email sent' });
-});
-
-// POST /api/auth/signin — email/password sign-in; sets httpOnly session cookies on success
-router.post('/signin', async (req: Request, res: Response) => {
-    let email: string, password: string;
-    try {
-        ({ email, password } = SigninSchema.parse(req.body));
-    } catch (err) {
-        if (err instanceof ZodError) {
-            return res.status(400).json({ error: 'Invalid input', errors: err.issues });
-        }
-        return res.status(400).json({ error: 'Invalid input' });
-    }
-
-    const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password
-    })
-    if (error) {
-        return res.status(400).json({ error: error.message });
-    }
-    if (!data.user || !data.session) {
-        return res.status(400).json({ error: 'Signin succeeded but session was missing' });
-    }
-    
-    setAuthCookies(res, data.session);
-
-    try {
-        // Backfill profile if user signed up before Prisma wiring existed
-        const appUser = await ensureAppUser(data.user);
-        return res.status(200).json({ data, user: appUser });
-    } catch (err) {
-        return res.status(500).json({
-            error: err instanceof Error ? err.message : 'Failed to sync app user profile',
-        });
-    }
-});
+router.post('/signup', async (req: Request, res: Response) => { ... });
+router.post('/resend-confirmation', async (req: Request, res: Response) => { ... });
+router.post('/signin', async (req: Request, res: Response) => { ... });
+*/
 
 /** Establish httpOnly cookies from a client-side Supabase session (OAuth PKCE). */
 router.post('/session', async (req: Request, res: Response) => {
@@ -193,11 +94,7 @@ router.post('/session', async (req: Request, res: Response) => {
     }
 });
 
-// GET /api/auth/me — intentionally NOT behind authMiddleware: it reads the
-// short-lived access_token directly instead of triggering a refresh, so the
-// frontend can silently probe "am I logged in?" without rotating cookies.
 router.get('/me', async (req: Request, res: Response) => {
-    // Look in frontend @ src/routes/auth.routes.ts for withCredentials, where cookie is sent along with
     const accessToken = req.cookies?.access_token;
     if (!accessToken) {
         return res.status(401).json({ user: null });
@@ -219,17 +116,12 @@ router.get('/me', async (req: Request, res: Response) => {
     }
 });
 
-// POST /api/auth/signout — intentionally public/no-op if already signed out:
-// it only clears the caller's own cookies and signs out the local Supabase
-// session, so it cannot affect any other user's account.
 router.post('/signout', async (req: Request, res: Response) => {
     console.log('Backend signout route');
     res.clearCookie('access_token');
     res.clearCookie('refresh_token');
-    // log out only current user
     await supabase.auth.signOut({ scope: 'local' });
     return res.status(200).json({ message: 'Signed out successfully' });
 });
-
 
 export const authRouter = router;

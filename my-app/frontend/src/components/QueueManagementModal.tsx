@@ -8,7 +8,7 @@ import { QueueWorkspace } from './workspace/QueueWorkspace';
 import type { NotificationType } from '@shared/types';
 
 interface QueueManagementModalProps {
-    queue: Queue 
+    queue: Queue | null
     tickets: QueueTicketWithStudent[]
     setTickets: (value: QueueTicket[]) => void
     setIsViewingManagementModal: (value : boolean) => void

@@ -58,7 +58,7 @@ export const VerifyTA = ({ children }: VerifyTAProps) => {
     return (
         // Background
         <div className="flex min-h-screen m-0 p-0 overflow-hidden items-center justify-center">
-            <div className='relative flex flex-col items-center font-semibold text-black text-xl gap-2 px-6 py-8 bg-white border border-black/50 rounded-lg w-[300px] max-w-[684px]'>
+            <div className='relative flex flex-col items-center font-semibold text-black text-xl gap-2 px-6 py-8 bg-neutral-100 border border-black/50 rounded-lg w-[300px] max-w-[684px]'>
                 {(!isLoading && !error) ? <h1 className='text-base font-medium text-center'> Are you a TA?<br/>Click here to manage queues</h1> : 
                 <div className="text-base font-normal text-red-900">{error}</div>}
                 <button

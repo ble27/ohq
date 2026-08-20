@@ -6,9 +6,22 @@ const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter });
 
 const courses = [
-    { code: 'csce-221', semester: 'Fall 2026' },
-    { code: 'csce-313', semester: 'Fall 2026' },
-    { code: 'csce-350', semester: 'Fall 2026' },
+    // CSCE
+    { code: 'CSCE 120', semester: 'Fall 2026' },
+    { code: 'CSCE 221', semester: 'Fall 2026' },
+    { code: 'CSCE 313', semester: 'Fall 2026' },
+    { code: 'CSCE 314', semester: 'Fall 2026' },
+
+    // ECEN
+    { code: 'ECEN 248', semester: 'Fall 2026' },
+    { code: 'ECEN 214', semester: 'Fall 2026' },
+    { code: 'ECEN 314', semester: 'Fall 2026' },
+    { code: 'ECEN 350', semester: 'Fall 2026' },
+
+    // ENGR
+    { code: 'ENGR 102', semester: 'Fall 2026' },
+    { code: 'ENGR 216', semester: 'Fall 2026' },
+    { code: 'ENGR 217', semester: 'Fall 2026' },
 ];
 
 async function main() {

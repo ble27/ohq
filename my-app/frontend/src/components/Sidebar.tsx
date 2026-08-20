@@ -17,7 +17,7 @@ interface SideBarProps {
 
 export const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }: SideBarProps ) => {
   const [isDesktop, setIsDesktop] = useState(() => window.innerWidth >= MOBILE_BREAKPOINT);
-  const { user, refreshUser } = useAuth();
+  const { user, prismaUser, refreshUser } = useAuth();
   const userToggled = useRef(false);
   const navigate = useNavigate();
 
@@ -159,10 +159,10 @@ export const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }: SideBarProps ) => {
           {/* Account name and status */}
           <div className='flex flex-col overflow-hidden'>
             <div className={`font-normal text-white text-xs whitespace-nowrap transition-all duration-200 ${isSidebarOpen ? 'opacity-100 max-w-[160px]' : 'opacity-0 max-w-0 pl-0'}`}>
-              {user?.email ?? ''}
+              {prismaUser?.name ?? 'No display name'}
             </div> 
             <div className={`font-normal text-white text-xs text-gray-50/50 whitespace-nowrap transition-all duration-200 ${isSidebarOpen ? 'opacity-100 max-w-[160px]' : 'opacity-0 max-w-0 pl-0'}`}>
-              {user?.id ?? ''}
+              {user?.email ?? ''}
             </div> 
           </div>          
         </div>

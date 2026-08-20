@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type RefObject } from 'react';
 import { LuMoveUpRight } from 'react-icons/lu';
 import { Link } from 'react-router-dom';
 import { Handshake, RefreshCw, Move, FolderOpen } from 'lucide-react';
@@ -145,7 +145,11 @@ function FeatureCard({
   );
 }
 
-export const Body = () => {
+interface BodyProps {
+  featuresRef: RefObject<HTMLDivElement | null>;
+}
+
+export const Body = ({ featuresRef }: BodyProps) => {
   const prefersReducedMotion = useReducedMotion();
 
   return (
@@ -183,7 +187,7 @@ export const Body = () => {
       </motion.div>
 
       {/* Hero Section */}
-      <div className="w-full pt-24 md:pt-32 lg:pt-40">
+      <div ref={featuresRef} className="w-full pt-24 md:pt-32 lg:pt-40">
         <motion.span
           className="pl-8 md:pl-16 lg:pl-18 text-3xl md:text-4xl lg:text-5xl block"
           initial={prefersReducedMotion ? false : { opacity: 0, y: 16 }}
@@ -210,18 +214,27 @@ export const Body = () => {
         </p>
       </div>
 
-      {/* Name section footer + privacy */}
-      <div className="flex flex-col w-full py-20 pl-8 pr-8 bg-yellow-100/20 border-t-2 border-black/50">
-        <span
-          className="flex flex-2 text-center text-6xl md:text-7xl lg:text-8xl
-            lg:tracking-tight justify-center mb-2"
-        >
-          Queueble
-        </span>
-        <span className="flex flex-1 text-lg text-center justify-center">
-          This website is not affiliated with <br /> Texas A&M University
-        </span>
-        <span className="flex flex-1 text-lg text-center justify-center"> @ 2026 Queueble</span>
+      {/* Name section footer + privacy — background spans the full viewport (breaks out of
+          the page's max-w-[1500px] body), text stays capped to the same 1500px content width */}
+      <div className="relative left-1/2 w-screen -translate-x-1/2 bg-yellow-100/50">
+        <div className="mx-auto flex w-full max-w-[1500px] flex-col py-20 pl-8 pr-8">
+          <span
+            className="flex flex-2 text-center text-6xl md:text-7xl lg:text-8xl
+              tracking-tight lg:tracking-tight justify-center mb-2"
+          >
+            Queueble
+          </span>
+          <span className="flex flex-1 text-center text-sm md:text-base lg:text-lg justify-center">
+            This website is not affiliated with Texas A&M University
+          </span>
+          <span className="flex flex-1 text-base md:text-lg lg:text-xl text-center justify-center gap-2">
+            <Link to="/privacy" className="hover:underline">
+              Privacy
+            </Link>
+            <span aria-hidden>·</span>
+            <span>© 2026 Queueble</span>
+          </span>
+        </div>
       </div>
     </div>
   );

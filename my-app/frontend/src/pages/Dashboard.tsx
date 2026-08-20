@@ -37,10 +37,14 @@ export const Dashboard = () => {
 
     // Sidebar remains open when above mobile breakpoint
     const [isSidebarOpen, setIsSidebarOpen] = useState(() => window.innerWidth >= MOBILE_BREAKPOINT);
-    const CSCEClasses: string[] = ['csce-221', 'csce-313', 'csce-350'];
+    const Classes: string[] = [
+        'ENGR 102', 'ENGR 216', 'ENGR 217', 
+        'CSCE 120', 'CSCE 221', 'CSCE 313', 'CSCE 314', 
+        'ECEN 248', 'ECEN 214', 'ECEN 314', 'ECEN 350'
+    ];
    
     // Class currently being selected
-    const [selectedClass, setSelectedClass] = useState(CSCEClasses[0]);
+    const [selectedClass, setSelectedClass] = useState(Classes[0]);
     const [createdQueues, setCreatedQueues] = useState<Queue[]>([]);
     const [courses, setCourses] = useState<Course[]>([]);
     const [isLoadingQueues, setIsLoadingQueues] = useState(true);
@@ -288,7 +292,7 @@ return (
                     onClearAll={clearAllNotifications}
                 />
             )}
-            {isDashboardClass && <ClassSelector CSCEClasses={CSCEClasses} selectedClass={selectedClass} setSelectedClass={setSelectedClass}/>}
+            {isDashboardClass && <ClassSelector Classes={Classes} selectedClass={selectedClass} setSelectedClass={setSelectedClass}/>}
             {isDashboardHome && (
                 <Home onToggleNotifications={() => setIsOpenAlert((prev) => !prev)} />
             )}

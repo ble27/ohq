@@ -127,12 +127,13 @@ router.post('/', requireRole(Role.TA, Role.PROFESSOR), async (req: Request, res:
         });
         const { taId, courseId, endsAt, ...queueData } = validatedQueue;
 
-        // 1 queue per course for each TA / PT
+        // 1 queue for each TA for now
         const queueCheck = await prisma.queue.findFirst({
-            where: { taId , courseId }
+            where: { taId }
         })
+        // A queue has already existed
         if (queueCheck) {
-            res.status(400).json({ message: 'Only 1 queue can be created per course' });
+            res.status(400).json({ message: 'Only 1 queue can be created per TA. Please delete the current queue and create another one.' });
             return;
         }
         const newQueue = await prisma.queue.create({

@@ -4,7 +4,7 @@ import { useAuth } from '@/context/AuthContextProvider';
 interface QueueTicketModalProps {
     // chronological order
     queueTickets: QueueTicketWithStudent[]
-    queue: Queue
+    queue: Queue | null
 }
 
 const formatJoinedAt = (joinedAt: string | Date) => {
@@ -29,7 +29,7 @@ export const QueueTicketModal = ({ queueTickets, queue }: QueueTicketModalProps)
         <ul className="w-full space-y-2 overflow-y-auto">
             {queueTickets.map((qt) => {
                 // Only TA of the queue can see joined name or the person who actually joined the queue
-                const isTA = (prismaUser?.role === 'TA' && queue.taId === prismaUser.id) || prismaUser?.role === 'PROFESSOR';
+                const isTA = (prismaUser?.role === 'TA' && queue?.taId === prismaUser.id) || prismaUser?.role === 'PROFESSOR';
                 const isOwnTicket = qt.studentId === prismaUser?.id;
                 const showName = isTA || isOwnTicket;
                 return (
