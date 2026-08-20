@@ -10,11 +10,12 @@ import type {
 import { ZodError } from 'zod';
 import { UserValidatedSchema, NotificationAlertUpdateSchema, DefaultLocationUpdateSchema } from '../schemas/user.schema.js';
 import { getNotifyPreferenceField } from '../services/notification.services.js';
+import { requireSelf, type AuthedRequest } from '../middlewares/authz.middleware.js';
 
 const router: Router = Router();
 
 // GET /api/users/:id
-router.get('/:id', async (req: Request, res: Response): Promise<void> => {
+router.get('/:id', requireSelf('id'), async (req: Request, res: Response): Promise<void> => {
     try {
         const userId = req.params.id;
         if (!userId) {
@@ -54,6 +55,11 @@ router.get('/:id', async (req: Request, res: Response): Promise<void> => {
 router.post('/', async (req: Request, res: Response): Promise<void> => {
     try {
         const validatedUser = UserValidatedSchema.parse(req.body);
+        const authUserId = (req as AuthedRequest).user?.id;
+        if (!authUserId || authUserId !== validatedUser.id) {
+            res.status(403).json({ message: 'You can only create a profile for your own account' });
+            return;
+        }
 
         const existingUser = await prisma.user.findUnique({
             where: { id: validatedUser.id },
@@ -90,7 +96,7 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
 });
 
 // PATCH user name /api/users/:id/name
-router.patch('/:id/name', async (req: Request, res: Response) => {
+router.patch('/:id/name', requireSelf('id'), async (req: Request, res: Response) => {
     try {
         const id = req.params.id as string;
         const name = req.body.name as string;
@@ -114,7 +120,7 @@ router.patch('/:id/name', async (req: Request, res: Response) => {
 })
 
 // PATCH notification alerts based on types /api/users/:id/notifications/type/:type
-router.patch('/:id/notifications/type/:type', async (req: Request, res: Response) => {
+router.patch('/:id/notifications/type/:type', requireSelf('id'), async (req: Request, res: Response) => {
     try {
         console.log('Calling notifications update route');
         const id = req.params.id as string;
@@ -163,7 +169,7 @@ router.patch('/:id/notifications/type/:type', async (req: Request, res: Response
 });
 
 // PATCH /api/users/:id/notifications/sound
-router.patch('/:id/notifications/sound', async (req: Request, res: Response) => {
+router.patch('/:id/notifications/sound', requireSelf('id'), async (req: Request, res: Response) => {
     try {
         const id = req.params.id as string;
         const { status } = NotificationAlertUpdateSchema.parse(req.body);
@@ -192,7 +198,7 @@ router.patch('/:id/notifications/sound', async (req: Request, res: Response) => 
 });
 
 // PATCH api/users/${id}/defaultlocation
-router.patch('/:id/defaultlocation', async (req: Request, res: Response) => {
+router.patch('/:id/defaultlocation', requireSelf('id'), async (req: Request, res: Response) => {
     try {
         const id = req.params.id as string;
         const { defaultLocation } = DefaultLocationUpdateSchema.parse(req.body);
@@ -231,21 +237,11 @@ router.patch('/:id/defaultlocation', async (req: Request, res: Response) => {
 })
 
 // DELETE /api/users/:id
-router.delete('/:id', async (req: Request, res: Response): Promise<void> => {
+router.delete('/:id', requireSelf('id'), async (req: Request, res: Response): Promise<void> => {
     try {
         const userId = req.params.id;
         if (!userId) {
             res.status(400).json({ message: 'User ID is required' });
-            return;
-        }
-
-        const authUser = (req as Request & { user?: { id: string } }).user;
-        if (!authUser?.id) {
-            res.status(401).json({ message: 'Unauthorized' });
-            return;
-        }
-        if (authUser.id !== userId) {
-            res.status(403).json({ message: 'You can only delete your own account' });
             return;
         }
 

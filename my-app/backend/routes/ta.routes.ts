@@ -2,11 +2,12 @@ import { Router } from "express";
 import type { Request, Response } from "express";
 import { prisma } from "../prisma.js";
 import { Role } from "../generated/prisma/client.js";
+import { requireSelf } from "../middlewares/authz.middleware.js";
 
 const router = Router();
 
 // POST /api/tas/:id/verification
-router.post(`/:id/verification`, async (req: Request, res: Response) => {
+router.post(`/:id/verification`, requireSelf('id'), async (req: Request, res: Response) => {
     try {
         const id = req.params.id as string;
         const role = Role.TA

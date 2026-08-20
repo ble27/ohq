@@ -15,7 +15,7 @@ import type {
 
 import { CreateQueueTicketValidationSchema, LeaveTicketStatusSchema } from '../schemas/queueticket.schema.js';
 import { ZodError } from 'zod';
-import { requireQueueOwnership, requireRole, requireTicketQueueOwnership } from '../middlewares/authz.middleware.js';
+import { requireQueueOwnership, requireRole, requireTicketQueueOwnership, requireSelf, requireQueueViewerAccess, requireTicketReadAccess } from '../middlewares/authz.middleware.js';
 const router: Router = Router();
 
 // GET /api/queueticket — list every ticket across all queues. TA/PROFESSOR only (admin-style view).
@@ -41,7 +41,7 @@ router.get('/', requireRole(Role.TA, Role.PROFESSOR), async (_req: Request, res:
 
 // GET /api/queueticket/queues/:id — fetch only multiple active tickets based on a Queue ID
 // Call listActiveTickets helper (only WAITING and HELPING tickets)
-router.get('/queues/:queueId', async (req: Request, res: Response): Promise<void> => {
+router.get('/queues/:queueId', requireQueueViewerAccess('queueId'), async (req: Request, res: Response): Promise<void> => {
     try {
         
         const queueId = req.params.queueId as string;
@@ -75,7 +75,7 @@ router.get('/queues/:queueId', async (req: Request, res: Response): Promise<void
 });
 
 // GET /api/queueticket/queues/:queueId/status/completed - for completed tickets to store in local completed storage
-router.get('/queues/:queueId/status/completed', async (req: Request, res: Response): Promise<void> => {
+router.get('/queues/:queueId/status/completed', requireQueueOwnership('queueId'), async (req: Request, res: Response): Promise<void> => {
     try {
         const queueId = req.params.queueId as string;
         if (!queueId) {
@@ -112,46 +112,8 @@ router.get('/queues/:queueId/status/completed', async (req: Request, res: Respon
 });
 
 
-// GET /api/queueticket/:queueTicketId — single ticket
-router.get('/:queueTicketId', async (req: Request, res: Response): Promise<void> => {
-    try {
-        const queueTicketId = req.params.queueTicketId;
-        // No id or no queue id flag
-        if (!queueTicketId) {
-            res.status(404).json({ message: 'Missing required parameter'})
-            return;
-        }
-
-        const ticket = await prisma.queueTicket.findUnique({
-            where: { id: queueTicketId },
-        });
-        if (!ticket) {
-            res.status(404).json({ message: 'No ticket found' });
-            return;
-        }
-
-        console.log(`[QUEUE TICKET] Successfully sent ticket object: ${JSON.stringify(ticket, null, 2)}`)
-
-        const body: QueueTicketResponse = {
-            ticket,
-            message: `Successfully fetched ticket ${ticket.id}`,
-        };
-        res.status(200).json(body);
-    } catch (error: unknown) {
-        if (error instanceof ZodError) {
-            res.status(400).json({ message: 'Invalid input', errors: error.issues });
-            return;
-        }
-        if (error instanceof Error) {
-            res.status(500).json({ message: error.message });
-            return;
-        }
-        res.status(500).json({ message: 'Failed to fetch ticket' });
-    }
-});
-
-// GET /api/queueticket/user/:studentId — single ticket from User ID
-router.get('/user/:studentId', async (req: Request, res: Response): Promise<void> => {
+// GET /api/queueticket/user/:studentId — tickets for the authenticated student only
+router.get('/user/:studentId', requireSelf('studentId'), async (req: Request, res: Response): Promise<void> => {
     try {
         const studentId = req.params.studentId;
         // no id or no queue id flag
@@ -193,6 +155,44 @@ router.get('/user/:studentId', async (req: Request, res: Response): Promise<void
 });
 
 
+// GET /api/queueticket/:queueTicketId — single ticket
+router.get('/:queueTicketId', requireTicketReadAccess('queueTicketId'), async (req: Request, res: Response): Promise<void> => {
+    try {
+        const queueTicketId = req.params.queueTicketId;
+        // No id or no queue id flag
+        if (!queueTicketId) {
+            res.status(404).json({ message: 'Missing required parameter'})
+            return;
+        }
+
+        const ticket = await prisma.queueTicket.findUnique({
+            where: { id: queueTicketId },
+        });
+        if (!ticket) {
+            res.status(404).json({ message: 'No ticket found' });
+            return;
+        }
+
+        console.log(`[QUEUE TICKET] Successfully sent ticket object: ${JSON.stringify(ticket, null, 2)}`)
+
+        const body: QueueTicketResponse = {
+            ticket,
+            message: `Successfully fetched ticket ${ticket.id}`,
+        };
+        res.status(200).json(body);
+    } catch (error: unknown) {
+        if (error instanceof ZodError) {
+            res.status(400).json({ message: 'Invalid input', errors: error.issues });
+            return;
+        }
+        if (error instanceof Error) {
+            res.status(500).json({ message: error.message });
+            return;
+        }
+        res.status(500).json({ message: 'Failed to fetch ticket' });
+    }
+});
+
 // POST /api/queueticket/:queueId — create ticket based on queue ID
 router.post('/queues/:queueId', async (req: Request, res: Response): Promise<void> => {
     try {
@@ -206,6 +206,19 @@ router.post('/queues/:queueId', async (req: Request, res: Response): Promise<voi
             ...req.body, status, queueId, studentId
         });
 
+        // A student may only be actively WAITING/HELPING in one queue at a time.
+        // Must filter by status — otherwise any past ticket (COMPLETED/LEFT/REMOVED)
+        // would permanently block that student from ever joining a queue again.
+        const existingActiveTicket = await prisma.queueTicket.findFirst({
+            where: {
+                studentId,
+                status: { in: [SessionStatus.WAITING, SessionStatus.HELPING] },
+            },
+        })
+        if (existingActiveTicket && existingActiveTicket.queueId !== queueId) {
+            res.status(409).json({ message: 'Only 1 queue can be joined at a time. Please leave your current queue before joining another one.' });
+            return;
+        }
         // Ticket id, joinedAt, updatedAt are set by the server
         // Call joinQueue service to create the ticket
         const newTicket = await joinQueue(queueId, studentId);

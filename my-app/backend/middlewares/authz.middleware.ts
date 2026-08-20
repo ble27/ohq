@@ -7,6 +7,8 @@ import type { Queue, QueueTicket, User } from '../generated/prisma/client.js';
 // These middlewares add authorization on top of that: role checks and
 // ownership checks (queue TA / ticket's queue TA), and attach the already
 // -fetched Prisma rows to the request so route handlers don't re-query them.
+// return async (req, res, next) => {} automatically returns to the API route
+// before running the validation checks when an actual request goes through
 export type AuthedRequest = Request & {
     user?: { id: string; email?: string | null };
     appUser?: User;
@@ -130,6 +132,92 @@ export function requireSelf(paramName: string = 'id') {
             return;
         }
         next();
+    };
+}
+
+/**
+ * Requires the caller to read queue ticket lists: the queue's TA/PROFESSOR, or a student
+ * who holds any ticket in that queue (including past LEFT/COMPLETED rows).
+ */
+export function requireQueueViewerAccess(paramName: string = 'queueId') {
+    return async (req: AuthedRequest, res: Response, next: NextFunction) => {
+        try {
+            const authUserId = req.user?.id;
+            if (!authUserId) {
+                res.status(401).json({ message: 'Unauthorized' });
+                return;
+            }
+            const queueId = req.params[paramName];
+            if (!queueId) {
+                res.status(400).json({ message: `Missing ${paramName} parameter` });
+                return;
+            }
+            const queue = await prisma.queue.findUnique({ where: { id: queueId } });
+            if (!queue) {
+                res.status(404).json({ message: 'Queue not found' });
+                return;
+            }
+            if (await isQueueManager(queue, authUserId)) {
+                req.queue = queue;
+                next();
+                return;
+            }
+            const participantTicket = await prisma.queueTicket.findFirst({
+                where: { queueId, studentId: authUserId },
+            });
+            if (!participantTicket) {
+                res.status(403).json({ message: 'You do not have access to this queue' });
+                return;
+            }
+            req.queue = queue;
+            next();
+        } catch (error) {
+            res.status(500).json({ message: (error as Error).message });
+        }
+    };
+}
+
+/**
+ * Requires the caller to read a single ticket: the ticket's student, or the queue's TA/PROFESSOR.
+ */
+export function requireTicketReadAccess(paramName: string = 'queueTicketId') {
+    return async (req: AuthedRequest, res: Response, next: NextFunction) => {
+        try {
+            const authUserId = req.user?.id;
+            if (!authUserId) {
+                res.status(401).json({ message: 'Unauthorized' });
+                return;
+            }
+            const ticketId = req.params[paramName];
+            if (!ticketId) {
+                res.status(400).json({ message: `Missing ${paramName} parameter` });
+                return;
+            }
+            const ticket = await prisma.queueTicket.findUnique({ where: { id: ticketId } });
+            if (!ticket) {
+                res.status(404).json({ message: 'Ticket not found' });
+                return;
+            }
+            if (ticket.studentId === authUserId) {
+                req.ticket = ticket;
+                next();
+                return;
+            }
+            const queue = await prisma.queue.findUnique({ where: { id: ticket.queueId } });
+            if (!queue) {
+                res.status(404).json({ message: 'Queue not found' });
+                return;
+            }
+            if (await isQueueManager(queue, authUserId)) {
+                req.ticket = ticket;
+                req.queue = queue;
+                next();
+                return;
+            }
+            res.status(403).json({ message: 'Forbidden' });
+        } catch (error) {
+            res.status(500).json({ message: (error as Error).message });
+        }
     };
 }
 
