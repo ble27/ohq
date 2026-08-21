@@ -1,56 +1,13 @@
 name: Deploy
 
 on:
-  push:
-    branches: [main]
+  workflow_dispatch:
 
 jobs:
-  migrate:
+  managed-deployments:
     runs-on: ubuntu-latest
-    env:
-      DATABASE_URL: ${{ secrets.DATABASE_URL }}
-      DIRECT_URL: ${{ secrets.DIRECT_URL }}
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-          cache-dependency-path: my-app/backend/package-lock.json
-
-      - name: Require database URL secrets
-        working-directory: my-app/backend
+      - name: Explain deployment ownership
         run: |
-          if [ -z "$DIRECT_URL" ] && [ -z "$DATABASE_URL" ]; then
-            echo "::error::Set DATABASE_URL and/or DIRECT_URL in GitHub repo secrets (Settings → Secrets and variables → Actions). Copy the same values from your Render service environment."
-            exit 1
-          fi
-
-      - working-directory: my-app/backend
-        run: npm ci
-
-      - working-directory: my-app/backend
-        run: npx prisma migrate deploy
-
-  deploy-backend:
-    needs: migrate
-    runs-on: ubuntu-latest
-    steps:
-      - name: Trigger Render deploy
-        run: |
-          curl -f -X POST "https://api.render.com/deploy/${{ secrets.RENDER_SERVICE_ID }}?key=${{ secrets.RENDER_DEPLOY_HOOK_KEY }}"
-
-  deploy-frontend:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Deploy to Vercel
-        uses: amondnet/vercel-action@v25
-        with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }}
-          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-          working-directory: my-app/frontend
-          vercel-args: '--prod'
+          echo "Frontend deployments are managed by Vercel's Git integration."
+          echo "Backend deployments and database migrations are managed by Render."
