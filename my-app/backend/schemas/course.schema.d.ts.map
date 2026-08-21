@@ -1,0 +1,1 @@
+{"version":3,"file":"course.schema.d.ts","sourceRoot":"","sources":["course.schema.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,CAAC,EAAE,MAAM,KAAK,CAAC;AAExB,eAAO,MAAM,sBAAsB;;;;;;iBAkBjC,CAAC;AAEH,eAAO,MAAM,4BAA4B;;;;iBAGvC,CAAC;AAEH,MAAM,MAAM,WAAW,GAAG,CAAC,CAAC,KAAK,CAAC,OAAO,sBAAsB,CAAC,CAAC;AACjE,MAAM,MAAM,iBAAiB,GAAG,CAAC,CAAC,KAAK,CAAC,OAAO,4BAA4B,CAAC,CAAC"}

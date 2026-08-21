@@ -117,7 +117,7 @@ router.get('/me', async (req: Request, res: Response) => {
 });
 
 router.post('/signout', async (req: Request, res: Response) => {
-    console.log('Backend signout route');
+    // console.log('Backend signout route');
     res.clearCookie('access_token');
     res.clearCookie('refresh_token');
     await supabase.auth.signOut({ scope: 'local' });

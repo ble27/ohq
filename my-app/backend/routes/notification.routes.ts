@@ -43,7 +43,7 @@ router.get('/user/:userId', requireSelf('userId'), async (req, res) => {
             notifications,
             message: `Successfully fetched notifications for ${userId}`,
         };
-        console.log(`Successfully fetched notifications`, JSON.stringify(body, null, 2));
+        // console.log(`Successfully fetched notifications`, JSON.stringify(body, null, 2));
         res.status(200).json(body);
     } catch (error) {
         if (error instanceof Error) {
@@ -117,7 +117,7 @@ router.post('/queues/:queueId/user/:recipientId/type/:type', async (req: Request
         // Notify only to recipientId 
         getIo().to(`user:${recipientId}`).emit('notification-created', response);
         
-        console.log(`[Socket] Sent notification to ${recipientId}`);
+        // console.log(`[Socket] Sent notification to ${recipientId}`);
 
         const payload: NotificationResponse = {
             notification: response,
@@ -207,7 +207,7 @@ router.patch('/:id', async (req: Request, res: Response) => {
 
 // DELETE /api/notifications/user/:userId — clear all for recipient. Self only.
 router.delete('/user/:userId', requireSelf('userId'), async (req: Request, res: Response) => {
-    console.log('Calling delete /api/notifications/user/:userId');
+    // console.log('Calling delete /api/notifications/user/:userId');
     try {
         const userId = req.params.userId as string;
         if (!userId) {
@@ -221,10 +221,10 @@ router.delete('/user/:userId', requireSelf('userId'), async (req: Request, res: 
             count: notificationResponses.count,
             message: `Successfully cleared all notifications associated with user ${userId}`,
         };
-        console.log(
-            `Successfully cleared all notifications associated with user ${userId}`,
-            JSON.stringify(body, null, 2)
-        );
+        // console.log(
+        //     `Successfully cleared all notifications associated with user ${userId}`,
+        //     JSON.stringify(body, null, 2)
+        // );
         res.status(200).json(body);
     } catch (error) {
         if (error instanceof Error) {
@@ -262,7 +262,7 @@ router.delete('/:id', async (req: Request, res: Response) => {
             notification: notificationResponse,
             message: `Successfully deleted notification ${id}`,
         };
-        console.log(`Successfully deleted notification`, JSON.stringify(body, null, 2));
+        // console.log(`Successfully deleted notification`, JSON.stringify(body, null, 2));
         res.status(200).json(body);
     } catch (error) {
         if (error instanceof Error) {

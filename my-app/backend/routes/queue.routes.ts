@@ -31,7 +31,7 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
         });
         const body: QueuesListResponse = { queues, message: 'SUCCESS' };
 
-        console.log(`[QUEUE] Successfully sent queue objects: ${JSON.stringify(body.queues, null, 2)}`)
+        // console.log(`[QUEUE] Successfully sent queue objects: ${JSON.stringify(body.queues, null, 2)}`)
 
         res.status(200).json(body);
     } catch (error: unknown) {
@@ -61,7 +61,7 @@ router.get('/:id', async (req: Request, res: Response): Promise<void> => {
             return;
         }        
         const body: QueueResponse = { queue, message: 'SUCCESS' };
-        console.log(`[QUEUE] Successfully sent queue object`);
+        // console.log(`[QUEUE] Successfully sent queue object`);
         res.status(200).json(body);
     }
      catch (error: unknown) {
@@ -87,12 +87,12 @@ router.get('/course/:courseId', async (req: Request, res: Response): Promise<voi
             queues: activeQueues,
             message: 'SUCCESS'
         }
-        console.log('Sent active queues from /api/queues/course/:courseId');
-        console.log(JSON.stringify(body.queues));
+        // console.log('Sent active queues from /api/queues/course/:courseId');
+        // console.log(JSON.stringify(body.queues));
         res.status(200).json(body);
     } catch (error) {
         res.status(500).json({ error: 'Failed to fetch queues' });
-        console.log('Failed to send active queues from /api/queues/course/:courseId');
+        // console.log('Failed to send active queues from /api/queues/course/:courseId');
     }
     
 });
@@ -145,7 +145,7 @@ router.post('/', requireRole(Role.TA, Role.PROFESSOR), async (req: Request, res:
             },
         });
 
-        console.log(`[QUEUE] Successfully created queue object`);
+        // console.log(`[QUEUE] Successfully created queue object`);
 
         const body: QueueResponse = { queue: newQueue, message: 'SUCCESS' };
         res.status(201).json(body);
@@ -234,7 +234,7 @@ router.patch('/:id', requireQueueOwnership('id'), async (req: AuthedRequest, res
             data: { isOpen: !queueToToggle.isOpen },
         });
 
-        console.log(`[QUEUE] Successfully updated queue: ${JSON.stringify(updatedQueue, null, 2)}`)
+        // console.log(`[QUEUE] Successfully updated queue: ${JSON.stringify(updatedQueue, null, 2)}`)
 
         const body: QueueResponse = {
             queue: updatedQueue,
@@ -292,7 +292,7 @@ router.delete('/:id', requireQueueOwnership('id'), async (req: AuthedRequest, re
             where: { id: queueId },
         });
         
-        console.log(`[QUEUE] Successfully deleted queue object: ${JSON.stringify(deletedQueue, null, 2)}`)
+        // console.log(`[QUEUE] Successfully deleted queue object: ${JSON.stringify(deletedQueue, null, 2)}`)
         const body: ApiMessageResponse = { message: 'SUCCESS' };
         
         res.status(200).json(body);

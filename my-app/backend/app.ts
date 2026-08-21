@@ -19,6 +19,7 @@ import { socketMiddleware } from './middlewares/socket.middleware.js';
 import { setIo } from './socket.js';
 import { prisma } from './prisma.js';
 import { isQueueManager } from './middlewares/authz.middleware.js';
+import { startCleanupJob } from './jobs/cleanup.job.js';
 
 // Comma-separated list of allowed browser origins (both HTTP CORS and Socket.IO CORS).
 const ALLOWED_ORIGINS = (process.env.CORS_ORIGINS ?? 'http://localhost:5173,http://localhost:5174')
@@ -78,10 +79,10 @@ io.on('connection', async (socket: Socket) => {
     socket.emit('queue-error', { event, message });
   };
 
-  console.log(`User connected: ${userId}`);
+  // console.log(`User connected: ${userId}`);
 
   socket.on('disconnect', (reason) => {
-    console.log(`User ${userId} disconnected: ${reason}`);
+    // console.log(`User ${userId} disconnected: ${reason}`);
   });
 
   // Room subscriptions never create or update queue tickets.
@@ -90,7 +91,7 @@ io.on('connection', async (socket: Socket) => {
       await socket.join(queueId);
       const tickets = await listActiveTickets(queueId);
       io.to(queueId).emit('queue-updated', tickets);
-      console.log(`User ${userId} is watching room ${queueId}`);
+      // console.log(`User ${userId} is watching room ${queueId}`);
     } catch (error: unknown) {
       reportSocketError('watch-queue', error);
     }
@@ -99,7 +100,7 @@ io.on('connection', async (socket: Socket) => {
   socket.on('unwatch-queue', async (queueId: string) => {
     try {
       await socket.leave(queueId);
-      console.log(`User ${userId} stopped watching room ${queueId}`);
+      // console.log(`User ${userId} stopped watching room ${queueId}`);
     } catch (error: unknown) {
       reportSocketError('unwatch-queue', error);
     }
@@ -122,7 +123,7 @@ io.on('connection', async (socket: Socket) => {
       await startHelping(ticketId);
       const tickets = await listActiveTickets(queue.id);
       io.to(queue.id).emit('queue-updated', tickets);
-      console.log(`User ${userId} started helping in room ${queue.id}`);
+      // console.log(`User ${userId} started helping in room ${queue.id}`);
     } catch (error: unknown) {
       reportSocketError('start-helping', error);
     }
@@ -135,7 +136,7 @@ io.on('connection', async (socket: Socket) => {
       await completeTicket(ticketId);
       const tickets = await listActiveTickets(queue.id);
       io.to(queue.id).emit('queue-updated', tickets);
-      console.log(`User ${userId} completed ticket ${ticketId}`);
+      // console.log(`User ${userId} completed ticket ${ticketId}`);
     } catch (error: unknown) {
       reportSocketError('complete-ticket', error);
     }
@@ -158,6 +159,11 @@ app.use('/api/queueticket/', apiRateLimiter, authMiddleware, queueTicketRouter);
 app.use('/api/users', apiRateLimiter, authMiddleware, userRouter);
 app.use('/api/tas/', apiRateLimiter, authMiddleware, taRouter);
 app.use('/api/notifications', apiRateLimiter, authMiddleware, notificationRouter);
+
+// Housekeeping (closing expired queues, purging old finished tickets/notifications)
+// used to only happen as a side effect of someone hitting the right route.
+// Run it on a schedule so it isn't dependent on traffic.
+startCleanupJob();
 
 server.listen(PORT, () => {
   console.log(`Server is runnning on port ${PORT}`);

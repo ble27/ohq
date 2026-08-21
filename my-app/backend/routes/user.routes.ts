@@ -122,7 +122,7 @@ router.patch('/:id/name', requireSelf('id'), async (req: Request, res: Response)
 // PATCH notification alerts based on types /api/users/:id/notifications/type/:type
 router.patch('/:id/notifications/type/:type', requireSelf('id'), async (req: Request, res: Response) => {
     try {
-        console.log('Calling notifications update route');
+        // console.log('Calling notifications update route');
         const id = req.params.id as string;
         const type = req.params.type as NotificationType;
         const { status } = NotificationAlertUpdateSchema.parse(req.body);

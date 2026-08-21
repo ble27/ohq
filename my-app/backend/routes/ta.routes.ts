@@ -20,13 +20,13 @@ router.post(`/:id/verification`, requireSelf('id'), async (req: Request, res: Re
                 success: false,
             });
         }
-        console.log('TA verification complete', JSON.stringify(response));
+        // console.log('TA verification complete', JSON.stringify(response));
         return res.status(200).json({
             message: 'TA verification complete',
             success: true,
         });
     } catch (error) {
-        console.log('Failed to verify TA\'s status', error);
+        console.error('Failed to verify TA\'s status', error);
         return res.status(500).json({
             message: 'Failed to verify TA\'s status',
             success: false,

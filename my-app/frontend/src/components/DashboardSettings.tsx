@@ -47,15 +47,14 @@ export const DashboardSettings = ({ prismaUser, supabaseUser, onUpdateSaveChange
         }
         await deleteAccount(id);
         await signOut();
+        navigate('/', { replace: true });
         await refreshUser();
-        navigate('/');
     }
 
     const handleSignout = async () => {
-        console.log('Calling handleSignout');
         await signOut();
-        navigate('/');
-        return;
+        navigate('/', { replace: true });
+        await refreshUser();
     }
 
     const handleSaveChanges = async () => {

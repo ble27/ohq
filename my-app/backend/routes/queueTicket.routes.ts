@@ -24,7 +24,7 @@ router.get('/', requireRole(Role.TA, Role.PROFESSOR), async (_req: Request, res:
         const tickets = await prisma.queueTicket.findMany();
         const body: QueueTicketsListResponse = { tickets, message: 'SUCCESS' };
 
-        console.log(`[QUEUE TICKET] Successfully sent ticket objects: ${JSON.stringify(body.tickets, null, 2)}`)
+        // console.log(`[QUEUE TICKET] Successfully sent ticket objects: ${JSON.stringify(body.tickets, null, 2)}`)
         res.status(200).json(body);
     } catch (error: unknown) {
         if (error instanceof ZodError) {
@@ -53,7 +53,7 @@ router.get('/queues/:queueId', requireQueueViewerAccess('queueId'), async (req: 
         const ticketsResponse = await listActiveTickets(queueId);
         const ticketsArray: QueueTicketWithStudent[] = ticketsResponse;
 
-        console.log(`[QUEUE TICKET] Successfully sent ticket objects: ${JSON.stringify(ticketsArray, null, 2)}`)
+        // console.log(`[QUEUE TICKET] Successfully sent ticket objects: ${JSON.stringify(ticketsArray, null, 2)}`)
 
         const body: QueueTicketsListResponse = {
             tickets: ticketsArray,
@@ -90,7 +90,7 @@ router.get('/queues/:queueId/status/completed', requireQueueOwnership('queueId')
 
         const ticketsArray: QueueTicket[] = ticketsResponse;
 
-        console.log(`[QUEUE TICKET] Successfully sent ticket objects: ${JSON.stringify(ticketsArray, null, 2)}`)
+        // console.log(`[QUEUE TICKET] Successfully sent ticket objects: ${JSON.stringify(ticketsArray, null, 2)}`)
 
         const body: QueueTicketsListResponse = {
             tickets: ticketsArray,
@@ -138,7 +138,7 @@ router.get('/user/:studentId', requireSelf('studentId'), async (req: Request, re
             tickets,
             message: `Tickets successfully sent to ${studentId}`
         };
-        console.log(`Tickets successfully sent to ${studentId}`);
+        // console.log(`Tickets successfully sent to ${studentId}`);
         res.status(200).json(body);
     } 
     catch (error: unknown) {
@@ -173,7 +173,7 @@ router.get('/:queueTicketId', requireTicketReadAccess('queueTicketId'), async (r
             return;
         }
 
-        console.log(`[QUEUE TICKET] Successfully sent ticket object: ${JSON.stringify(ticket, null, 2)}`)
+        // console.log(`[QUEUE TICKET] Successfully sent ticket object: ${JSON.stringify(ticket, null, 2)}`)
 
         const body: QueueTicketResponse = {
             ticket,
@@ -223,14 +223,14 @@ router.post('/queues/:queueId', async (req: Request, res: Response): Promise<voi
         // Call joinQueue service to create the ticket
         const newTicket = await joinQueue(queueId, studentId);
 
-        console.log(`[QUEUE TICKET] Successfully created ticket object: ${JSON.stringify(newTicket, null, 2)}`)
+        // console.log(`[QUEUE TICKET] Successfully created ticket object: ${JSON.stringify(newTicket, null, 2)}`)
 
         const body: QueueTicketResponse = {
             ticket: newTicket,
             message: 'SUCCESS',
         };
-        console.log('Successfully created a new ticket');
-        console.log(JSON.stringify(body.ticket));
+        // console.log('Successfully created a new ticket');
+        // console.log(JSON.stringify(body.ticket));
 
         res.status(201).json(body);
     } catch (error: unknown) {
@@ -242,7 +242,7 @@ router.post('/queues/:queueId', async (req: Request, res: Response): Promise<voi
             res.status(500).json({ message: error.message });
             return;
         }
-        console.log('Failed to create a new ticket');
+        // console.log('Failed to create a new ticket');
         res.status(500).json({ message: 'Failed to create ticket' });
     }
 });
@@ -279,7 +279,7 @@ router.patch('/:queueTicketId', async (req: Request, res: Response): Promise<voi
             message: 'SUCCESS',
         };
 
-        console.log(`[QUEUE TICKET] Successfully updated ticket status to ${updatedTicket.status}`);
+        // console.log(`[QUEUE TICKET] Successfully updated ticket status to ${updatedTicket.status}`);
         res.status(200).json(body);
     }
      catch (error: unknown) {
@@ -330,7 +330,7 @@ router.patch('/:queueTicketId/status/completed', requireTicketQueueOwnership('qu
             ticket: ticketResponse, 
             message: 'Successfully updated ticket status to "Completed"'
         }
-        console.log(`[QUEUE TICKET] Successfully updated ticket status to ${JSON.stringify(ticketResponse, null, 2)}`);
+        // console.log(`[QUEUE TICKET] Successfully updated ticket status to ${JSON.stringify(ticketResponse, null, 2)}`);
         res.status(200).json(body);
     } catch (error) {
         // Record not found
@@ -369,7 +369,7 @@ router.delete('/:queueTicketId', requireTicketQueueOwnership('queueTicketId'), a
         });
 
         const body: ApiMessageResponse = { message: 'SUCCESS' };
-        console.log(`[QUEUE TICKET] Successfully deleted ticket object: ${JSON.stringify(body, null, 2)}`)
+        // console.log(`[QUEUE TICKET] Successfully deleted ticket object: ${JSON.stringify(body, null, 2)}`)
         res.status(200).json(body);
     } 
     catch (error: unknown) {
@@ -404,7 +404,7 @@ router.delete('/queues/:queueId', requireQueueOwnership('queueId'), async (req: 
         }
 
         const body: ApiMessageResponse = { message: 'SUCCESS' };
-        console.log(`[QUEUE TICKET] Successfully deleted all tickets from ${queueId}`);
+        // console.log(`[QUEUE TICKET] Successfully deleted all tickets from ${queueId}`);
         res.status(200).json(body);
     }
     catch (error: unknown) {
@@ -432,12 +432,12 @@ router.delete(`/queues/:queueId/status/completed`, requireQueueOwnership('queueI
             tickets: deletedTickets, 
             message: `Successfully deleted all completed tickets from queue ${queueId}`
         }
-        console.log(`Successfully deleted all tickets currently from queue ${queueId}`, JSON.stringify(body, null, 2));
+        // console.log(`Successfully deleted all tickets currently from queue ${queueId}`, JSON.stringify(body, null, 2));
         res.status(200).json(body);
     } catch (error) {
         if (error instanceof Error) {
             res.status(500).json({ message: error.message });
-            console.log(error);
+            console.error(error);
             return;
         }
         res.status(500).json({ message: 'Failed to delete all completed tickets' });
@@ -455,12 +455,12 @@ router.delete('/queues/:queueId/status/closed', requireQueueOwnership('queueId')
             tickets: deletedTickets, 
             message: `Successfully deleted all tickets currently waiting and helping from queue ${queueId}`
         }
-        console.log(`Successfully deleted all tickets currently waiting and helping from queue ${queueId}`, JSON.stringify(body, null, 2));
+        // console.log(`Successfully deleted all tickets currently waiting and helping from queue ${queueId}`, JSON.stringify(body, null, 2));
         res.status(200).json(body);
     } catch (error) {
         if (error instanceof Error) {
             res.status(500).json({ message: error.message });
-            console.log(error);
+            console.error(error);
             return;
         }
         res.status(500).json({ message: 'Failed to delete all tickets' });

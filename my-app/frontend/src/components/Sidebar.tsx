@@ -61,8 +61,8 @@ export const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }: SideBarProps ) => {
   const handleSignout = useCallback(async () => {
     try {
       await signOut();
+      navigate('/', { replace: true });
       await refreshUser();
-      navigate('/');
     }
     catch(err: unknown) {
       console.log(err);

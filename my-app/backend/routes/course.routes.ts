@@ -31,13 +31,13 @@ router.get('/:code', async (req: Request, res: Response): Promise<void> => {
             where: { code },
         });
         const body = { courseId: course?.id, message: 'SUCCESS'};
-        console.log('successfully retrieved course id from course code');
+        // console.log('successfully retrieved course id from course code');
         res.status(200).json(body);
     } catch (error: unknown) {
         const message = error instanceof Error
             ? error.message
             : 'Failed to fetch course ID from course code';
-        console.log('failed to retrieved course id from course code');
+        // console.log('failed to retrieved course id from course code');
         res.status(500).json({ message });
     }
 });

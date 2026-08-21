@@ -33,6 +33,7 @@ export function parseGoogleDisplayName(
 
     const fullName = trimString(meta.full_name) ?? trimString(meta.name);
     if (fullName) {
+        // / / -> start of regex expression, \s -> whitespace
         const parts = fullName.split(/\s+/);
         if (!firstName && parts.length >= 1) {
             firstName = parts[0] ?? null;

@@ -163,7 +163,7 @@ export const completeTicket = async (ticketId: string): Promise<QueueTicket> => 
   
     // Return ticketCheck instead of the unassigned 'ticket' variable
     if (ticketCheck?.status === 'COMPLETED') {
-      console.log('Ticket has already been completed');
+      // console.log('Ticket has already been completed');
       return ticketCheck; 
     }
   
