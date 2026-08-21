@@ -1,4 +1,4 @@
-import { useEffect, useState, type RefObject } from 'react';
+import { useEffect, useRef, useState, type RefObject } from 'react';
 import { LuMoveUpRight } from 'react-icons/lu';
 import { Link } from 'react-router-dom';
 import { Handshake, RefreshCw, Move, FolderOpen } from 'lucide-react';
@@ -153,6 +153,13 @@ interface BodyProps {
 
 export const Body = ({ featuresRef }: BodyProps) => {
   const prefersReducedMotion = useReducedMotion();
+  const purposeHeadingRef = useRef<HTMLHeadingElement>(null);
+
+  useEffect(() => {
+    // #region agent log
+    fetch('http://127.0.0.1:7631/ingest/8c9affa0-91b7-414a-ade2-92f13ab89cb1',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'cba606'},body:JSON.stringify({sessionId:'cba606',runId:'post-fix',hypothesisId:'H4,H5',location:'src/components/LandingPageBody.tsx:Body',message:'Homepage purpose heading rendered',data:{heading:purposeHeadingRef.current?.textContent?.trim() ?? null},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion
+  }, []);
 
   return (
     <div className="flex flex-col items-center text-black bg-yellow-50">
@@ -164,19 +171,16 @@ export const Body = ({ featuresRef }: BodyProps) => {
         animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
         transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
       >
-        <div>
-          <span>
-            Select a class and receive <br />
-          </span>
-          <span> live updates for office hours.</span>
-        </div>
+        <h1 ref={purposeHeadingRef}>
+          Queueble is an office-hours queue management app for students and teaching teams.
+        </h1>
         <div className="flex flex-col mt-3 gap-1 text-3xl">
           <p
             className="font-light w-[420px] sm:w-[450px] md:w-[500px] lg:w-[600px] mt-3 mb-3 md:mt-4 md:mb-4
           leading-7 lg:leading-8 text-base md:text-lg lg:text-xl font-light"
           >
-            Get notified the instant a TA or PT is free, so you can focus on the work that matters in
-            the meantime.
+            Students join a live course queue and receive updates when a TA or peer tutor is ready,
+            while teaching teams organize requests and manage office hours in one place.
           </p>
         </div>
         <Link
