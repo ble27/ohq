@@ -1,4 +1,3 @@
-import React from "react"
 import axios from "axios"
 
 export const verifyTA = async (id: string) => {
@@ -10,7 +9,7 @@ export const verifyTA = async (id: string) => {
             return { status: 200, message: msg };
         }
     }
-    catch (error) {
+    catch {
         const msg = 'Failed to verify TA\'s status'
         console.log(msg);
         return { status: 404, message: msg };

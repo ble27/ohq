@@ -1,5 +1,3 @@
-import { useState } from 'react'
-
 interface DeleteConfirmationProps {
     onConfirm: () => void
     onClose: () => void

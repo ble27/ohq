@@ -1,7 +1,6 @@
 import { useState, useEffect, type ReactNode } from 'react'
 import { useAuth } from '@/context/AuthContextProvider'
 import { verifyTA } from '@/services/authQueueManager';
-import { Button } from './ui/button';
 import { Spinner } from "@/components/ui/spinner"
 
 const TA_VERIFIED_KEY = 'ta-verified-id';
@@ -19,6 +18,8 @@ export const VerifyTA = ({ children }: VerifyTAProps) => {
     // Reverify status if role or user id changes
     useEffect(() => {
         if (!user?.id || role != 'TA') {
+            // Resetting local verification state to sync with the current user/role, not an external system.
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setIsTA(false);
             return;
         }

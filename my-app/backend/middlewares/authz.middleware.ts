@@ -136,6 +136,20 @@ export function requireSelf(paramName: string = 'id') {
 }
 
 /**
+ * True if `userId` may view queue ticket data for `queue`: the queue's
+ * TA/PROFESSOR, or a student who holds any ticket in that queue (including
+ * past LEFT/COMPLETED rows). Shared by the REST middleware below and the
+ * Socket.IO handlers in `app.ts`, so both surfaces enforce the same rule.
+ */
+export async function canViewQueue(queue: Queue, userId: string): Promise<boolean> {
+    if (await isQueueManager(queue, userId)) return true;
+    const participantTicket = await prisma.queueTicket.findFirst({
+        where: { queueId: queue.id, studentId: userId },
+    });
+    return participantTicket !== null;
+}
+
+/**
  * Requires the caller to read queue ticket lists: the queue's TA/PROFESSOR, or a student
  * who holds any ticket in that queue (including past LEFT/COMPLETED rows).
  */
@@ -157,15 +171,7 @@ export function requireQueueViewerAccess(paramName: string = 'queueId') {
                 res.status(404).json({ message: 'Queue not found' });
                 return;
             }
-            if (await isQueueManager(queue, authUserId)) {
-                req.queue = queue;
-                next();
-                return;
-            }
-            const participantTicket = await prisma.queueTicket.findFirst({
-                where: { queueId, studentId: authUserId },
-            });
-            if (!participantTicket) {
+            if (!(await canViewQueue(queue, authUserId))) {
                 res.status(403).json({ message: 'You do not have access to this queue' });
                 return;
             }

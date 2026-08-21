@@ -1,5 +1,3 @@
-import React from 'react'
-
 interface InactiveQueueModal {
     selectedClass: string
     setIsInactiveModalOpen: (value: boolean) => void

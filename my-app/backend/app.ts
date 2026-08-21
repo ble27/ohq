@@ -28,7 +28,7 @@ const ALLOWED_ORIGINS = (process.env.CORS_ORIGINS ?? 'http://localhost:5173,http
   .filter(Boolean);
 
 // Socket Services helpers
-import { listActiveTickets } from './services/queue.services.js';
+import { listActiveTickets, assertQueueViewer } from './services/queue.services.js';
 import { startHelping, completeTicket } from './services/queue.services.js';
 
 /**
@@ -85,9 +85,13 @@ io.on('connection', async (socket: Socket) => {
     // console.log(`User ${userId} disconnected: ${reason}`);
   });
 
-  // Room subscriptions never create or update queue tickets.
+  // Room subscriptions never create or update queue tickets, but the room does
+  // carry other students' ticket data, so joining it requires the same
+  // authorization as the equivalent REST endpoint (GET /api/queueticket/queues/:queueId):
+  // the queue's TA/PROFESSOR, or a student who holds a ticket in that queue.
   socket.on('watch-queue', async (queueId: string) => {
     try {
+      await assertQueueViewer(queueId, userId);
       await socket.join(queueId);
       const tickets = await listActiveTickets(queueId);
       io.to(queueId).emit('queue-updated', tickets);
@@ -108,6 +112,7 @@ io.on('connection', async (socket: Socket) => {
 
   socket.on('refresh-queue', async (queueId: string) => {
     try {
+      await assertQueueViewer(queueId, userId);
       const tickets = await listActiveTickets(queueId);
       io.to(queueId).emit('queue-updated', tickets);
     } catch (error: unknown) {

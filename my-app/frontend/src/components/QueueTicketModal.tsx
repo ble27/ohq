@@ -22,8 +22,8 @@ const shortId = (id: string) => id.slice(0, 8);
 // Only the TA of the queue can see who is actually waiting in the queue. (TA view)
 // For other students only display the ticket ID (Student view)
 export const QueueTicketModal = ({ queueTickets, queue }: QueueTicketModalProps) => {
-    if (queueTickets.length === 0) return null;
     const { prismaUser } = useAuth();
+    if (queueTickets.length === 0) return null;
 
     return (
         <ul className="w-full space-y-2 overflow-y-auto">

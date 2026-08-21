@@ -2,8 +2,11 @@
   // Visit https://aka.ms/tsconfig to read more about this file
   "compilerOptions": {
     // File Layout
-    // "rootDir": "./src",
-    // "outDir": "./dist",
+    // Source files import from ../shared, so rootDir must cover both
+    // backend/ and shared/ (their common ancestor, my-app/), which nests
+    // output at dist/backend/ (see the "start" script).
+    "rootDir": "../",
+    "outDir": "./dist",
 
     // Environment Settings
     // See also https://aka.ms/tsconfig/module

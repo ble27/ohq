@@ -1,7 +1,8 @@
 import { prisma } from '../prisma.js';
 import { updatePosition } from './queueTicket.services.js';
-import type { QueueTicket } from '../generated/prisma/client.js';
+import type { Queue, QueueTicket } from '../generated/prisma/client.js';
 import { Prisma, SessionStatus } from '../generated/prisma/client.js';
+import { canViewQueue } from '../middlewares/authz.middleware.js';
 
 const isUniqueConstraintViolation = (error: unknown): boolean =>
   error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002';
@@ -28,8 +29,34 @@ export const listActiveTickets = async (queueId: string): Promise<QueueTicket[]>
       { position: 'asc' },
       { joinedAt: 'asc' }, // schema has joinedAt, not createdAt
     ],
-    include: { student: true }
+    // Only the fields needed to display a ticket (name/email for the TA,
+    // role for icons) — never notifyJoin/notifyLeave/notifyAssist/notifyClose/
+    // notifySound/defaultLocation. This list is visible to every participant
+    // in the queue (not just the TA), so it must never carry another
+    // student's private preferences.
+    include: {
+      student: {
+        select: { id: true, name: true, email: true, role: true },
+      },
+    },
   });
+};
+
+/**
+ * Throws unless `userId` may view ticket data for `queueId`: the queue's
+ * TA/PROFESSOR, or a student who holds a ticket in that queue. Callers
+ * (REST + Socket.IO) must call this before returning/broadcasting ticket data —
+ * `listActiveTickets` itself does not check authorization.
+ */
+export const assertQueueViewer = async (queueId: string, userId: string): Promise<Queue> => {
+  const queue = await prisma.queue.findUnique({ where: { id: queueId } });
+  if (!queue) {
+    throw new Error('Queue not found');
+  }
+  if (!(await canViewQueue(queue, userId))) {
+    throw new Error('You do not have access to this queue');
+  }
+  return queue;
 };
 
 export const joinQueue = async (

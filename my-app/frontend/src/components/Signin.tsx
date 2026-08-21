@@ -16,6 +16,8 @@ export const Signin = () => {
 
     useEffect(() => {
         const message = (location.state as { message?: string } | null)?.message;
+        // Reading router navigation state on mount, not synchronizing with an external system.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         if (message) setInfo(message);
     }, [location.state]);
 

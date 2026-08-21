@@ -140,6 +140,8 @@ export const QueueManager = ({
 
     useEffect(() => {
         if (!isViewingManagementModal || !currentQueue) {
+            // Resetting local ticket list to sync with the modal's open/closed state, not an external system.
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setTickets([]);
             return;
         }

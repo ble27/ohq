@@ -27,7 +27,7 @@ export const QueueManagementModal = ({
     onQueueClosing, 
     onTimeChange
 }: QueueManagementModalProps) => {
-    const toTimeInput = (value: any) => {
+    const toTimeInput = (value: Date | string | null | undefined) => {
     if (!value || value === 'null' || value === 'undefined') {
         return '';
     }
@@ -215,7 +215,9 @@ export const QueueManagementModal = ({
     }
 
     useEffect(() => {
+        // Fetch-on-mount: both refresh async data and update state after the network call resolves.
         refreshActive();
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         refreshCompleted();
     }, [queue?.id])
 

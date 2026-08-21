@@ -38,20 +38,27 @@ async function ensureAppUser(authUser: {
     });
 }
 
+// Frontend (Vercel) and backend (Render) are on different domains in
+// production, so cookies must be SameSite=None + Secure to be sent on
+// cross-site requests. In local dev they're same-site (both localhost), so
+// SameSite=Lax and non-Secure keep cookies working over plain HTTP.
+const isProduction = process.env.NODE_ENV === 'production';
+const authCookieOptions = {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: (isProduction ? 'none' : 'lax') as 'none' | 'lax',
+};
+
 export function setAuthCookies(
     res: Response,
     session: { access_token: string; refresh_token: string },
 ) {
     res.cookie('access_token', session.access_token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
+        ...authCookieOptions,
         maxAge: 60 * 20 * 1000,
     });
     res.cookie('refresh_token', session.refresh_token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
+        ...authCookieOptions,
         maxAge: 60 * 60 * 24 * 30 * 1000,
     });
 }
@@ -118,8 +125,8 @@ router.get('/me', async (req: Request, res: Response) => {
 
 router.post('/signout', async (req: Request, res: Response) => {
     // console.log('Backend signout route');
-    res.clearCookie('access_token');
-    res.clearCookie('refresh_token');
+    res.clearCookie('access_token', authCookieOptions);
+    res.clearCookie('refresh_token', authCookieOptions);
     await supabase.auth.signOut({ scope: 'local' });
     return res.status(200).json({ message: 'Signed out successfully' });
 });

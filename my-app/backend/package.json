@@ -6,8 +6,8 @@
  "main": "app.ts",
  "scripts": {
   "dev": "tsx watch app.ts",
-  "build": "tsc",
-  "start": "node dist/app.js",
+  "build": "tsc && cp -r generated dist/backend/generated",
+  "start": "node dist/backend/app.js",
   "seed": "tsx prisma/seed.ts"
  },
  "dependencies": {

@@ -1,1 +1,0 @@
-{"version":3,"file":"courseta.schema.d.ts","sourceRoot":"","sources":["courseta.schema.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,CAAC,EAAE,MAAM,KAAK,CAAC;AAExB,eAAO,MAAM,wBAAwB;;;;;iBAQnC,CAAC;AAEH,eAAO,MAAM,8BAA8B;;;iBAGzC,CAAC;AAEH,MAAM,MAAM,aAAa,GAAG,CAAC,CAAC,KAAK,CAAC,OAAO,wBAAwB,CAAC,CAAC;AACrE,MAAM,MAAM,mBAAmB,GAAG,CAAC,CAAC,KAAK,CAAC,OAAO,8BAA8B,CAAC,CAAC"}

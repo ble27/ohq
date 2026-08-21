@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import type { NotificationType, Queue, QueueTicket, QueueTicketWithStudent, QueueWithTA } from '@shared/types'
+import type { NotificationType, QueueTicketWithStudent, QueueWithTA } from '@shared/types'
 
 interface NotificationBannerProps {
     queue: QueueWithTA | null

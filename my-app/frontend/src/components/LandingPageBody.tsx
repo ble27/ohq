@@ -55,7 +55,7 @@ const FEATURE_CARDS = [
 
 function AudienceWordCycle() {
   const [index, setIndex] = useState(0);
-  const [text, setText] = useState(AUDIENCE_WORDS[0].label);
+  const [text, setText] = useState<string>(AUDIENCE_WORDS[0].label);
   const [phase, setPhase] = useState<'typing' | 'holding' | 'deleting' | 'gap'>('holding');
   const prefersReducedMotion = useReducedMotion();
 
@@ -63,6 +63,8 @@ function AudienceWordCycle() {
 
   useEffect(() => {
     if (prefersReducedMotion) {
+      // Syncing displayed text with the current word when animation is disabled, not an external system.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setText(current.label);
       return;
     }

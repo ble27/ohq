@@ -27,6 +27,8 @@ export const DashboardSettings = ({ prismaUser, supabaseUser, onUpdateSaveChange
     // Update state every time prismaUser changes
     useEffect(() => {
         if (!prismaUser) return;
+        // Syncing local form fields from the latest prismaUser prop, not an external system.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setDisplayName(prismaUser?.name ?? '');
         setStudentAlertYourTurn(prismaUser?.notifyAssist ?? null);
         setStudentAlertQueueClosing(prismaUser?.notifyClose ?? null);

@@ -170,26 +170,6 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ Classes, selectedC
         } 
     };
 
-    const clearAllTickets = async (queueId: string) => {
-      const response = await axios.delete(`/api/queueticket/queues/${queueId}`);
-      if (response.status === 200) {
-        console.log(`SUCCESSFULLY deleted all tickets from ${queueId}`);
-        setJoinedQueueIds((prev) => {
-          const next = new Set(prev);
-          next.delete(queueId);
-          return next;
-        });
-        setMyTicketsByQueueId((prev) => {
-          const next = new Map(prev);
-          next.delete(queueId);
-          return next;
-        });
-        setTicket((prev) => (prev?.queueId === queueId ? null : prev));
-        return;
-      }
-      console.log(`FAILED to delete all tickets from ${queueId}`);
-    }
-
     const clearQueue = () => {
         setQueue([]);
     }

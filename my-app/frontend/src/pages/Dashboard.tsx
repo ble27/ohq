@@ -170,6 +170,9 @@ export const Dashboard = () => {
     };
 
     useEffect(() => {
+        // Fetch-on-mount: refreshNotifications is async and updates state after
+        // awaiting the network call, not synchronously within the effect body.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         void refreshNotifications();
     }, [refreshNotifications]);
 
