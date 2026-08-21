@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type RefObject } from 'react';
+import { useEffect, useState, type RefObject } from 'react';
 import { LuMoveUpRight } from 'react-icons/lu';
 import { Link } from 'react-router-dom';
 import { Handshake, RefreshCw, Move, FolderOpen } from 'lucide-react';
@@ -153,13 +153,6 @@ interface BodyProps {
 
 export const Body = ({ featuresRef }: BodyProps) => {
   const prefersReducedMotion = useReducedMotion();
-  const purposeHeadingRef = useRef<HTMLHeadingElement>(null);
-
-  useEffect(() => {
-    // #region agent log
-    fetch('http://127.0.0.1:7631/ingest/8c9affa0-91b7-414a-ade2-92f13ab89cb1',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'cba606'},body:JSON.stringify({sessionId:'cba606',runId:'post-fix',hypothesisId:'H4,H5',location:'src/components/LandingPageBody.tsx:Body',message:'Homepage purpose heading rendered',data:{heading:purposeHeadingRef.current?.textContent?.trim() ?? null},timestamp:Date.now()})}).catch(()=>{});
-    // #endregion
-  }, []);
 
   return (
     <div className="flex flex-col items-center text-black bg-yellow-50">
@@ -171,7 +164,7 @@ export const Body = ({ featuresRef }: BodyProps) => {
         animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
         transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
       >
-        <h1 ref={purposeHeadingRef}>
+        <h1>
           Queueble is an office-hours queue management app for students and teaching teams.
         </h1>
         <div className="flex flex-col mt-3 gap-1 text-3xl">
