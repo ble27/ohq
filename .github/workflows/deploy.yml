@@ -7,6 +7,9 @@ on:
 jobs:
   migrate:
     runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      DIRECT_URL: ${{ secrets.DIRECT_URL }}
     steps:
       - uses: actions/checkout@v4
 
@@ -16,14 +19,19 @@ jobs:
           cache: npm
           cache-dependency-path: my-app/backend/package-lock.json
 
+      - name: Require database URL secrets
+        working-directory: my-app/backend
+        run: |
+          if [ -z "$DIRECT_URL" ] && [ -z "$DATABASE_URL" ]; then
+            echo "::error::Set DATABASE_URL and/or DIRECT_URL in GitHub repo secrets (Settings → Secrets and variables → Actions). Copy the same values from your Render service environment."
+            exit 1
+          fi
+
       - working-directory: my-app/backend
         run: npm ci
 
       - working-directory: my-app/backend
         run: npx prisma migrate deploy
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          DIRECT_URL: ${{ secrets.DIRECT_URL }}
 
   deploy-backend:
     needs: migrate
@@ -34,7 +42,6 @@ jobs:
           curl -f -X POST "https://api.render.com/deploy/${{ secrets.RENDER_SERVICE_ID }}?key=${{ secrets.RENDER_DEPLOY_HOOK_KEY }}"
 
   deploy-frontend:
-    needs: migrate
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
