@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import type { Request, Response } from 'express';
 import { prisma } from '../prisma.js';
-import { Prisma, SessionStatus, Role } from '@prisma/client';
+import { Prisma, SessionStatus, Role } from '../generated/prisma/client.js';
 import { joinQueue, leaveQueue, listActiveTickets } from '../services/queue.services.js';
 import { startHelping } from '../services/queue.services.js';
 
