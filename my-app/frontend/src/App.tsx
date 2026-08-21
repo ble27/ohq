@@ -11,6 +11,7 @@ import { Signup } from './components/Signup'
 // import { EmailConfirmation } from './components/EmailConfirmation'
 import { AuthCallback } from './components/AuthCallback'
 import { ProtectedRoute } from './components/ProtectedRoute'
+import { PrivacyPage } from './pages/PrivacyPage'
 import { Toaster } from '@/components/ui/sonner'
 
 import './index.css'
@@ -45,7 +46,7 @@ function App() {
                 </>
               }
             />
-            {/* <Route path='/privacy' element={<PrivacyPage />} /> */}
+            <Route path='/privacy' element={<PrivacyPage />} />
             <Route path='/signin' element={<Signin />} />
             <Route path='/signup' element={<Signup />} />
             {/* [email/password — disabled for Google-only auth] */}
