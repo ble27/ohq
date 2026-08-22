@@ -6,7 +6,7 @@
       "destination": "https://queueble.onrender.com/api/:path*"
     },
     {
-      "source": "/(.*)",
+      "source": "/((?!favicon\\.ico|favicon\\.svg|favicon-32\\.png|apple-touch-icon\\.png|assets/).*)",
       "destination": "/index.html"
     }
   ]
