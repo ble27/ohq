@@ -38,15 +38,14 @@ async function ensureAppUser(authUser: {
     });
 }
 
-// Frontend (Vercel) and backend (Render) are on different domains in
-// production, so cookies must be SameSite=None + Secure to be sent on
-// cross-site requests. In local dev they're same-site (both localhost), so
-// SameSite=Lax and non-Secure keep cookies working over plain HTTP.
+// Frontend (Vercel) proxies /api to this backend, so auth cookies are
+// first-party on the Vercel domain. SameSite=Lax works for that same-site
+// traffic. Secure is still required in production (HTTPS).
 const isProduction = process.env.NODE_ENV === 'production';
 const authCookieOptions = {
     httpOnly: true,
     secure: isProduction,
-    sameSite: (isProduction ? 'none' : 'lax') as 'none' | 'lax',
+    sameSite: 'lax' as const,
 };
 
 export function setAuthCookies(
@@ -121,6 +120,25 @@ router.get('/me', async (req: Request, res: Response) => {
     } catch {
         return res.status(200).json({ user: data.user, profile: null });
     }
+});
+
+/**
+ * Socket.IO connects directly to the Render host (WebSockets aren't proxied
+ * through Vercel), so it cannot rely on first-party cookies set on the
+ * frontend domain. This endpoint returns the access token for the handshake.
+ */
+router.get('/socket-token', async (req: Request, res: Response) => {
+    const accessToken = req.cookies?.access_token;
+    if (!accessToken) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const { data, error } = await supabase.auth.getUser(accessToken);
+    if (error || !data.user) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    return res.status(200).json({ token: accessToken });
 });
 
 router.post('/signout', async (req: Request, res: Response) => {

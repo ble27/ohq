@@ -183,13 +183,11 @@ export const Dashboard = () => {
         const loadQueueManagerData = async () => {
             try {
                 const [queuesResponse, coursesResponse] = await Promise.all([
-                    axios.get<QueuesListResponse>('/api/queues'),
+                    axios.get<QueuesListResponse>('/api/queues/mine'),
                     axios.get<CoursesListResponse>('/api/courses'),
                 ]);
                 if (!cancelled) {
-                    setCreatedQueues(
-                        queuesResponse.data.queues.filter((queue) => queue.taId === userId),
-                    );
+                    setCreatedQueues(queuesResponse.data.queues);
                     setCourses(coursesResponse.data.courses);
                 }
             } catch (error: unknown) {

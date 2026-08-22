@@ -4,16 +4,23 @@ import type { Queue, QueueTicket } from '../generated/prisma/client.js';
 import { Prisma, SessionStatus } from '../generated/prisma/client.js';
 import { canViewQueue } from '../middlewares/authz.middleware.js';
 
+export { isWithinQueueHours } from './queueSchedule.js';
+
 const isUniqueConstraintViolation = (error: unknown): boolean =>
   error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002';
 
 const ACTIVE_STATUSES = [SessionStatus.WAITING, SessionStatus.HELPING] as const;
 
+/** Closes open queues that are outside their scheduled window. Never deletes rows. */
 export const closeExpiredQueues = async (): Promise<void> => {
+  const now = new Date();
   await prisma.queue.updateMany({
     where: {
       isOpen: true,
-      endsAt: { lte: new Date() },
+      OR: [
+        { endsAt: { lte: now } },
+        { startsAt: { gt: now } },
+      ],
     },
     data: { isOpen: false },
   });

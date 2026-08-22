@@ -13,7 +13,7 @@ export const QueueValidationSchema = z.object({
         .min(3, { message: 'Location must be at least 3 characters' })
         .trim(),
 
-    isOpen: z.boolean({ message: 'Status must be a boolean' }),
+    isOpen: z.boolean({ message: 'Status must be a boolean' }).optional(),
 
     startsAt: z.coerce.date().optional().default(() => new Date()),
 

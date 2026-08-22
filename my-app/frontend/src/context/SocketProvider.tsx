@@ -1,5 +1,6 @@
 import { createContext, useState, useEffect, useContext, type ReactNode } from 'react'
 import { io, type Socket } from 'socket.io-client'
+import axios from 'axios'
 import { useAuth } from './AuthContextProvider';
 
 const SocketContext = createContext<Socket | null>(null);
@@ -14,22 +15,42 @@ export function SocketProvider ({ children }: { children: ReactNode } ) {
             return;
         }
 
-        // Client side socket
-        // Initialize connection with auth token
-        const instance = io(
-            import.meta.env.VITE_API_URL ?? "http://localhost:3000",
-            { withCredentials: true },
-        );
+        let cancelled = false;
+        let instance: Socket | null = null;
 
-        // The socket instance is the external resource synchronized by this effect.
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setSocket(instance);
+        const connect = async () => {
+            try {
+                // Same-origin /api (Vercel proxy) — cookies available here.
+                const { data } = await axios.get<{ token: string }>('/api/auth/socket-token', {
+                    withCredentials: true,
+                });
+                if (cancelled || !data.token) return;
 
-        // Cleanup socket
+                // WebSockets still talk to Render directly.
+                instance = io(
+                    import.meta.env.VITE_API_URL ?? "http://localhost:3000",
+                    {
+                        withCredentials: true,
+                        auth: { token: data.token },
+                    },
+                );
+                if (cancelled) {
+                    instance.disconnect();
+                    return;
+                }
+                setSocket(instance);
+            } catch (error) {
+                console.error('[SOCKET] failed to connect:', error);
+            }
+        };
+
+        void connect();
+
         return () => {
-            instance.disconnect();
-        }
-        // Trigger when the token changes
+            cancelled = true;
+            instance?.disconnect();
+            setSocket(null);
+        };
     }, [user, loading]); 
 
     return (

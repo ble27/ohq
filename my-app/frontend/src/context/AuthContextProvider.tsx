@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 import type { User as PrismaUser } from '@shared/types';
 import type { Role } from '@shared/types';
@@ -28,12 +28,17 @@ export const AuthContextProvider = ({ children }: { children: ReactNode }) => {
   const [prismaUser, setPrismaUser] = useState<PrismaUser | null>(null);
   const [role, setRole] = useState<Role | null>(null);
   const [loading, setLoading] = useState(true);
+  const refreshGeneration = useRef(0);
 
   // GET /api/auth/me → { user: SupabaseUser, profile: PrismaUser | null }
   // Update both the Prisma and Supababse user models
   const refreshUser = useCallback(async () => {
+    const generation = ++refreshGeneration.current;
     try {
       const me = await getMeSupabase();
+      // Ignore stale responses — OAuth callback can finish while the mount-time
+      // /me (started with no cookies) is still in flight and would clear the user.
+      if (generation !== refreshGeneration.current) return;
       if (!me?.user) {
         setUser(null);
         setPrismaUser(null);
@@ -44,11 +49,14 @@ export const AuthContextProvider = ({ children }: { children: ReactNode }) => {
       setPrismaUser(me.profile ?? null);
       setRole(me.profile?.role ?? null);
     } catch {
+      if (generation !== refreshGeneration.current) return;
       setUser(null);
       setPrismaUser(null);
       setRole(null);
     } finally {
-      setLoading(false);
+      if (generation === refreshGeneration.current) {
+        setLoading(false);
+      }
     }
   }, []);
 

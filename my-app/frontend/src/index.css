@@ -14,6 +14,7 @@
 /* Full-bleed yellow gutters; page content stays capped at 1500px */
 html {
   background-color: #fefce8; /* yellow-50 */
+  overflow-x: hidden;
 }
 
 body {
@@ -22,6 +23,7 @@ body {
   max-width: 1500px;
   min-height: 100%;
   background-color: #fefce8;
+  overflow-x: hidden;
 }
 
 #root {

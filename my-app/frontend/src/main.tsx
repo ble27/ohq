@@ -9,13 +9,11 @@ import App from './App.tsx'
 // each call site to remember `withCredentials: true`.
 axios.defaults.withCredentials = true;
 
-// Call sites use relative `/api/...` paths. In dev, Vite's proxy (see
-// vite.config.ts) forwards those to the local backend, so no baseURL is
-// needed. In production the frontend and backend are on different domains
-// (Vercel + Render), so point relative paths at the deployed backend.
-if (import.meta.env.VITE_API_URL) {
-  axios.defaults.baseURL = import.meta.env.VITE_API_URL;
-}
+// Always call relative `/api/...` paths.
+// - Dev: Vite proxies /api → localhost:3000 (vite.config.ts)
+// - Prod: Vercel rewrites /api → Render (vercel.json)
+// Hitting Render cross-origin breaks auth cookies on mobile Safari (ITP).
+// Socket.IO still uses VITE_API_URL directly — see SocketProvider.
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

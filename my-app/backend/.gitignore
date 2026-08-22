@@ -54,6 +54,9 @@ build/
 out/
 *.tsbuildinfo
 
+# Local-only scripts (not part of runtime or deploy)
+scripts/
+
 # IDE and system files
 .DS_Store
 .idea/

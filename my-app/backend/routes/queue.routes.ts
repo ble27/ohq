@@ -16,7 +16,7 @@ import {
     TimeValidationSchema,
 } from '../schemas/queue.schema.js';
 import { ZodError } from 'zod';
-import { closeExpiredQueues } from '../services/queue.services.js';
+import { closeExpiredQueues, isWithinQueueHours } from '../services/queue.services.js';
 import { requireQueueOwnership, requireRole } from '../middlewares/authz.middleware.js';
 import type { AuthedRequest } from '../middlewares/authz.middleware.js';
 
@@ -43,6 +43,48 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
     }
 });
 
+// GET /api/queues/mine — all queues owned by the caller (open and closed).
+// Closed rows stay listed so a TA can manage/delete them; they are never auto-deleted.
+router.get('/mine', requireRole(Role.TA, Role.PROFESSOR), async (req: AuthedRequest, res: Response): Promise<void> => {
+    try {
+        await closeExpiredQueues();
+        const taId = req.user!.id;
+        const queues = await prisma.queue.findMany({
+            where: { taId },
+            orderBy: { createdAt: 'desc' },
+        });
+        const body: QueuesListResponse = { queues, message: 'SUCCESS' };
+        res.status(200).json(body);
+    } catch (error: unknown) {
+        if (error instanceof Error) {
+            res.status(500).json({ message: error.message });
+            return;
+        }
+        res.status(500).json({ message: 'Failed to fetch queues' });
+    }
+});
+
+// GET /api/queues/course/:courseId — open queues for a course (student join list).
+// Registered before /:id so "course" is not treated as a queue id.
+router.get('/course/:courseId', async (req: Request, res: Response): Promise<void> => { 
+    try { 
+        const courseId = req.params.courseId as string; 
+        await closeExpiredQueues();
+        const activeQueues = await prisma.queue.findMany({ 
+            where: { courseId, isOpen: true }, 
+            include: { ta: true , course: true} 
+        });
+        const body: QueuesListResponse = {
+            queues: activeQueues,
+            message: 'SUCCESS'
+        }
+        res.status(200).json(body);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch queues' });
+    }
+    
+});
+
 // GET /api/queues/:id — single queue
 router.get('/:id', async (req: Request, res: Response): Promise<void> => {
     try {
@@ -61,7 +103,6 @@ router.get('/:id', async (req: Request, res: Response): Promise<void> => {
             return;
         }        
         const body: QueueResponse = { queue, message: 'SUCCESS' };
-        // console.log(`[QUEUE] Successfully sent queue object`);
         res.status(200).json(body);
     }
      catch (error: unknown) {
@@ -71,30 +112,6 @@ router.get('/:id', async (req: Request, res: Response): Promise<void> => {
             res.status(500).json({ message: 'An unexpected database error occurred.' });
         }
     }
-});
-
-// GET /api/queues/:courseId - select all queues based on course id (uuid)
-router.get('/course/:courseId', async (req: Request, res: Response): Promise<void> => { 
-    try { 
-        const courseId = req.params.courseId as string; 
-        await closeExpiredQueues();
-        const activeQueues = await prisma.queue.findMany({ 
-            where: { courseId, isOpen: true }, 
-            include: { ta: true , course: true} 
-        });
-        // fix this
-        const body: QueuesListResponse = {
-            queues: activeQueues,
-            message: 'SUCCESS'
-        }
-        // console.log('Sent active queues from /api/queues/course/:courseId');
-        // console.log(JSON.stringify(body.queues));
-        res.status(200).json(body);
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to fetch queues' });
-        // console.log('Failed to send active queues from /api/queues/course/:courseId');
-    }
-    
 });
 
 // POST /api/queues — create a queue. TA/PROFESSOR only; the caller becomes the queue's TA.
@@ -125,22 +142,25 @@ router.post('/', requireRole(Role.TA, Role.PROFESSOR), async (req: Request, res:
             // Never trust a client-supplied taId — the caller always owns the queue they create.
             taId: (req as any).user.id,
         });
-        const { taId, courseId, endsAt, ...queueData } = validatedQueue;
+        const { taId, courseId, endsAt, isOpen: _clientIsOpen, startsAt, ...queueData } = validatedQueue;
 
-        // 1 queue for each TA for now
+        // 1 queue for each TA for now (includes closed queues — closing never deletes)
         const queueCheck = await prisma.queue.findFirst({
             where: { taId }
         })
-        // A queue has already existed
         if (queueCheck) {
             res.status(400).json({ message: 'Only 1 queue can be created per TA. Please delete the current queue and create another one.' });
             return;
         }
+
+        const isOpen = isWithinQueueHours(startsAt, endsAt);
         const newQueue = await prisma.queue.create({
             data: {
                 courseId, 
                 taId,
                 ...queueData,
+                startsAt,
+                isOpen,
                 ...(endsAt != null ? { endsAt } : {}),
             },
         });
@@ -255,14 +275,20 @@ router.patch('/:id', requireQueueOwnership('id'), async (req: AuthedRequest, res
 });
 
 // PATCH /api/queues/:queueId/time — updates the queue's start/end time. TA-owner only.
-router.patch(`/:queueId/time`, requireQueueOwnership('queueId'), async (req: Request, res: Response) => {
+router.patch(`/:queueId/time`, requireQueueOwnership('queueId'), async (req: AuthedRequest, res: Response) => {
     try {
         const queueId = req.params.queueId as string;
         const validatedTimeSchema = TimeValidationSchema.parse(req.body);
         const { startsAt, endsAt } = validatedTimeSchema;
+        const currentlyOpen = req.queue?.isOpen ?? false;
+        const stillInWindow = isWithinQueueHours(startsAt, endsAt);
         const response = await prisma.queue.update({
             where: { id: queueId },
-            data: { startsAt, endsAt }
+            data: {
+                startsAt,
+                endsAt,
+                ...(currentlyOpen && !stillInWindow ? { isOpen: false } : {}),
+            }
         })
         const body = { 
             queue: response, 

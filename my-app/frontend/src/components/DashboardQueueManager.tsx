@@ -27,7 +27,6 @@ export interface CreateQueueInput {
     courseId: string
     taId:     string
     location: string
-    isOpen:   boolean
     startsAt: Date
     endsAt: Date
 }
@@ -82,7 +81,6 @@ export const QueueManager = ({
                 courseId,
                 taId: user.id,
                 location: location.trim().toUpperCase(),
-                isOpen: true,
                 startsAt: parseTimeOnToday(startTime),
                 endsAt: parseTimeOnToday(endTime),
             })
@@ -251,7 +249,7 @@ export const QueueManager = ({
                         Manage queues
                     </h1>
                     <p className="mt-2 max-w-lg text-sm leading-relaxed text-slate-500">
-                        Create queues for your courses and remove ones you no longer need.
+                        Create a queue at any time. If it is outside the start–end window it is marked closed, and it stays here until you delete it.
                     </p>
                 </header>
 

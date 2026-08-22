@@ -1,1 +1,44 @@
+# Local notes (not used by app, CI, or deploy)
 my-app/features.md
+
+# Cursor / editor local state and debug dumps
+.cursor/
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs and debug traces (not needed to run or deploy)
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Secrets — keep *.example committed
+.env
+.env.*
+!.env.example
+!**/.env.example
+
+# Dependencies and build output
+node_modules/
+dist/
+build/
+coverage/
+.nyc_output/
+*.tsbuildinfo
+
+# Local-only helpers (not imported by the app or deploy pipelines)
+my-app/backend/scripts/
+
+# Shared TypeScript emit next to source — runtime uses dist/; Vite uses types.ts
+my-app/shared/*.js
+my-app/shared/*.js.map
+my-app/shared/*.d.ts
+my-app/shared/*.d.ts.map
