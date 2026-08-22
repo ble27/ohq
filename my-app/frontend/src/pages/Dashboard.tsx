@@ -6,7 +6,7 @@ import { useLocation } from 'react-router-dom';
 import { QueueManager, type CreateQueueInput } from '@/components/DashboardQueueManager';
 import { VerifyTA } from '@/components/TAVerification';
 import { NotificationPanel } from '@/components/notifications/NotificationPanel'
-import { LuBell } from 'react-icons/lu'
+import { LuBell, LuPanelLeft } from 'react-icons/lu'
 import type {
     ApiMessageResponse,
     Course,
@@ -37,6 +37,7 @@ export const Dashboard = () => {
 
     // Sidebar remains open when above mobile breakpoint
     const [isSidebarOpen, setIsSidebarOpen] = useState(() => window.innerWidth >= MOBILE_BREAKPOINT);
+    const [isDesktop, setIsDesktop] = useState(() => window.innerWidth >= MOBILE_BREAKPOINT);
     const Classes: string[] = [
         'ENGR 102', 'ENGR 216', 'ENGR 217', 
         'CSCE 120', 'CSCE 221', 'CSCE 313', 'CSCE 314', 
@@ -243,6 +244,15 @@ export const Dashboard = () => {
         )
     }, []);
 
+    useEffect(() => {
+        const syncViewport = () => {
+            setIsDesktop(window.innerWidth >= MOBILE_BREAKPOINT);
+        };
+        syncViewport();
+        window.addEventListener('resize', syncViewport);
+        return () => window.removeEventListener('resize', syncViewport);
+    }, []);
+
     const paneBackgroundClass = isDashboardHome || isDashboardSettings
         ? 'bg-white'
         : isDashboardClass
@@ -275,18 +285,36 @@ export const Dashboard = () => {
 
 return (
     <>
-    <div className={`flex h-screen w-full overflow-hidden m-0 p-0 ${paneBackgroundClass}`} onPointerDown={() => playNotificationsSound(true)}>
-        {/* Sidebar */}
+    <div className={`flex h-dvh w-full overflow-hidden m-0 p-0 ${paneBackgroundClass}`} onPointerDown={() => playNotificationsSound(true)}>
         <Sidebar isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen}/>
-        <div className={`relative min-h-0 min-w-0 flex-1 overflow-y-auto ${paneBackgroundClass}`}>
-            {/* Fixed overlay — no layout whitespace. Home places its own bell in the title row. */}
-            {!(isDashboardHome || isDashboardSettings) && (
-                <LuBell
-                    size={35}
-                    className="fixed top-11 right-7 z-30 cursor-pointer p-2 hover:rounded-full hover:bg-gray-100 hover:opacity-80 sm:right-9 md:right-11 lg:right-15"
+        <div
+            className={`relative flex min-h-0 min-w-0 flex-1 flex-col ${paneBackgroundClass} ${
+                isSidebarOpen && !isDesktop
+                    ? 'overflow-hidden'
+                    : 'overflow-y-auto overscroll-y-contain'
+            }`}
+            style={{ WebkitOverflowScrolling: 'touch' }}
+        >
+            <header className={`sticky top-0 z-30 flex h-14 shrink-0 items-center px-2 sm:px-3 ${paneBackgroundClass}`}>
+                {!isDesktop && (
+                    <button
+                        type="button"
+                        aria-label="Open menu"
+                        onClick={() => setIsSidebarOpen(true)}
+                        className="rounded-full p-2 text-neutral-800 transition-colors hover:bg-black/5"
+                    >
+                        <LuPanelLeft size={22} />
+                    </button>
+                )}
+                <button
+                    type="button"
+                    aria-label="Notifications"
                     onClick={() => setIsOpenAlert((prev) => !prev)}
-                />
-            )}
+                    className="ml-auto rounded-full p-2 text-neutral-800 transition-colors hover:bg-gray-100"
+                >
+                    <LuBell size={22} />
+                </button>
+            </header>
             {isOpenAlert && (
                 <NotificationPanel
                     notifications={notifications}
@@ -294,9 +322,7 @@ return (
                 />
             )}
             {isDashboardClass && <ClassSelector Classes={Classes} selectedClass={selectedClass} setSelectedClass={setSelectedClass}/>}
-            {isDashboardHome && (
-                <Home onToggleNotifications={() => setIsOpenAlert((prev) => !prev)} />
-            )}
+            {isDashboardHome && <Home />}
             {isDashboardQueueManager && (
                 <VerifyTA>
                     <QueueManager
@@ -310,7 +336,6 @@ return (
                 </VerifyTA>
             )}
             
-            {/* Settings */}
             { isDashboardSettings && <DashboardSettings prismaUser={prismaUser} supabaseUser={user} onUpdateSaveChanges={refreshUser}/>}
         </div>
     </div>

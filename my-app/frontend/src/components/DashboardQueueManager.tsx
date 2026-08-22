@@ -221,7 +221,7 @@ export const QueueManager = ({
     }
 
     return (
-        <main className="min-h-full bg-slate-50 px-4 py-6 sm:px-6 sm:py-8 md:px-8">
+        <main className="min-h-full bg-slate-50 px-4 pb-6 pt-4 sm:px-6 sm:pb-8 md:px-8">
             {/* Delete confirmation modal */}
             {isViewingDeletionModal && (
                 <DeleteConfirmation

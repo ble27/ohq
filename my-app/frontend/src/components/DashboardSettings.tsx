@@ -121,7 +121,7 @@ export const DashboardSettings = ({ prismaUser, supabaseUser, onUpdateSaveChange
 
     return (
         <>
-            <div className="flex min-h-full w-full flex-col bg-white px-6 pb-10 pt-10 sm:px-8 md:px-10">
+            <div className="flex min-h-full w-full flex-col bg-white px-4 pb-10 pt-4 sm:px-8 md:px-10">
                 {/* Settings and below layout */}
                 <div className='flex flex-col gap-5 md:gap-6 lg:gap-7'>
                     <h1 className='text-xl md:text-2xl font-semibold'>Settings</h1>
@@ -133,11 +133,11 @@ export const DashboardSettings = ({ prismaUser, supabaseUser, onUpdateSaveChange
                             
                             {/* General setting tabs */}
                             <div className='flex flex-col bg-neutral-300 px-3 py-3 gap-5 rounded-sm'> 
-                                <div className='flex flex-row items-center gap-3 rounded-lg'>
-                                    <label htmlFor="display_name" className='font-medium text-sm md:text-md'>Change display name (Real Name): </label>
+                                <div className='flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3 rounded-lg'>
+                                    <label htmlFor="display_name" className='font-medium text-sm md:text-md shrink-0'>Change display name (Real Name): </label>
                                     <input 
                                         className='border-1 border-neutral-400 rounded-sm px-2 py-1 text-xs
-                                        md:text-sm lg:text-md w-24 focus:outline-none focus:border-blue-500 overflow-hidden'
+                                        md:text-sm lg:text-md w-full min-w-0 sm:w-40 focus:outline-none focus:border-blue-500 overflow-hidden'
                                         placeholder={prismaUser?.name ?? displayName ?? supabaseUser?.email}
                                         value={displayName}
                                         onChange={e => setDisplayName(e.target.value)}
@@ -151,11 +151,11 @@ export const DashboardSettings = ({ prismaUser, supabaseUser, onUpdateSaveChange
                                     </span>      
                                 </span>
                                 {/* Default queue location */}
-                                {prismaUser?.role === 'TA' &&  <div className='flex flex-row gap-2 items-center'>
-                                    <label htmlFor="display_name" className='font-medium text-sm md:text-md'>Default Queue Location: </label>
+                                {prismaUser?.role === 'TA' &&  <div className='flex flex-col gap-2 sm:flex-row sm:items-center'>
+                                    <label htmlFor="display_name" className='font-medium text-sm md:text-md shrink-0'>Default Queue Location: </label>
                                     <input 
                                         className='border-1 border-neutral-400 rounded-sm px-2 py-1 text-xs
-                                        md:text-sm lg:text-md w-24 focus:outline-none focus:border-blue-500 overflow-hidden'
+                                        md:text-sm lg:text-md w-full min-w-0 sm:w-40 focus:outline-none focus:border-blue-500 overflow-hidden'
                                         placeholder={prismaUser?.defaultLocation ?? 'e.g. Zach 420'}
                                         value={defaultLocation}
                                         onChange={e => setDefaultLocation(e.target.value)}
@@ -172,18 +172,18 @@ export const DashboardSettings = ({ prismaUser, supabaseUser, onUpdateSaveChange
                             <div className='flex flex-col bg-neutral-300 px-3 pt-3 pb-4 gap-3 rounded-sm'> 
                                 <h3 className='font-semibold text-sm md:text-base lg:text-md'> Student </h3>
                                 <div className='flex flex-col gap-2 text-sm'>
-                                    <div className='flex flex-row justify-between bg-neutral-400 px-2 py-2 rounded-lg'>
-                                        Alert when it is your turn next in a queue
+                                    <div className='flex flex-row justify-between gap-3 bg-neutral-400 px-2 py-2 rounded-lg'>
+                                        <span className="min-w-0">Alert when it is your turn next in a queue</span>
                                         <button 
-                                            className='pr-3'
+                                            className='shrink-0 pr-3'
                                             onClick={() => setStudentAlertYourTurn(!studentAlertYourTurn)}> 
                                          {studentAlertYourTurn ? 'ON' : 'OFF'}
                                         </button>
                                     </div>
-                                    <div className='flex flex-row justify-between bg-neutral-400 px-2 py-2 rounded-lg'>
-                                        Alert when a joined queue is closing
+                                    <div className='flex flex-row justify-between gap-3 bg-neutral-400 px-2 py-2 rounded-lg'>
+                                        <span className="min-w-0">Alert when a joined queue is closing</span>
                                         <button 
-                                            className='pr-3'
+                                            className='shrink-0 pr-3'
                                             onClick={() => setStudentAlertQueueClosing(!studentAlertQueueClosing)}
                                             >     
                                             {studentAlertQueueClosing ? 'ON' : 'OFF'} 
@@ -193,18 +193,18 @@ export const DashboardSettings = ({ prismaUser, supabaseUser, onUpdateSaveChange
                             
                                 {prismaUser?.role === 'TA' && <h3 className='font-semibold text-sm md:text-base lg:text-md'> TA/PT </h3>}
                                 {prismaUser?.role === 'TA' &&  <div className='flex flex-col gap-2 text-sm'>
-                                    <div className='flex flex-row justify-between bg-neutral-400 px-2 py-2 rounded-lg'>
-                                        Alert when a student joins your queue
+                                    <div className='flex flex-row justify-between gap-3 bg-neutral-400 px-2 py-2 rounded-lg'>
+                                        <span className="min-w-0">Alert when a student joins your queue</span>
                                         <button 
-                                            className='pr-3'
+                                            className='shrink-0 pr-3'
                                             onClick={() => setTaAlertStudentJoinQueue(!taAlertStudentJoinQueue)}> 
                                             {taAlertStudentJoinQueue ? 'ON' : 'OFF'}
                                         </button>
                                     </div>
-                                    <div className='flex flex-row justify-between bg-neutral-400 px-2 py-2 rounded-lg'>
-                                        Alert when a student leaves your queue
+                                    <div className='flex flex-row justify-between gap-3 bg-neutral-400 px-2 py-2 rounded-lg'>
+                                        <span className="min-w-0">Alert when a student leaves your queue</span>
                                         <button 
-                                            className='pr-3'
+                                            className='shrink-0 pr-3'
                                             onClick={() => setTaAlertStudentLeaveQueue(!taAlertStudentLeaveQueue)}> 
                                             {taAlertStudentLeaveQueue ? 'ON' : 'OFF'}
                                         </button>
@@ -212,10 +212,10 @@ export const DashboardSettings = ({ prismaUser, supabaseUser, onUpdateSaveChange
                                 </div>}
                                 <h3 className='font-semibold text-sm md:text-base lg:text-md'> Sound </h3>
                                 <div className='flex flex-col gap-2 text-sm'>
-                                    <div className='flex flex-row justify-between bg-neutral-400 px-2 py-2 rounded-lg'>
-                                        Play sound when a notification arrives
+                                    <div className='flex flex-row justify-between gap-3 bg-neutral-400 px-2 py-2 rounded-lg'>
+                                        <span className="min-w-0">Play sound when a notification arrives</span>
                                         <button
-                                            className='pr-3'
+                                            className='shrink-0 pr-3'
                                             onClick={() => setNotificationSoundEnabled(!notificationSoundEnabled)}
                                         >
                                             {notificationSoundEnabled ? 'ON' : 'OFF'}
@@ -231,7 +231,7 @@ export const DashboardSettings = ({ prismaUser, supabaseUser, onUpdateSaveChange
 
                             <div className='flex flex-col gap-2 bg-neutral-300 px-3 py-3 rounded-sm'>
                                 {/* Sign out */}
-                                <div className='flex flex-row items-center justify-between'>
+                                <div className='flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between'>
                                     <span className='font-medium text-sm md:text-base lg:text-md'> Sign out </span>
                                     <button 
                                         className='flex justify-center w-30 text-xs text-black md:text-sm
@@ -241,7 +241,7 @@ export const DashboardSettings = ({ prismaUser, supabaseUser, onUpdateSaveChange
                                     > Sign out </button>        
 
                                 </div>
-                                <div className='flex flex-row items-center justify-between'>
+                                <div className='flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between'>
                                     <span className="font-medium text-sm md:text-base lg:text-md">Permanently delete account</span>    
                                     {/* Delete Account */}
                                     <button 

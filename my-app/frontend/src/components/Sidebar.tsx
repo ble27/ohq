@@ -20,6 +20,7 @@ export const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }: SideBarProps ) => {
   const { user, prismaUser, refreshUser } = useAuth();
   const userToggled = useRef(false);
   const navigate = useNavigate();
+  const isMobileDrawer = !isDesktop;
 
   const toggleSidebar = () => {
     userToggled.current = true;
@@ -32,7 +33,6 @@ export const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }: SideBarProps ) => {
     }
   }
   
-  // Sync open/closed with viewport; always collapse below breakpoint
   useEffect(() => {
     const handleResize = () => {
       const desktop = window.innerWidth >= MOBILE_BREAKPOINT;
@@ -42,7 +42,6 @@ export const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }: SideBarProps ) => {
         userToggled.current = false;
         return;
       }
-      // Desktop: reopen unless the user manually collapsed
       if (!userToggled.current) {
         setIsSidebarOpen(true);
       }
@@ -52,12 +51,31 @@ export const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }: SideBarProps ) => {
     return () => window.removeEventListener('resize', handleResize);
   }, [setIsSidebarOpen]);
 
-  const sidebarWidth = isSidebarOpen ? 'w-60' : 'w-[72px]';
-  // Mobile: spacer stays 72px so expand overlays home without shifting it.
-  // Desktop: spacer matches sidebar so content is pushed.
-  const spacerWidth = isDesktop ? sidebarWidth : 'w-[72px]';
+  useEffect(() => {
+    if (!isMobileDrawer || !isSidebarOpen) return;
 
-  // Build a new function whenever a user is refreshed or whenever a new page is navigated to
+    const { documentElement, body } = document;
+    const scrollbarWidth = window.innerWidth - documentElement.clientWidth;
+    const previous = {
+      htmlOverflow: documentElement.style.overflow,
+      bodyOverflow: body.style.overflow,
+      bodyPaddingRight: body.style.paddingRight,
+      bodyTouchAction: body.style.touchAction,
+    };
+
+    documentElement.style.overflow = 'hidden';
+    body.style.overflow = 'hidden';
+    body.style.paddingRight = `${scrollbarWidth}px`;
+    body.style.touchAction = 'none';
+
+    return () => {
+      documentElement.style.overflow = previous.htmlOverflow;
+      body.style.overflow = previous.bodyOverflow;
+      body.style.paddingRight = previous.bodyPaddingRight;
+      body.style.touchAction = previous.bodyTouchAction;
+    };
+  }, [isMobileDrawer, isSidebarOpen]);
+
   const handleSignout = useCallback(async () => {
     try {
       await signOut();
@@ -69,11 +87,6 @@ export const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }: SideBarProps ) => {
     }
   }, [refreshUser, navigate]);
 
-  // Auto sign-out after inactivity. Must live in an effect (not the render
-  // body) — otherwise every re-render re-adds these listeners without
-  // removing the previous set and resets the timer regardless of whether
-  // the user was actually active.
-  // handleSignout is called in useEffect therefore is also in in dependency list 
   useEffect(() => {
     let inactivityTimer: ReturnType<typeof setTimeout>;
 
@@ -91,82 +104,120 @@ export const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }: SideBarProps ) => {
     };
   }, [handleSignout]);
 
+  const linkClass = `flex w-full flex-row items-center gap-2.5 px-4 py-3 transition-colors duration-200 ${
+    isSidebarOpen ? 'hover:bg-black/20' : 'pointer-events-none opacity-0'
+  }`;
+
   return (
     <>
-      {/* Spacer keeps main content offset; on mobile it never grows with expand */}
-      <div className={`shrink-0 transition-all ease-in-out duration-400 ${spacerWidth}`} aria-hidden />
-      <div className={`fixed top-0 left-0 z-40 flex flex-col h-screen shadow bg-[#500000] transition-all ease-in-out duration-400 text-white font-semibold ${sidebarWidth}`}>
-        <div className='flex flex-row items-center pl-4 text-xl pt-5 pb-7 pr-2'>
-        <span 
-          className={`font-medium text-white whitespace-nowrap transition-all duration-200 overflow-hidden cursor-pointer
-            ${isSidebarOpen ? 'opacity-100 max-w-[160px] mr-auto justify-between' : 'opacity-0 max-w-0 mr-0 pointer-events-none'}`}
-        >
-          Queueble
-        </span>
-          <LuPanelLeft 
-            size={45} 
-            onClick={toggleSidebar} 
-            className='p-3 rounded-full hover:bg-black/20 transition-colors duration-200 cursor-pointer' 
-            color='white'
-          />
+      {isDesktop && (
+        <div
+          className={`shrink-0 transition-[width] duration-300 ease-out ${isSidebarOpen ? 'w-60' : 'w-[72px]'}`}
+          aria-hidden
+        />
+      )}
+
+      {isMobileDrawer && isSidebarOpen && (
+        <button
+          type="button"
+          aria-label="Close menu"
+          className="fixed inset-0 z-40 bg-black/40"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
+      <aside
+        aria-hidden={isMobileDrawer && !isSidebarOpen}
+        className={`fixed top-0 left-0 z-50 flex h-dvh flex-col bg-[#500000] text-white shadow ${
+          isMobileDrawer
+            ? `w-[min(20rem,85vw)] transition-transform duration-300 ease-out ${
+                isSidebarOpen ? 'translate-x-0' : '-translate-x-full pointer-events-none'
+              }`
+            : `transition-[width] duration-300 ease-out ${isSidebarOpen ? 'w-60' : 'w-[72px]'}`
+        }`}
+      >
+        <div className="flex h-14 shrink-0 items-center gap-2 px-3 pt-[env(safe-area-inset-top)]">
+          <span
+            className={`truncate text-lg font-medium transition-opacity ${
+              isSidebarOpen ? 'opacity-100' : 'pointer-events-none w-0 overflow-hidden opacity-0'
+            }`}
+          >
+            Queueble
+          </span>
+          <button
+            type="button"
+            aria-label={isSidebarOpen ? 'Close sidebar' : 'Open sidebar'}
+            onClick={toggleSidebar}
+            className={`rounded-full p-2 transition-colors hover:bg-black/20 ${
+              isSidebarOpen ? 'ml-auto' : 'mx-auto'
+            }`}
+          >
+            <LuPanelLeft size={22} color="white" />
+          </button>
         </div>
         
-        <ul className='flex text-md flex-col gap-3 pointer-events-auto w-full'> 
-          <Link to='/dashboard/home' 
-            onClick={handleNavigation}
-            className={`flex flex-row px-4 py-3 gap-[10px] items-center transition-colors duration-200 w-full 
-            ${isSidebarOpen ? 'hover:bg-black/20 hover:opacity-90': 'hover:opacity-0 pointer-events-none'}`}> 
-              {isSidebarOpen && <LuHouse size={20} color="white" />}
-              {isSidebarOpen && <span>Home</span>}
-          </Link> 
-          <Link to='/dashboard/class' onClick={handleNavigation} className={`flex flex-row px-4 py-3 gap-[10px] items-center transition-colors duration-200 w-full
-            ${isSidebarOpen ? 'hover:bg-black/20 hover:opacity-90': 'hover:opacity-0 pointer-events-none'}`}> 
-              {isSidebarOpen && <LuLibraryBig size={20} color="white" />}
-              {isSidebarOpen && <span>Class</span>}
-          </Link> 
+        <nav className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+          <ul className="flex w-full flex-col gap-1 text-sm font-semibold">
+            <li>
+              <Link to="/dashboard/home" onClick={handleNavigation} className={linkClass}>
+                {isSidebarOpen && <LuHouse size={20} color="white" />}
+                {isSidebarOpen && <span>Home</span>}
+              </Link>
+            </li>
+            <li>
+              <Link to="/dashboard/class" onClick={handleNavigation} className={linkClass}>
+                {isSidebarOpen && <LuLibraryBig size={20} color="white" />}
+                {isSidebarOpen && <span>Class</span>}
+              </Link>
+            </li>
+            <li>
+              <Link to="/dashboard/queuemanager" onClick={handleNavigation} className={linkClass}>
+                {isSidebarOpen && <LuPackage size={20} color="white" />}
+                {isSidebarOpen && <span>Queue Manager</span>}
+              </Link>
+            </li>
+            <li>
+              <Link to="/dashboard/settings" onClick={handleNavigation} className={linkClass}>
+                {isSidebarOpen && <LuSettings size={20} color="white" />}
+                {isSidebarOpen && <span>Settings</span>}
+              </Link>
+            </li>
+          </ul>
+        </nav>
 
-          <Link to='/dashboard/queuemanager' onClick={handleNavigation} className={`flex flex-row px-4 py-3 gap-[10px] items-center transition-colors duration-200 w-full
-            ${isSidebarOpen ? 'hover:bg-black/20 hover:opacity-90': 'hover:opacity-0 pointer-events-none'}`}>
-              {isSidebarOpen && <LuPackage size={20} color="white" />}
-              {isSidebarOpen && <span>Queue Manager</span>}
-          </Link>
-
-          <Link to='/dashboard/settings' onClick={handleNavigation} className={`flex flex-row px-4 py-3 gap-[10px] items-center transition-colors duration-200 w-full 
-            ${isSidebarOpen ? 'hover:bg-black/20 hover:opacity-90': 'hover:opacity-0 pointer-events-none'}`}>
-              {isSidebarOpen && <LuSettings size={20} color="white" />}
-              {isSidebarOpen && <span>Settings</span>}
-          </Link>
-        </ul> 
-
-
-
-        <div className={`flex flex-row absolute bottom-25 px-4 py-3 gap-[10px] items-center transition-colors duration-200 w-full pointer-events-auto 
-            cursor-pointer ${isSidebarOpen ? 'hover:bg-black/20 hover:opacity-90': 'hover:opacity-80 justify-center'}`}
-            onClick={handleSignout}>
-              <LuLogOut size={20} color="white"/>
-              {isSidebarOpen && <span>Sign out</span>}
-          </div>
-        {/* Account and settings */}
-        <div 
-          className={`flex flex-row absolute bottom-0 left-0 h-20 w-full gap-2 border-t border-gray-50/20 items-center transition-all duration-200
-            ${isSidebarOpen ? ' justify-start pl-4' : 'justify-center pl-2'}`}
+        <div className="mt-auto shrink-0 border-t border-white/20">
+          <button
+            type="button"
+            onClick={handleSignout}
+            className={`flex w-full items-center gap-2.5 px-4 py-3 text-sm font-semibold transition-colors hover:bg-black/20 ${
+              isSidebarOpen ? '' : 'justify-center'
+            }`}
           >
-          {/* PFP placeholder */}
-          <div className='w-9 h-9 rounded-full text-white font-bold bg-black/60 border-none shrink-0 flex items-center justify-center'>
-            {user?.email?.charAt(0).toUpperCase() ?? ''}
-          </div>
+            <LuLogOut size={20} color="white" className="shrink-0" />
+            {isSidebarOpen && <span>Sign out</span>}
+          </button>
 
-          {/* Account name and status */}
-          <div className='flex flex-col overflow-hidden'>
-            <div className={`font-normal text-white text-xs whitespace-nowrap transition-all duration-200 ${isSidebarOpen ? 'opacity-100 max-w-[160px]' : 'opacity-0 max-w-0 pl-0'}`}>
-              {prismaUser?.name ?? 'No display name'}
-            </div> 
-            <div className={`font-normal text-white text-xs text-gray-50/50 whitespace-nowrap transition-all duration-200 ${isSidebarOpen ? 'opacity-100 max-w-[160px]' : 'opacity-0 max-w-0 pl-0'}`}>
-              {user?.email ?? ''}
-            </div> 
-          </div>          
+          <div
+            className={`flex min-w-0 items-center gap-2.5 px-4 py-3 ${
+              isSidebarOpen ? '' : 'justify-center'
+            }`}
+          >
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-black/60 text-sm font-bold text-white">
+              {user?.email?.charAt(0).toUpperCase() ?? ''}
+            </div>
+            {isSidebarOpen && (
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-xs font-normal text-white">
+                  {prismaUser?.name ?? 'No display name'}
+                </div>
+                <div className="truncate text-xs font-normal text-white/50">
+                  {user?.email ?? ''}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
-    </div>
+      </aside>
     </>
   )
 }

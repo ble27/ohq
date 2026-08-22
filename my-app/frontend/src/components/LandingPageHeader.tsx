@@ -6,6 +6,8 @@ interface HeaderProps {
   featuresRef: RefObject<HTMLDivElement | null>;
 }
 
+const LOGO_INSET = 'pl-6 sm:pl-8 md:pl-15 lg:pl-20';
+
 export const Header = ({ featuresRef }: HeaderProps) => {
   const [isHamburgerMenuOpen, setHamburgerMenuOpen] = useState(false);
   const MOBILE_BREAKING_POINT = 684;
@@ -68,7 +70,7 @@ export const Header = ({ featuresRef }: HeaderProps) => {
         <Link
           to="/"
           onClick={() => setHamburgerMenuOpen(false)}
-          className="pl-6 sm:pl-8 md:pl-15 lg:pl-20 flex-1 text-2xl font-medium tracking-tight"
+          className={`${LOGO_INSET} flex-1 text-2xl font-medium tracking-tight`}
         >
           Queueble
         </Link>
@@ -155,7 +157,7 @@ export const Header = ({ featuresRef }: HeaderProps) => {
                 setHamburgerMenuOpen(false);
                 scrollToFeatures();
               }}
-              className="flex min-h-20 items-center hover:bg-gray-100 px-6 sm:px-9"
+              className={`flex min-h-20 items-center hover:bg-gray-100 pr-6 ${LOGO_INSET}`}
             >
               Features
             </button>
@@ -163,7 +165,7 @@ export const Header = ({ featuresRef }: HeaderProps) => {
               to="/privacy"
               tabIndex={isHamburgerMenuOpen ? 0 : -1}
               onClick={() => setHamburgerMenuOpen(false)}
-              className="flex min-h-20 items-center hover:bg-gray-100 px-6 sm:px-9"
+              className={`flex min-h-20 items-center hover:bg-gray-100 pr-6 ${LOGO_INSET}`}
             >
               Privacy
             </Link>
@@ -171,7 +173,7 @@ export const Header = ({ featuresRef }: HeaderProps) => {
               to="/signin"
               tabIndex={isHamburgerMenuOpen ? 0 : -1}
               onClick={() => setHamburgerMenuOpen(false)}
-              className="flex items-center min-h-20 hover:bg-gray-100 px-6 sm:px-9"
+              className={`flex min-h-20 items-center hover:bg-gray-100 pr-6 ${LOGO_INSET}`}
             >
               Log In
             </Link>
@@ -179,7 +181,7 @@ export const Header = ({ featuresRef }: HeaderProps) => {
               to="/signup"
               tabIndex={isHamburgerMenuOpen ? 0 : -1}
               onClick={() => setHamburgerMenuOpen(false)}
-              className="flex items-center min-h-20 hover:bg-gray-100 px-6 sm:px-9"
+              className={`flex min-h-20 items-center hover:bg-gray-100 pr-6 ${LOGO_INSET}`}
             >
               Sign Up
             </Link>

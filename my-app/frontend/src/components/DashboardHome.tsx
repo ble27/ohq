@@ -3,17 +3,12 @@ import axios from 'axios'
 import type { QueueTicket, QueueWithTA } from '@shared/types'
 import { QueueTicketComp } from './QueueTicketComp'
 import { useAuth } from '@/context/AuthContextProvider'
-import { LuBell } from 'react-icons/lu'
 
 const ACTIVE_TICKET_STATUSES = new Set(['WAITING', 'HELPING'])
 
 type HomeTicket = QueueTicket & { queue?: QueueWithTA }
 
-interface HomeProps {
-    onToggleNotifications?: () => void
-}
-
-export const Home = ({ onToggleNotifications }: HomeProps) => {
+export const Home = () => {
     // Home owns the tickets for the current user
     const [tickets, setTickets] = useState<HomeTicket[]>([])
     const { user } = useAuth()
@@ -45,14 +40,9 @@ export const Home = ({ onToggleNotifications }: HomeProps) => {
     }
 
     return (
-        <div className="flex bg-white min-h-full w-full flex-col px-4 py-8 sm:px-6 md:px-8 lg:pr-12">
-            <div className="flex w-full flex-row items-center justify-between p-3 text-xl font-semibold sm:text-2xl">
+        <div className="flex bg-white min-h-full w-full flex-col px-4 pb-8 pt-4 sm:px-6 md:px-8 lg:pr-12">
+            <div className="flex w-full flex-row items-center p-3 text-xl font-semibold sm:text-2xl">
                 My Tickets
-                <LuBell
-                    size={35}
-                    className="cursor-pointer p-2 hover:rounded-full hover:bg-gray-100 hover:opacity-80"
-                    onClick={onToggleNotifications}
-                />
             </div>
 
             {tickets.length === 0 && (
