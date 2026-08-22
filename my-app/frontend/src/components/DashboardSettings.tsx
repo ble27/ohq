@@ -136,7 +136,8 @@ export const DashboardSettings = ({ prismaUser, supabaseUser, onUpdateSaveChange
                                 <div className='flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3 rounded-lg'>
                                     <label htmlFor="display_name" className='font-medium text-sm md:text-md shrink-0'>Change display name (Real Name): </label>
                                     <input 
-                                        className='border-1 border-neutral-400 rounded-sm px-2 py-1 text-xs
+                                        id="display_name"
+                                        className='border-1 border-neutral-400 rounded-sm px-2 py-1 text-base
                                         md:text-sm lg:text-md w-full min-w-0 sm:w-40 focus:outline-none focus:border-blue-500 overflow-hidden'
                                         placeholder={prismaUser?.name ?? displayName ?? supabaseUser?.email}
                                         value={displayName}
@@ -154,7 +155,8 @@ export const DashboardSettings = ({ prismaUser, supabaseUser, onUpdateSaveChange
                                 {prismaUser?.role === 'TA' &&  <div className='flex flex-col gap-2 sm:flex-row sm:items-center'>
                                     <label htmlFor="display_name" className='font-medium text-sm md:text-md shrink-0'>Default Queue Location: </label>
                                     <input 
-                                        className='border-1 border-neutral-400 rounded-sm px-2 py-1 text-xs
+                                        id="default_location"
+                                        className='border-1 border-neutral-400 rounded-sm px-2 py-1 text-base
                                         md:text-sm lg:text-md w-full min-w-0 sm:w-40 focus:outline-none focus:border-blue-500 overflow-hidden'
                                         placeholder={prismaUser?.defaultLocation ?? 'e.g. Zach 420'}
                                         value={defaultLocation}

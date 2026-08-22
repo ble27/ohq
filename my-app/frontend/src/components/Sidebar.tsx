@@ -104,8 +104,10 @@ export const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }: SideBarProps ) => {
     };
   }, [handleSignout]);
 
-  const linkClass = `flex w-full flex-row items-center gap-2.5 px-4 py-3 transition-colors duration-200 ${
-    isSidebarOpen ? 'hover:bg-black/20' : 'pointer-events-none opacity-0'
+  // Shared left inset so Queueble, nav icons, sign-out, and pfp share one vertical axis.
+  const sideInset = 'pl-4';
+  const linkClass = `flex w-full flex-row items-center gap-[10px] ${sideInset} pr-4 py-3 transition-colors duration-200 ${
+    isSidebarOpen ? 'hover:bg-black/20 hover:opacity-90' : 'pointer-events-none opacity-0'
   }`;
 
   return (
@@ -136,9 +138,9 @@ export const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }: SideBarProps ) => {
             : `transition-[width] duration-300 ease-out ${isSidebarOpen ? 'w-60' : 'w-[72px]'}`
         }`}
       >
-        <div className="flex h-14 shrink-0 items-center gap-2 px-3 pt-[env(safe-area-inset-top)]">
+        <div className={`flex shrink-0 items-center ${sideInset} pr-2 pb-7 pt-[max(1.25rem,env(safe-area-inset-top))]`}>
           <span
-            className={`truncate text-lg font-medium transition-opacity ${
+            className={`truncate text-xl font-medium transition-opacity ${
               isSidebarOpen ? 'opacity-100' : 'pointer-events-none w-0 overflow-hidden opacity-0'
             }`}
           >
@@ -148,7 +150,7 @@ export const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }: SideBarProps ) => {
             type="button"
             aria-label={isSidebarOpen ? 'Close sidebar' : 'Open sidebar'}
             onClick={toggleSidebar}
-            className={`rounded-full p-2 transition-colors hover:bg-black/20 ${
+            className={`rounded-full p-3 transition-colors hover:bg-black/20 ${
               isSidebarOpen ? 'ml-auto' : 'mx-auto'
             }`}
           >
@@ -157,40 +159,40 @@ export const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }: SideBarProps ) => {
         </div>
         
         <nav className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-          <ul className="flex w-full flex-col gap-1 text-sm font-semibold">
+          <ul className="flex w-full flex-col gap-3 text-md font-semibold">
             <li>
               <Link to="/dashboard/home" onClick={handleNavigation} className={linkClass}>
-                {isSidebarOpen && <LuHouse size={20} color="white" />}
+                {isSidebarOpen && <LuHouse size={20} color="white" className="shrink-0" />}
                 {isSidebarOpen && <span>Home</span>}
               </Link>
             </li>
             <li>
               <Link to="/dashboard/class" onClick={handleNavigation} className={linkClass}>
-                {isSidebarOpen && <LuLibraryBig size={20} color="white" />}
+                {isSidebarOpen && <LuLibraryBig size={20} color="white" className="shrink-0" />}
                 {isSidebarOpen && <span>Class</span>}
               </Link>
             </li>
             <li>
               <Link to="/dashboard/queuemanager" onClick={handleNavigation} className={linkClass}>
-                {isSidebarOpen && <LuPackage size={20} color="white" />}
+                {isSidebarOpen && <LuPackage size={20} color="white" className="shrink-0" />}
                 {isSidebarOpen && <span>Queue Manager</span>}
               </Link>
             </li>
             <li>
               <Link to="/dashboard/settings" onClick={handleNavigation} className={linkClass}>
-                {isSidebarOpen && <LuSettings size={20} color="white" />}
+                {isSidebarOpen && <LuSettings size={20} color="white" className="shrink-0" />}
                 {isSidebarOpen && <span>Settings</span>}
               </Link>
             </li>
           </ul>
         </nav>
 
-        <div className="mt-auto shrink-0 border-t border-white/20">
+        <div className="mt-auto shrink-0">
           <button
             type="button"
             onClick={handleSignout}
-            className={`flex w-full items-center gap-2.5 px-4 py-3 text-sm font-semibold transition-colors hover:bg-black/20 ${
-              isSidebarOpen ? '' : 'justify-center'
+            className={`flex w-full items-center gap-[10px] ${sideInset} pr-4 py-3 text-md font-semibold transition-colors hover:bg-black/20 hover:opacity-90 ${
+              isSidebarOpen ? '' : 'justify-center pl-0'
             }`}
           >
             <LuLogOut size={20} color="white" className="shrink-0" />
@@ -198,8 +200,8 @@ export const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }: SideBarProps ) => {
           </button>
 
           <div
-            className={`flex min-w-0 items-center gap-2.5 px-4 py-3 ${
-              isSidebarOpen ? '' : 'justify-center'
+            className={`flex min-w-0 items-center gap-[10px] border-t border-white/20 ${sideInset} pr-4 py-4 ${
+              isSidebarOpen ? '' : 'justify-center pl-0'
             }`}
           >
             <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-black/60 text-sm font-bold text-white">
