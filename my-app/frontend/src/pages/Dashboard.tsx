@@ -129,8 +129,10 @@ export const Dashboard = () => {
                 );
             }
             else if (n.type === 'ASSIST') {
-                toast(`TA ${n.queue?.ta?.name} is ready to assist you. Please head to location ${n.queue?.location}!`, 
-                    { description: finalDisplayString }
+                const zoomHint = n.queue?.zoomLink ? ` or join Zoom` : '';
+                toast(
+                    `TA ${n.queue?.ta?.name} is ready to assist you. Please head to location ${n.queue?.location}${zoomHint}!`,
+                    { description: finalDisplayString },
                 )
             }
             else if (n.type === 'CLOSE') {

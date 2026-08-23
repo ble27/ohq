@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import axios from 'axios'
-import { ChevronDown, MapPin } from 'lucide-react'
+import { ChevronDown, MapPin, Video } from 'lucide-react'
 import { QueueModal } from './QueueModal'
 import type {
   NotificationResponse,
@@ -345,6 +345,19 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ Classes, selectedC
                       <MapPin className="size-3.5 shrink-0 text-neutral-400" strokeWidth={2} color='red' aria-hidden />
                       <span className="truncate">Location: {q.location || '—'}</span>
                     </div>
+                    {q.zoomLink ? (
+                      <div className="mt-1 flex items-center gap-1.5 text-sm text-neutral-600">
+                        <Video className="size-3.5 shrink-0 text-neutral-400" strokeWidth={2} aria-hidden />
+                        <a
+                          href={q.zoomLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="truncate text-blue-600 underline-offset-2 hover:underline"
+                        >
+                          Join Zoom
+                        </a>
+                      </div>
+                    ) : null}
                     <span className="mt-1 block text-sm text-neutral-500">
                         Time: {formatQueueTime(q.startsAt)}
                         {q.endsAt ? ` – ${formatQueueTime(q.endsAt)}` : ''}

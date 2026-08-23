@@ -157,3 +157,10 @@ body {
     @apply font-sans;
   }
 }
+
+/* Sonner's default toast description color is a low-contrast light grey.
+   Force it to match the popover foreground so it's readable on the toast background. */
+.cn-toast [data-description] {
+  color: var(--popover-foreground);
+  opacity: 0.85;
+}

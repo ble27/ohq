@@ -51,6 +51,7 @@ export const QueueManagementModal = ({
     // Save all these settings at once
     const [isQueueOpen, setIsQueueOpen] = useState(queue?.isOpen ?? true);
     const [roomLocation, setRoomLocation] = useState(queue?.location ?? '');
+    const [zoomLink, setZoomLink] = useState(queue?.zoomLink ?? '');
     const [startTime, setStartTime] = useState(toTimeInput(queue?.startsAt) ?? '08:00');
     const [endTime, setEndTime] = useState(toTimeInput(queue?.endsAt) ?? '09:00');
 
@@ -83,6 +84,22 @@ export const QueueManagementModal = ({
             );
             if (response.status !== 200) return null;
             console.log(`SUCCESSFULLY changed queue location to ${trimmedLocation}`);
+            return response.data.queue as Queue;
+        } catch (error) {
+            console.log(error);
+            return null;
+        }
+    }
+
+    const handleChangeZoomLink = async (): Promise<Queue | null> => {
+        const trimmedZoom = zoomLink.trim();
+        const nextZoom = trimmedZoom || null;
+        if (!queue || (queue.zoomLink ?? null) === nextZoom) return queue;
+        try {
+            const response = await axios.patch(`/api/queues/${queue.id}/zoomlink`, {
+                zoomLink: nextZoom,
+            });
+            if (response.status !== 200) return null;
             return response.data.queue as Queue;
         } catch (error) {
             console.log(error);
@@ -136,6 +153,22 @@ export const QueueManagementModal = ({
                 return;
             }
         }
+
+        const trimmedZoom = zoomLink.trim();
+        const nextZoom = trimmedZoom || null;
+        if ((queue?.zoomLink ?? null) !== nextZoom) {
+            try {
+                updatedQueue = await handleChangeZoomLink();
+                if (!updatedQueue) {
+                    console.log('Failed to change zoom link');
+                    return;
+                }
+                didUpdate = true;
+            } catch (error) {
+                console.log('Unable to change zoom link', error);
+                return;
+            }
+        }
         
         // Change queue status only when queue's original status doesn't equal new status (API)
         if (queue?.isOpen !== isQueueOpen) {
@@ -170,6 +203,7 @@ export const QueueManagementModal = ({
     const handleCancelChanges = () => {
         setIsQueueOpen(queue?.isOpen ?? true);
         setRoomLocation(queue?.location ?? '');
+        setZoomLink(queue?.zoomLink ?? '');
         setStartTime(toTimeInput(queue?.startsAt));
         setEndTime(toTimeInput(queue?.endsAt));
         setIsViewingManagementModal(false);
@@ -303,6 +337,19 @@ export const QueueManagementModal = ({
                             value={roomLocation}
                             onChange={(e) => setRoomLocation(e.target.value)}
                             placeholder="e.g. Room 101"
+                        />
+                    </div>
+
+                    {/* Optional Zoom / remote link */}
+                    <div className='flex flex-row items-center'>
+                        <label htmlFor="zoom_link">Zoom link: </label>
+                        <input
+                            type="url"
+                            id="zoom_link"
+                            className='outline-none text-gray-500 ml-3 min-w-0 flex-1'
+                            value={zoomLink}
+                            onChange={(e) => setZoomLink(e.target.value)}
+                            placeholder="https://zoom.us/j/… (optional)"
                         />
                     </div>
                     {/* Start / end time manual configuration */}

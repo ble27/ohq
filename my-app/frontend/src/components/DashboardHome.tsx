@@ -58,6 +58,7 @@ export const Home = () => {
                         key={ticket.id}
                         ticket={ticket}
                         location={ticket.queue?.location}
+                        zoomLink={ticket.queue?.zoomLink}
                         taName={ticket.queue?.ta?.name ?? ticket.queue?.ta?.email}
                         onLeave={handleLeaveTicket}
                     />

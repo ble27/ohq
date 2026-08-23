@@ -33,7 +33,7 @@ export const NotificationBanner = ({
     const defaultMessages: Record<NotificationType, string> = {
         JOIN: `Student ${ticket?.student?.name} joined your queue`,
         LEAVE: `Student ${ticket?.student?.name} left your queue`,
-        ASSIST: `Please head to ${queue?.location}. TA ${queue?.ta?.name} is ready to assist you.`,
+        ASSIST: `Please head to ${queue?.location}${queue?.zoomLink ? ` or join Zoom (${queue.zoomLink})` : ''}. TA ${queue?.ta?.name} is ready to assist you.`,
         CLOSE: 'Queue is closing in 5 mins.',
     }
 

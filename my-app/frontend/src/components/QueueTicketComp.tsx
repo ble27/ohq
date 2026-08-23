@@ -6,6 +6,7 @@ import { MapPin } from 'lucide-react'
 interface QueueTicketProps {
     ticket: QueueTicket
     location?: string
+    zoomLink?: string | null
     taName?: string
     className?: string
     footer?: ReactNode
@@ -50,12 +51,14 @@ const TicketNotches = () => (
 export const QueueTicketComp = ({
     ticket,
     location: locationProp,
+    zoomLink: zoomLinkProp,
     taName: taNameProp,
     className = '',
     footer,
     onLeave,
 }: QueueTicketProps) => {
     const [fetchedLocation, setFetchedLocation] = useState('')
+    const [fetchedZoomLink, setFetchedZoomLink] = useState<string | null>(null)
     const [fetchedTaName, setFetchedTaName] = useState('')
     const [fetchedTaId, setFetchedTaId] = useState('')
     const [isLeaving, setIsLeaving] = useState(false)
@@ -74,6 +77,9 @@ export const QueueTicketComp = ({
                 if (locationProp == null) {
                     setFetchedLocation(queue.location as string)
                 }
+                if (zoomLinkProp == null) {
+                    setFetchedZoomLink((queue.zoomLink as string | null) ?? null)
+                }
                 if (taNameProp == null) {
                     setFetchedTaName(
                         (queue.ta?.name as string) || (queue.ta?.email as string) || '',
@@ -91,9 +97,10 @@ export const QueueTicketComp = ({
         return () => {
             cancelled = true
         }
-    }, [ticket.queueId, locationProp, taNameProp])
+    }, [ticket.queueId, locationProp, zoomLinkProp, taNameProp])
 
     const location = locationProp ?? fetchedLocation
+    const zoomLink = zoomLinkProp ?? fetchedZoomLink
     const taName = taNameProp ?? fetchedTaName
     const canLeave = ticket.status === 'WAITING'
     const positionLabel =
@@ -170,7 +177,7 @@ export const QueueTicketComp = ({
 
                 <div className="border-t border-dotted border-[#e8c97a]/35" />
 
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                     <MetaCell label="TA" value={taName || '—'} />
                     <MetaCell
                         label="LOCATION"
@@ -179,6 +186,23 @@ export const QueueTicketComp = ({
                                 <MapPin className="size-3.5 shrink-0 text-[#e8c97a]" aria-hidden />
                                 <span className="truncate">{location || '—'}</span>
                             </span>
+                        }
+                    />
+                    <MetaCell
+                        label="ZOOM"
+                        value={
+                            zoomLink ? (
+                                <a
+                                    href={zoomLink}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="truncate text-[#e8c97a] underline-offset-2 hover:underline"
+                                >
+                                    Join
+                                </a>
+                            ) : (
+                                '—'
+                            )
                         }
                     />
                     <MetaCell label="TICKET" value={shortId(ticket.id)} />

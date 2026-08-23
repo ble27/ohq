@@ -14,6 +14,7 @@ import {
     QueueOpenParamSchema,
     RoomLocationParamSchema,
     TimeValidationSchema,
+    ZoomLinkBodySchema,
 } from '../schemas/queue.schema.js';
 import { ZodError } from 'zod';
 import { closeExpiredQueues, isWithinQueueHours } from '../services/queue.services.js';
@@ -132,7 +133,7 @@ router.post('/', requireRole(Role.TA, Role.PROFESSOR), async (req: Request, res:
             })
             : null;
         if (!course) {
-            res.status(400).json({ message: 'Select or enter a valid active course' });
+            res.status(400).json({ message: 'Select a valid active course from the list' });
             return;
         }
 
@@ -238,6 +239,37 @@ router.patch('/:queueId/location/:roomLocation', requireQueueOwnership('queueId'
             return;
         }
         res.status(500).json({ message: 'Failed to update queue location' });
+    }
+});
+
+// PATCH /api/queues/:queueId/zoomlink — sets or clears the optional Zoom/Meet URL. TA-owner only.
+router.patch('/:queueId/zoomlink', requireQueueOwnership('queueId'), async (req: Request, res: Response): Promise<void> => {
+    try {
+        const queueId = req.params.queueId as string;
+        const { zoomLink } = ZoomLinkBodySchema.parse(req.body);
+
+        const result: Queue = await prisma.queue.update({
+            where: { id: queueId },
+            data: { zoomLink },
+        });
+
+        const body: QueueResponse = {
+            queue: result,
+            message: zoomLink
+                ? `SUCCESSFULLY UPDATED zoom link`
+                : `SUCCESSFULLY CLEARED zoom link`,
+        };
+        res.status(200).json(body);
+    } catch (error) {
+        if (error instanceof ZodError) {
+            res.status(400).json({ message: 'Invalid input', errors: error.issues });
+            return;
+        }
+        if (error instanceof Error) {
+            res.status(500).json({ message: error.message });
+            return;
+        }
+        res.status(500).json({ message: 'Failed to update zoom link' });
     }
 });
 
