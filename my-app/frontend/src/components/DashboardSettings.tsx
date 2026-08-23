@@ -121,7 +121,7 @@ export const DashboardSettings = ({ prismaUser, supabaseUser, onUpdateSaveChange
 
     return (
         <>
-            <div className="flex min-h-full w-full flex-col bg-white px-4 pb-10 pt-4 sm:px-8 md:px-10">
+            <div className="flex min-h-full w-full flex-col bg-white px-4 pb-16 pt-4 sm:px-6 sm:pb-20 md:px-8">
                 {/* Settings and below layout */}
                 <div className='flex flex-col gap-5 md:gap-6 lg:gap-7'>
                     <h1 className='text-xl md:text-2xl font-semibold'>Settings</h1>
@@ -258,7 +258,7 @@ export const DashboardSettings = ({ prismaUser, supabaseUser, onUpdateSaveChange
                         </div>
                     </div>
                        {/* Save changes button */}
-                       <div className='flex flex-row justify-end gap-3'>
+                       <div className='mt-4 flex flex-row justify-end gap-3 sm:mt-6'>
                         <button 
                             onClick={handleSaveChanges}
                             className="bg-green-600 text-white px-3 py-1 text-sm rounded-sm
