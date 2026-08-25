@@ -301,7 +301,7 @@ export const QueueManagementModal = ({
                 </nav>
 
                 {/* Settings tab */}
-                {isSettingsOpen && <div className='mt-5 flex h-full w-full flex-col gap-10 p-3 pl-5 text-lg text-gray-500'>
+                {isSettingsOpen && <div className='mt-5 flex min-h-0 flex-1 flex-col gap-10 overflow-y-auto p-3 pb-20 pl-5 text-lg text-gray-500'>
 
                     {/* Open / Close queue */}
                     <div className='flex flex-row gap-5 items-center'>

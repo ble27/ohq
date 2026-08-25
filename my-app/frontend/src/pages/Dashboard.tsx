@@ -255,6 +255,11 @@ export const Dashboard = () => {
         return () => window.removeEventListener('resize', syncViewport);
     }, []);
 
+    // Landing/privacy use document scroll; reset so the dashboard shell starts at the top.
+    useEffect(() => {
+        window.scrollTo(0, 0);
+    }, []);
+
     const paneBackgroundClass = isDashboardHome || isDashboardSettings
         ? 'bg-white'
         : isDashboardClass
