@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import axios from 'axios'
 import { ChevronDown, MapPin, Video } from 'lucide-react'
 import { QueueModal } from './QueueModal'
@@ -40,6 +40,11 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ Classes, selectedC
     const [isInactiveModalOpen, setIsInactiveModalOpen] = useState(false);
     // Tracks the queue currently being joined so a double-click can't fire two join requests.
     const [joiningQueueId, setJoiningQueueId] = useState<string | null>(null);
+
+    // Track counter for active queues so user don't have to click to find the active number
+    const [activeQueueCounts, setActiveQueueCounts] = useState<Map<string, number>>(() => new Map());
+    const [isClassDropdownOpen, setIsClassDropdownOpen] = useState(false);
+    const classDropdownRef = useRef<HTMLDivElement>(null);
 
     // Visible queues that will be displayed (will refresh every time queue changes)
     const visibleQueues = queue;
@@ -170,6 +175,44 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ Classes, selectedC
         } 
     };
 
+    useEffect(() => {
+      // Display the number of active queues for each course as a counter
+      const fetchActiveQueues = async () => {
+        try {
+          const response = await axios.get<QueuesListResponse>('/api/queues/active');
+          if (!response.data.queues) return;
+
+          const counts = new Map<string, number>();
+          for (const q of response.data.queues) {
+            const code = q.course?.code;
+            if (!code) continue;
+            counts.set(code, (counts.get(code) ?? 0) + 1);
+          }
+          setActiveQueueCounts(counts);
+        } catch (error) {
+          console.log('Failed to fetch active queues', error);
+        }
+      };
+      void fetchActiveQueues();
+
+      // Poll every 15 seconds
+      const intervalID = setInterval(() => { void fetchActiveQueues(); }, 15000);
+      return () => clearInterval(intervalID);
+    }, []);
+
+    useEffect(() => {
+      if (!isClassDropdownOpen) return;
+
+      const handlePointerDown = (event: MouseEvent) => {
+        if (!classDropdownRef.current?.contains(event.target as Node)) {
+          setIsClassDropdownOpen(false);
+        }
+      };
+
+      document.addEventListener('mousedown', handlePointerDown);
+      return () => document.removeEventListener('mousedown', handlePointerDown);
+    }, [isClassDropdownOpen]);
+    
     const clearQueue = () => {
         setQueue([]);
     }
@@ -262,26 +305,59 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ Classes, selectedC
 
         {/* Class search */}
         <div className="mt-6 flex flex-wrap items-center gap-3">
-          <div className="relative w-full max-w-xs min-w-[12rem] flex-1 sm:max-w-sm">
-            <select
-              name="csce_choices"
+          <div ref={classDropdownRef} className="relative w-full max-w-xs min-w-[12rem] flex-1 sm:max-w-sm">
+            <button
+              type="button"
               id="csce_choices"
               aria-label="Select a class"
-              className="h-11 w-full cursor-pointer appearance-none rounded-full border border-neutral-300 bg-white py-2.5 pl-4 pr-10 text-sm font-medium text-neutral-900 outline-none transition focus:border-neutral-500"
-              value={selectedClass}
-              onChange={(e) => setSelectedClass(e.target.value)}
+              aria-haspopup="listbox"
+              aria-expanded={isClassDropdownOpen}
+              onClick={() => setIsClassDropdownOpen((open) => !open)}
+              className="flex h-11 w-full cursor-pointer items-center justify-between gap-3 rounded-full border border-neutral-300 bg-white py-2.5 pl-4 pr-10 text-left text-sm font-medium text-neutral-900 outline-none transition focus:border-neutral-500"
             >
-              {Classes.map((courseNum: string, index: number) => (
-                <option key={index} value={courseNum} className="bg-white text-neutral-900">
-                  {courseNum}
-                </option>
-              ))}
-            </select>
+              <span className="truncate">{selectedClass}</span>
+              <span className="shrink-0 tabular-nums text-neutral-500">
+                ({activeQueueCounts.get(selectedClass) ?? 0})
+              </span>
+            </button>
             <ChevronDown
               aria-hidden
-              className="pointer-events-none absolute right-3.5 top-1/2 size-4 -translate-y-1/2 text-neutral-400"
+              className={`pointer-events-none absolute right-3.5 top-1/2 size-4 -translate-y-1/2 text-neutral-400 transition-transform ${
+                isClassDropdownOpen ? 'rotate-180' : ''
+              }`}
               strokeWidth={1.75}
             />
+
+            {isClassDropdownOpen && (
+              <ul
+                role="listbox"
+                aria-label="Course options"
+                className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-20 max-h-72 overflow-y-auto rounded-2xl border border-neutral-300 bg-white py-1 shadow-lg"
+              >
+                {Classes.map((courseNum) => {
+                  const count = activeQueueCounts.get(courseNum) ?? 0;
+                  const isSelected = courseNum === selectedClass;
+
+                  return (
+                    <li key={courseNum} role="option" aria-selected={isSelected}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedClass(courseNum);
+                          setIsClassDropdownOpen(false);
+                        }}
+                        className={`flex w-full items-center justify-between gap-4 px-4 py-2.5 text-left text-sm transition hover:bg-neutral-50 ${
+                          isSelected ? 'bg-neutral-100 font-medium text-neutral-900' : 'text-neutral-800'
+                        }`}
+                      >
+                        <span className="truncate">{courseNum}</span>
+                        <span className="shrink-0 tabular-nums text-neutral-500">({count})</span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
           </div>
 
           <button
@@ -395,7 +471,7 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ Classes, selectedC
                 )
               })}
             </div>
-          )}
+          )} 
 
           {isModalOpen && selectedQueue && (
             <QueueModal

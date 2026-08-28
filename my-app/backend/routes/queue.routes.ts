@@ -65,6 +65,26 @@ router.get('/mine', requireRole(Role.TA, Role.PROFESSOR), async (req: AuthedRequ
     }
 });
 
+// GET /api/queues/isOpen 
+// Public api routes to fetch active courses to display the number instead of the user having to manually search for the course
+router.get('/active', async (req: Request, res: Response) => {
+    try {
+        await closeExpiredQueues();
+        const activeQueues = await prisma.queue.findMany({
+            where: { isOpen: true },
+            include: { course: true },
+        });
+
+        const body: QueuesListResponse = {
+            queues: activeQueues,
+            message: 'SUCCESS',
+        };
+        res.status(200).json(body);
+    } catch (error) {
+        res.status(500).json({ message: 'Failed to fetch active queues' });
+    }
+});
+
 // GET /api/queues/course/:courseId — open queues for a course (student join list).
 // Registered before /:id so "course" is not treated as a queue id.
 router.get('/course/:courseId', async (req: Request, res: Response): Promise<void> => { 
