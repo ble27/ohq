@@ -23,6 +23,9 @@ import { DashboardSettings } from '@/components/DashboardSettings';
 import { toast } from 'sonner';
 import notificationAlert from '../sounds/notification_alert.mp3'
 
+const headerIconButtonClass =
+    'inline-flex size-[38px] shrink-0 items-center justify-center rounded-full text-neutral-800 transition-colors [&_svg]:block [&_svg]:shrink-0';
+
 export const Dashboard = () => {
     const location = useLocation();
     const isDashboardClass = location.pathname === '/dashboard/class';
@@ -276,7 +279,7 @@ export const Dashboard = () => {
                 ? '#f8fafc'
                 : '';
 
-    // html/body stay max-width: 1500px; paint the xl gutters to match this view.
+    // Paint html/body gutters to match the active dashboard pane background.
     useEffect(() => {
         if (!paneBackgroundColor) return;
         const html = document.documentElement;
@@ -302,24 +305,24 @@ return (
             }`}
             style={{ WebkitOverflowScrolling: 'touch' }}
         >
-            <header className={`sticky top-0 z-30 flex h-14 shrink-0 items-center px-2 sm:px-3 ${paneBackgroundClass}`}>
+            <header className={`sticky top-0 z-30 flex h-14 shrink-0 items-start px-2 pt-[23px] sm:px-3 ${paneBackgroundClass}`}>
                 {!isDesktop && (
                     <button
                         type="button"
                         aria-label="Open menu"
                         onClick={() => setIsSidebarOpen(true)}
-                        className="rounded-full p-2 text-neutral-800 transition-colors hover:bg-black/5"
+                        className={`${headerIconButtonClass} hover:bg-black/5`}
                     >
-                        <LuPanelLeft size={22} />
+                        <LuPanelLeft size={22} strokeWidth={2} className="translate-y-px" />
                     </button>
                 )}
                 <button
                     type="button"
                     aria-label="Notifications"
                     onClick={() => setIsOpenAlert((prev) => !prev)}
-                    className="ml-auto rounded-full p-2 text-neutral-800 transition-colors hover:bg-gray-100"
+                    className={`${headerIconButtonClass} ml-auto hover:bg-gray-100`}
                 >
-                    <LuBell size={22} />
+                    <LuBell size={21} strokeWidth={2} className="translate-y-px" />
                 </button>
             </header>
             {isOpenAlert && (

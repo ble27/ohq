@@ -11,17 +11,19 @@
   --font-sans: 'Inter', sans-serif;
 }
 
-/* Full-bleed yellow gutters; page content stays capped at 1500px */
+/* Full-bleed yellow gutters on html; landing content is capped in App.tsx.
+   Keep body/#root full viewport width so the scrollbar stays on the viewport edge. */
 html {
   background-color: #fefce8; /* yellow-50 */
   overflow-x: hidden;
+  overflow-y: auto;
   overscroll-behavior: none;
 }
 
 body {
-  margin: 0 auto;
+  margin: 0;
   padding: 0;
-  max-width: 1500px;
+  width: 100%;
   min-height: 100%;
   background-color: #fefce8;
   overflow-x: hidden;
@@ -29,6 +31,7 @@ body {
 }
 
 #root {
+  width: 100%;
   min-height: 100%;
   min-height: 100dvh;
   background-color: inherit;
@@ -163,4 +166,13 @@ body {
 .cn-toast [data-description] {
   color: var(--popover-foreground);
   opacity: 0.85;
+}
+
+/* Scrollable regions without a visible scrollbar */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
 }

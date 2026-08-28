@@ -293,12 +293,13 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ Classes, selectedC
         />
       )}
 
-      <div className="flex min-h-full w-full flex-col bg-neutral-50 px-4 pb-10 pt-4 sm:px-6 md:px-8">
-        <header className="max-w-xl">
+      <div className="flex min-h-full w-full flex-col bg-neutral-50 px-4 pb-10 pt-4 sm:px-6 sm:pb-8 md:px-8">
+        <div className="mx-auto w-full max-w-5xl">
+        <header>
           <h1 className="text-2xl font-semibold tracking-tight text-neutral-900 sm:text-3xl">
             Select a class
           </h1>
-          <p className="mt-2 text-sm leading-relaxed text-neutral-500 sm:text-base">
+          <p className="mt-2 max-w-lg text-sm leading-relaxed text-neutral-500 sm:text-base">
             Choose a course to load active office hour queues.
           </p>
         </header>
@@ -485,6 +486,7 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ Classes, selectedC
             />
           )}
         </section>
+        </div>
       </div>
     </>
   );

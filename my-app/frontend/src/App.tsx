@@ -40,10 +40,10 @@ function App() {
           <Routes>
             <Route path='/'
               element={
-                <>
+                <div className="mx-auto w-full max-w-[1500px]">
                   <Header featuresRef={featuresRef} />
                   <Body featuresRef={featuresRef} />
-                </>
+                </div>
               }
             />
             <Route path='/privacy' element={<PrivacyPage />} />

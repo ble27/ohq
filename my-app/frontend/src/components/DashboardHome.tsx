@@ -40,7 +40,8 @@ export const Home = () => {
     }
 
     return (
-        <div className="flex bg-white min-h-full w-full flex-col px-4 pb-8 pt-4 sm:px-6 md:px-8 lg:pr-12">
+        <div className="flex min-h-full w-full flex-col bg-white px-4 pb-8 pt-4 sm:px-6 sm:pb-8 md:px-8">
+            <div className="mx-auto w-full max-w-5xl">
             <div className="flex w-full flex-row items-center p-3 text-xl font-semibold sm:text-2xl">
                 My Tickets
             </div>
@@ -63,6 +64,7 @@ export const Home = () => {
                         onLeave={handleLeaveTicket}
                     />
                 ))}
+            </div>
             </div>
         </div>
     )
