@@ -341,7 +341,8 @@ export const QueueManager = ({
                         <button
                             type="submit"
                             disabled={isCreating || !courseId || !location.trim() || !user}
-                            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50 sm:col-span-2"
+                            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-blue-300 
+                            px-5 text-sm font-medium text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-100 sm:col-span-2"
                         >
                             <Plus className="size-4 shrink-0" />
                             <span className="truncate">{isCreating ? 'Creating…' : 'Create queue'}</span>

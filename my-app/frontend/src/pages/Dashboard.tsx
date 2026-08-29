@@ -6,7 +6,9 @@ import { useLocation } from 'react-router-dom';
 import { QueueManager, type CreateQueueInput } from '@/components/DashboardQueueManager';
 import { VerifyTA } from '@/components/TAVerification';
 import { NotificationPanel } from '@/components/notifications/NotificationPanel'
-import { LuBell, LuPanelLeft } from 'react-icons/lu'
+import { InstructionsPanel } from '@/components/notifications/InstructionsPanel'
+import { getDashboardView, VIEW_INSTRUCTIONS } from '@/data/viewInstructions'
+import { LuBell, LuPanelLeft, LuScrollText } from 'react-icons/lu'
 import type {
     ApiMessageResponse,
     Course,
@@ -32,6 +34,8 @@ export const Dashboard = () => {
     const isDashboardHome = location.pathname === '/dashboard' || location.pathname === '/dashboard/home';
     const isDashboardQueueManager = location.pathname === '/dashboard/queuemanager';
     const isDashboardSettings = location.pathname === '/dashboard/settings';
+    const currentView = getDashboardView(location.pathname);
+    const currentInstructions = VIEW_INSTRUCTIONS[currentView];
     // Supabase user
     const { user, prismaUser, refreshUser } = useAuth();
 
@@ -55,7 +59,8 @@ export const Dashboard = () => {
 
     // Inbox lives on Dashboard so it stays mounted across Class / Home / Queue Manager
     const [isOpenAlert, setIsOpenAlert] = useState(false);
-
+    const [isOpenScroll, setIsOpenScroll] = useState(false);
+    
     // This include ticket.student and queue.ta from forward relations
     const [notifications, setNotifications] = useState<NotificationWithDetails[]>([]);
 
@@ -153,7 +158,7 @@ export const Dashboard = () => {
             playNotificationsSound();
         };
         // socket auto pass in params to onCreated
-        // Each notification is already routed to a specific id on the backend using .to().emit()
+        // Each notification is already routed to a specific id in the backend using .to().emit()
         socket.on('notification-created', onCreated);
         return () => {
             // onCreated(n);
@@ -263,6 +268,11 @@ export const Dashboard = () => {
         window.scrollTo(0, 0);
     }, []);
 
+    useEffect(() => {
+        setIsOpenAlert(false);
+        setIsOpenScroll(false);
+    }, [location.pathname]);
+
     const paneBackgroundClass = isDashboardHome || isDashboardSettings
         ? 'bg-white'
         : isDashboardClass
@@ -305,7 +315,7 @@ return (
             }`}
             style={{ WebkitOverflowScrolling: 'touch' }}
         >
-            <header className={`sticky top-0 z-30 flex h-14 shrink-0 items-start px-2 pt-[23px] sm:px-3 ${paneBackgroundClass}`}>
+            <header className={`sticky top-0 z-30 flex h-14 shrink-0 items-start overflow-visible px-2 pt-[23px] sm:px-3 ${paneBackgroundClass}`}>
                 {!isDesktop && (
                     <button
                         type="button"
@@ -316,21 +326,49 @@ return (
                         <LuPanelLeft size={22} strokeWidth={2} className="translate-y-px" />
                     </button>
                 )}
-                <button
-                    type="button"
-                    aria-label="Notifications"
-                    onClick={() => setIsOpenAlert((prev) => !prev)}
-                    className={`${headerIconButtonClass} ml-auto hover:bg-gray-100`}
-                >
-                    <LuBell size={21} strokeWidth={2} className="translate-y-px" />
-                </button>
+
+                {/* Icon buttons */}
+                <div className="relative flex flex-1 items-end justify-end h-full w-full gap-4 pr-2 mt-2">
+                    <div className="relative">
+                        <button
+                            type="button"
+                            aria-label="Instructions"
+                            aria-expanded={isOpenScroll}
+                            onClick={() => {
+                                setIsOpenAlert(false);
+                                setIsOpenScroll((prev) => !prev);
+                            }}
+                            className={headerIconButtonClass}
+                        >
+                            <LuScrollText size={22} />
+                        </button>
+                        {isOpenScroll && (
+                            <InstructionsPanel instruction={currentInstructions} />
+                        )}
+                    </div>
+                    <div className="relative">
+                        <button
+                            type="button"
+                            aria-label="Notifications"
+                            aria-expanded={isOpenAlert}
+                            onClick={() => {
+                                setIsOpenScroll(false);
+                                setIsOpenAlert((prev) => !prev);
+                            }}
+                            className={headerIconButtonClass}
+                        >
+                            <LuBell size={22} strokeWidth={2} />
+                        </button>
+                        {isOpenAlert && (
+                            <NotificationPanel
+                                notifications={notifications}
+                                onClearAll={clearAllNotifications}
+                            />
+                        )}
+                    </div>
+                </div>
+
             </header>
-            {isOpenAlert && (
-                <NotificationPanel
-                    notifications={notifications}
-                    onClearAll={clearAllNotifications}
-                />
-            )}
             {isDashboardClass && <ClassSelector Classes={Classes} selectedClass={selectedClass} setSelectedClass={setSelectedClass}/>}
             {isDashboardHome && <Home />}
             {isDashboardQueueManager && (

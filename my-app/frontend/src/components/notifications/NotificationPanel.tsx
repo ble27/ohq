@@ -14,9 +14,9 @@ export const NotificationPanel = ({
     // notification.ticket and notification.queue
     return (
         <div
-            className="fixed top-14 right-3 z-40 m-0 flex h-[min(280px,50dvh)] w-[min(280px,calc(100vw-1.5rem))] min-h-0 flex-col overflow-x-hidden overflow-y-auto
+            className="absolute top-full right-4 z-40 mt-2 flex h-[min(280px,50dvh)] w-[min(280px,calc(100vw-1.5rem))] min-h-0 flex-col overflow-x-hidden overflow-y-auto
                 rounded-lg border border-black/20 bg-white px-4 shadow-xl backdrop-blur-lg
-                sm:right-6 lg:right-10 xl:right-16 xl:h-80 xl:w-80"
+                xl:h-80 xl:w-80"
         >
             <div className="flex h-15 flex-row items-center justify-between">
                 <span className="text-lg font-semibold">Notifications</span>

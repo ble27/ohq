@@ -333,7 +333,7 @@ export const QueueManagementModal = ({
                         <input
                             type="text"
                             id="room_location"
-                            className='outline-none text-gray-500 ml-3 w-35'
+                            className='text-gray-500 ml-3 w-35'
                             value={roomLocation}
                             onChange={(e) => setRoomLocation(e.target.value)}
                             placeholder="e.g. Room 101"
@@ -346,9 +346,14 @@ export const QueueManagementModal = ({
                         <input
                             type="url"
                             id="zoom_link"
-                            className='outline-none text-gray-500 ml-3 min-w-0 flex-1'
+                            className=' text-gray-500 ml-3 min-w-0 flex-1 max-w-90 overflow-x-auto'
                             value={zoomLink}
-                            onChange={(e) => setZoomLink(e.target.value)}
+                            onChange={(e) => {
+                                const value = e.target.value;
+                                if (value === " " || value.startsWith("https://zoom.us/")) {
+                                    setZoomLink(e.target.value)
+                                }
+                            }}
                             placeholder="https://zoom.us/j/… (optional)"
                         />
                     </div>
@@ -359,7 +364,6 @@ export const QueueManagementModal = ({
                             type="time" 
                             onChange={e => {setStartTime(e.target.value)}}
                             value={startTime}
-                            className='outline-none'
                             />
 
                         <label htmlFor="end_time">End: </label>
@@ -367,7 +371,6 @@ export const QueueManagementModal = ({
                             type="time" 
                             onChange={e => {setEndTime(e.target.value)}}
                             value={endTime}
-                            className='outline-none'
                             />
                     </div>
 
