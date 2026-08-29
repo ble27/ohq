@@ -18,6 +18,7 @@ import {
 } from '../schemas/queue.schema.js';
 import { ZodError } from 'zod';
 import { closeExpiredQueues, isWithinQueueHours } from '../services/queue.services.js';
+import { closeQueuesOnTaLeave } from '../services/taPresence.service.js';
 import { requireQueueOwnership, requireRole } from '../middlewares/authz.middleware.js';
 import type { AuthedRequest } from '../middlewares/authz.middleware.js';
 
@@ -62,6 +63,20 @@ router.get('/mine', requireRole(Role.TA, Role.PROFESSOR), async (req: AuthedRequ
             return;
         }
         res.status(500).json({ message: 'Failed to fetch queues' });
+    }
+});
+
+// POST /api/queues/close-on-leave — immediately close all open queues for the caller (TA/PROFESSOR).
+router.post('/close-on-leave', requireRole(Role.TA, Role.PROFESSOR), async (req: AuthedRequest, res: Response): Promise<void> => {
+    try {
+        const queueIds = await closeQueuesOnTaLeave(req.user!.id);
+        res.status(200).json({ queueIds, message: 'SUCCESS' });
+    } catch (error: unknown) {
+        if (error instanceof Error) {
+            res.status(500).json({ message: error.message });
+            return;
+        }
+        res.status(500).json({ message: 'Failed to close queues on leave' });
     }
 });
 

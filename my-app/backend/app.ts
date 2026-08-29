@@ -30,6 +30,11 @@ const ALLOWED_ORIGINS = (process.env.CORS_ORIGINS ?? 'http://localhost:5173,http
 // Socket Services helpers
 import { listActiveTickets, assertQueueViewer } from './services/queue.services.js';
 import { startHelping, completeTicket } from './services/queue.services.js';
+import {
+  isQueueManagerUser,
+  registerTaSocket,
+  unregisterTaSocket,
+} from './services/taPresence.service.js';
 
 /**
  * Loads the queue a ticket belongs to and confirms the caller manages it
@@ -73,6 +78,11 @@ io.on('connection', async (socket: Socket) => {
   // join the userId room 
   await socket.join(`user:${userId}`);
 
+  const tracksTaPresence = userId ? await isQueueManagerUser(userId) : false;
+  if (tracksTaPresence && userId) {
+    registerTaSocket(userId, socket.id);
+  }
+
   const reportSocketError = (event: string, error: unknown) => {
     const message = error instanceof Error ? error.message : 'Unexpected socket error';
     console.error(`[SOCKET] ${event} failed for user ${userId}:`, message);
@@ -81,8 +91,10 @@ io.on('connection', async (socket: Socket) => {
 
   // console.log(`User connected: ${userId}`);
 
-  socket.on('disconnect', (reason) => {
-    // console.log(`User ${userId} disconnected: ${reason}`);
+  socket.on('disconnect', () => {
+    if (tracksTaPresence && userId) {
+      unregisterTaSocket(userId, socket.id);
+    }
   });
 
   // Room subscriptions never create or update queue tickets, but the room does

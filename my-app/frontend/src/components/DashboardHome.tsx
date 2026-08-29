@@ -52,8 +52,8 @@ export const Home = () => {
                 </span>
             )}
 
-            {/* 1 col < lg; 2 from lg (~content ≥720px with sidebar); 3 from xl */}
-            <div className="mt-8 grid grid-cols-1 gap-5 sm:mt-10 sm:gap-6 lg:grid-cols-2 xl:grid-cols-3">
+            {/* 1 col on small screens; 2 cols from lg so each ticket has enough room for full details */}
+            <div className="mt-8 grid grid-cols-1 gap-5 sm:mt-10 sm:gap-6 lg:grid-cols-2">
                 {tickets.map((ticket) => (
                     <QueueTicketComp
                         key={ticket.id}

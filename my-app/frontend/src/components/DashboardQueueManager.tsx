@@ -40,6 +40,7 @@ interface QueueManagerProps {
     createdQueues: Queue[]
     courses: Course[]
     isLoading: boolean
+    onOpenSidebar?: () => void
     // onCreateQueue is a prop for a function in the parent component
     onCreateQueue: (input: CreateQueueInput) => void | Promise<void>
     onDeleteQueue: (queueId: string) => void | Promise<void>
@@ -50,6 +51,7 @@ export const QueueManager = ({
     createdQueues,
     courses,
     isLoading,
+    onOpenSidebar,
     onCreateQueue,
     onDeleteQueue,
     onUpdateQueue
@@ -250,6 +252,7 @@ export const QueueManager = ({
                     setIsViewingManagementModal={setIsViewingManagementModal}
                     onQueueClosing={removeTicketsWhenClosed}
                     onTimeChange={handleUpdateQueueTime}
+                    onOpenSidebar={onOpenSidebar}
                 />
             )}
 

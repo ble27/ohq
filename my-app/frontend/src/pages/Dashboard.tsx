@@ -4,7 +4,7 @@ import { Home } from '@/components/DashboardHome';
 import { Sidebar, MOBILE_BREAKPOINT } from '../components/Sidebar'
 import { useLocation } from 'react-router-dom';
 import { QueueManager, type CreateQueueInput } from '@/components/DashboardQueueManager';
-import { VerifyTA } from '@/components/TAVerification';
+import { VerifyTA, DASHBOARD_MAIN_PANE_ID } from '@/components/TAVerification';
 import { NotificationPanel } from '@/components/notifications/NotificationPanel'
 import { InstructionsPanel } from '@/components/notifications/InstructionsPanel'
 import { getDashboardView, VIEW_INSTRUCTIONS } from '@/data/viewInstructions'
@@ -60,6 +60,7 @@ export const Dashboard = () => {
     // Inbox lives on Dashboard so it stays mounted across Class / Home / Queue Manager
     const [isOpenAlert, setIsOpenAlert] = useState(false);
     const [isOpenScroll, setIsOpenScroll] = useState(false);
+    const [isTaVerificationPending, setIsTaVerificationPending] = useState(false);
     
     // This include ticket.student and queue.ta from forward relations
     const [notifications, setNotifications] = useState<NotificationWithDetails[]>([]);
@@ -163,6 +164,25 @@ export const Dashboard = () => {
         return () => {
             // onCreated(n);
             socket.off('notification-created', onCreated);
+        };
+    }, [socket]);
+
+    useEffect(() => {
+        if (!socket) return;
+
+        // Destructuring with type annotation
+        const onTaQueuesClosed = ({ queueIds }: { queueIds: string[] }) => {
+            const closedIds = new Set(queueIds);
+            setCreatedQueues((previousQueues) =>
+                previousQueues.map((queue) =>
+                    closedIds.has(queue.id) ? { ...queue, isOpen: false } : queue,
+                ),
+            );
+        };
+
+        socket.on('ta-queues-closed', onTaQueuesClosed);
+        return () => {
+            socket.off('ta-queues-closed', onTaQueuesClosed);
         };
     }, [socket]);
 
@@ -273,6 +293,12 @@ export const Dashboard = () => {
         setIsOpenScroll(false);
     }, [location.pathname]);
 
+    useEffect(() => {
+        if (!isTaVerificationPending) return;
+        setIsOpenAlert(false);
+        setIsOpenScroll(false);
+    }, [isTaVerificationPending]);
+
     const paneBackgroundClass = isDashboardHome || isDashboardSettings
         ? 'bg-white'
         : isDashboardClass
@@ -308,6 +334,7 @@ return (
     <div className={`flex h-dvh w-full overflow-hidden m-0 p-0 ${paneBackgroundClass}`} onPointerDown={() => playNotificationsSound(true)}>
         <Sidebar isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen}/>
         <div
+            id={DASHBOARD_MAIN_PANE_ID}
             className={`relative flex min-h-0 min-w-0 flex-1 flex-col ${paneBackgroundClass} ${
                 isSidebarOpen && !isDesktop
                     ? 'overflow-hidden'
@@ -315,64 +342,74 @@ return (
             }`}
             style={{ WebkitOverflowScrolling: 'touch' }}
         >
-            <header className={`sticky top-0 z-30 flex h-14 shrink-0 items-start overflow-visible px-2 pt-[23px] sm:px-3 ${paneBackgroundClass}`}>
+            <header className={`sticky top-0 flex h-14 shrink-0 items-start overflow-visible px-2 pt-[23px] sm:px-3 ${
+                isTaVerificationPending ? 'bg-transparent z-[60]' : `${paneBackgroundClass} z-30`
+            }`}>
                 {!isDesktop && (
                     <button
                         type="button"
                         aria-label="Open menu"
                         onClick={() => setIsSidebarOpen(true)}
-                        className={`${headerIconButtonClass} hover:bg-black/5`}
+                        className={`${headerIconButtonClass} ${
+                            isTaVerificationPending
+                                ? 'text-white hover:bg-white/10'
+                                : 'hover:bg-black/5'
+                        }`}
                     >
                         <LuPanelLeft size={22} strokeWidth={2} className="translate-y-px" />
                     </button>
                 )}
 
-                {/* Icon buttons */}
-                <div className="relative flex flex-1 items-end justify-end h-full w-full gap-4 pr-2 mt-2">
-                    <div className="relative">
-                        <button
-                            type="button"
-                            aria-label="Instructions"
-                            aria-expanded={isOpenScroll}
-                            onClick={() => {
-                                setIsOpenAlert(false);
-                                setIsOpenScroll((prev) => !prev);
-                            }}
-                            className={headerIconButtonClass}
-                        >
-                            <LuScrollText size={22} />
-                        </button>
-                        {isOpenScroll && (
-                            <InstructionsPanel instruction={currentInstructions} />
-                        )}
+                {/* Icon buttons — hidden while TA verification gate is active */}
+                {!isTaVerificationPending && (
+                    <div className="relative flex flex-1 items-end justify-end h-full w-full gap-4 pr-2 mt-2">
+                        <div className="relative">
+                            <button
+                                type="button"
+                                aria-label="Instructions"
+                                aria-expanded={isOpenScroll}
+                                onClick={() => {
+                                    setIsOpenAlert(false);
+                                    setIsOpenScroll((prev) => !prev);
+                                }}
+                                className={headerIconButtonClass}
+                            >
+                                <LuScrollText size={22} />
+                            </button>
+                            {isOpenScroll && (
+                                <InstructionsPanel instruction={currentInstructions} />
+                            )}
+                        </div>
+                        <div className="relative">
+                            <button
+                                type="button"
+                                aria-label="Notifications"
+                                aria-expanded={isOpenAlert}
+                                onClick={() => {
+                                    setIsOpenScroll(false);
+                                    setIsOpenAlert((prev) => !prev);
+                                }}
+                                className={headerIconButtonClass}
+                            >
+                                <LuBell size={22} strokeWidth={2} />
+                            </button>
+                            {isOpenAlert && (
+                                <NotificationPanel
+                                    notifications={notifications}
+                                    onClearAll={clearAllNotifications}
+                                />
+                            )}
+                        </div>
                     </div>
-                    <div className="relative">
-                        <button
-                            type="button"
-                            aria-label="Notifications"
-                            aria-expanded={isOpenAlert}
-                            onClick={() => {
-                                setIsOpenScroll(false);
-                                setIsOpenAlert((prev) => !prev);
-                            }}
-                            className={headerIconButtonClass}
-                        >
-                            <LuBell size={22} strokeWidth={2} />
-                        </button>
-                        {isOpenAlert && (
-                            <NotificationPanel
-                                notifications={notifications}
-                                onClearAll={clearAllNotifications}
-                            />
-                        )}
-                    </div>
-                </div>
+                )}
 
             </header>
             {isDashboardClass && <ClassSelector Classes={Classes} selectedClass={selectedClass} setSelectedClass={setSelectedClass}/>}
             {isDashboardHome && <Home />}
             {isDashboardQueueManager && (
-                <VerifyTA>
+                <VerifyTA
+                    onPendingChange={setIsTaVerificationPending}
+                >
                     <QueueManager
                         onCreateQueue={handleCreateQueue}
                         onDeleteQueue={handleDeleteQueue}
@@ -380,6 +417,7 @@ return (
                         createdQueues={createdQueues}
                         courses={courses}
                         isLoading={isLoadingQueues}
+                        onOpenSidebar={() => setIsSidebarOpen(true)}
                     />
                 </VerifyTA>
             )}
