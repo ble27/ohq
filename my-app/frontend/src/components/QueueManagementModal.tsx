@@ -1,5 +1,5 @@
 import type { Queue, QueueTicket, QueueTicketWithStudent } from '@shared/types';
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import axios from 'axios';
 import { LuX } from 'react-icons/lu';
 import { Button } from './ui/button';
@@ -212,25 +212,26 @@ export const QueueManagementModal = ({
     // WORKSPACE
     // Sync live ticket every time a single ticket transitions state useful for Workspace and Waitlist
     // For WAITING & HELPING tickets
-    const refreshActive = async () => {
+    const refreshActive = useCallback(async () => {
         const queueId = queue?.id;
         if (!queueId) return;
         const response = await axios.get(`/api/queueticket/queues/${queueId}`);   
         // Sync new states includes WAIITNG & HELPING tickets
         setTickets(response.data.tickets);
-    } 
+    }, [queue, setTickets]);
 
     // Sync completed ticket for queue ID
     // For COMPLETED tickets
-    const refreshCompleted = async () => {
+    const refreshCompleted = useCallback(async () => {
         try {
             const queueId = queue?.id;
+            if (!queueId) return;
             const response = await axios.get(`/api/queueticket/queues/${queueId}/status/completed`);
             setCompletedTickets(response.data.tickets);
         } catch (error) {
             console.log('Failed to fetch completed tickets', error);
         }
-    }
+    }, [queue]);
 
     // Notification
     /* 
@@ -250,10 +251,10 @@ export const QueueManagementModal = ({
 
     useEffect(() => {
         // Fetch-on-mount: both refresh async data and update state after the network call resolves.
-        refreshActive();
+        void refreshActive();
         // eslint-disable-next-line react-hooks/set-state-in-effect
-        refreshCompleted();
-    }, [queue?.id])
+        void refreshCompleted();
+    }, [refreshActive, refreshCompleted]);
 
     return (
         <div className="fixed inset-0 z-100 flex h-dvh w-screen flex-col items-center justify-center gap-3 bg-black/40 text-black">

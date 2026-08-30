@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react" 
 import { useAuth } from "@/context/AuthContextProvider"
 import { DeleteUserAccountConfirmation } from "./DeleteUserAccountConfirmation";
-import { deleteAccount, getMeSupabase, signOut } from "@/services/authService";
+import { deleteAccount, signOut } from "@/services/authService";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import type { User as PrismaUser } from "@shared/types";

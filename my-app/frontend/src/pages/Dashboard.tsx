@@ -99,7 +99,7 @@ export const Dashboard = () => {
 
     // First call with unlockOnly=true must happen from a user gesture (browser autoplay policy).
     // Later calls play the alert for real.
-    const playNotificationsSound = (unlockOnly = false) => {
+    const playNotificationsSound = useCallback((unlockOnly = false) => {
         const audio = notificationAudioRef.current;
         if (!audio) return;
 
@@ -124,7 +124,7 @@ export const Dashboard = () => {
         void audio.play().catch((error) => {
             console.warn('Failed to play notification sound', error);
         });
-    };
+    }, [prismaUser?.notifySound]);
 
     useEffect(() => {
         if (!socket) return;
@@ -169,7 +169,7 @@ export const Dashboard = () => {
             // onCreated(n);
             socket.off('notification-created', onCreated);
         };
-    }, [socket]);
+    }, [socket, playNotificationsSound]);
 
     useEffect(() => {
         if (!socket) return;
