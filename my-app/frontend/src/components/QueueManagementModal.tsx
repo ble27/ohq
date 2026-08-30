@@ -25,7 +25,7 @@ export const QueueManagementModal = ({
     onUpdateQueue,
     setIsViewingManagementModal,
     onQueueClosing, 
-    onTimeChange
+    onTimeChange,
 }: QueueManagementModalProps) => {
     const toTimeInput = (value: Date | string | null | undefined) => {
     if (!value || value === 'null' || value === 'undefined') {
@@ -51,6 +51,7 @@ export const QueueManagementModal = ({
     // Save all these settings at once
     const [isQueueOpen, setIsQueueOpen] = useState(queue?.isOpen ?? true);
     const [roomLocation, setRoomLocation] = useState(queue?.location ?? '');
+    const [zoomLink, setZoomLink] = useState(queue?.zoomLink ?? '');
     const [startTime, setStartTime] = useState(toTimeInput(queue?.startsAt) ?? '08:00');
     const [endTime, setEndTime] = useState(toTimeInput(queue?.endsAt) ?? '09:00');
 
@@ -83,6 +84,22 @@ export const QueueManagementModal = ({
             );
             if (response.status !== 200) return null;
             console.log(`SUCCESSFULLY changed queue location to ${trimmedLocation}`);
+            return response.data.queue as Queue;
+        } catch (error) {
+            console.log(error);
+            return null;
+        }
+    }
+
+    const handleChangeZoomLink = async (): Promise<Queue | null> => {
+        const trimmedZoom = zoomLink.trim();
+        const nextZoom = trimmedZoom || null;
+        if (!queue || (queue.zoomLink ?? null) === nextZoom) return queue;
+        try {
+            const response = await axios.patch(`/api/queues/${queue.id}/zoomlink`, {
+                zoomLink: nextZoom,
+            });
+            if (response.status !== 200) return null;
             return response.data.queue as Queue;
         } catch (error) {
             console.log(error);
@@ -136,6 +153,22 @@ export const QueueManagementModal = ({
                 return;
             }
         }
+
+        const trimmedZoom = zoomLink.trim();
+        const nextZoom = trimmedZoom || null;
+        if ((queue?.zoomLink ?? null) !== nextZoom) {
+            try {
+                updatedQueue = await handleChangeZoomLink();
+                if (!updatedQueue) {
+                    console.log('Failed to change zoom link');
+                    return;
+                }
+                didUpdate = true;
+            } catch (error) {
+                console.log('Unable to change zoom link', error);
+                return;
+            }
+        }
         
         // Change queue status only when queue's original status doesn't equal new status (API)
         if (queue?.isOpen !== isQueueOpen) {
@@ -170,6 +203,7 @@ export const QueueManagementModal = ({
     const handleCancelChanges = () => {
         setIsQueueOpen(queue?.isOpen ?? true);
         setRoomLocation(queue?.location ?? '');
+        setZoomLink(queue?.zoomLink ?? '');
         setStartTime(toTimeInput(queue?.startsAt));
         setEndTime(toTimeInput(queue?.endsAt));
         setIsViewingManagementModal(false);
@@ -222,13 +256,13 @@ export const QueueManagementModal = ({
     }, [queue?.id])
 
     return (
-        <div className="fixed inset-0 flex flex-col items-center justify-center w-screen h-screen gap-3 bg-black/40 text-black z-100">
-            <div className="relative mx-4 flex h-[684px] max-h-[1000px] w-full max-w-[600px] flex-col overflow-hidden rounded-lg bg-white">
-                <nav className='relative flex h-[50px] w-full shrink-0 flex-row gap-5 pt-5 pl-5 text-lg'>
-                    <div className='flex flex-row justify-between gap-5 w-2/3'>
+        <div className="fixed inset-0 z-100 flex h-dvh w-screen flex-col items-center justify-center gap-3 bg-black/40 text-black">
+            <div className="relative mx-4 flex h-[684px] max-h-[min(684px,calc(100dvh-5rem))] w-full max-w-[600px] flex-col overflow-hidden rounded-lg bg-white max-sm:mx-3 max-sm:max-h-[calc(100dvh-6rem)]">
+                <nav className='flex h-[50px] w-full shrink-0 flex-row items-center gap-3 pt-5 pl-3 pr-3 text-lg sm:gap-5 sm:pl-5'>
+                    <div className='flex min-w-0 flex-1 flex-row items-center gap-8 sm:gap-10'>
                         {/* Settings */}
                         <button 
-                            className={`${isSettingsOpen ? 'text-black' : 'text-gray-500/70'} hover:opacity-80`}
+                            className={`${isSettingsOpen ? 'text-black' : 'text-gray-500/70'} shrink-0 hover:opacity-80`}
                             onClick={() => {
                                 setIsSettingsOpen(true);
                                 setIsQueueModalOpen(false);
@@ -240,7 +274,7 @@ export const QueueManagementModal = ({
 
                         {/* Waitlist */}
                         <button 
-                            className={`${isQueueModalOpen ? 'text-black' : 'text-gray-500/70'} hover:opacity-80`}
+                            className={`${isQueueModalOpen ? 'text-black' : 'text-gray-500/70'} shrink-0 hover:opacity-80`}
                             onClick={() => {
                                 setIsSettingsOpen(false);
                                 setIsQueueModalOpen(true);
@@ -252,7 +286,7 @@ export const QueueManagementModal = ({
 
                         {/* Workspace */}
                         <button 
-                            className={`${isWorkspaceOpen ? 'text-black' : 'text-gray-500/70'} hover:opacity-80`}
+                            className={`${isWorkspaceOpen ? 'text-black' : 'text-gray-500/70'} shrink-0 hover:opacity-80`}
                             onClick={() => {
                                 setIsSettingsOpen(false);
                                 setIsQueueModalOpen(false);
@@ -262,12 +296,12 @@ export const QueueManagementModal = ({
                             <span> Workspace </span>
                         </button>
                     </div>
-                   
-                    <LuX onClick={() => setTimeout(() => setIsViewingManagementModal(false), 100)} className='flex absolute items-center right-3 hover:opacity-80'color='black' size={25}/>
+
+                    <LuX onClick={() => setTimeout(() => setIsViewingManagementModal(false), 100)} className='flex shrink-0 items-center hover:opacity-80' color='black' size={25}/>
                 </nav>
 
                 {/* Settings tab */}
-                {isSettingsOpen && <div className='mt-5 flex h-full w-full flex-col gap-10 p-3 pl-5 text-lg text-gray-500'>
+                {isSettingsOpen && <div className='mt-5 flex min-h-0 flex-1 flex-col gap-10 overflow-y-auto p-3 pb-20 pl-5 text-lg text-gray-500'>
 
                     {/* Open / Close queue */}
                     <div className='flex flex-row gap-5 items-center'>
@@ -299,10 +333,28 @@ export const QueueManagementModal = ({
                         <input
                             type="text"
                             id="room_location"
-                            className='outline-none text-gray-500 ml-3 w-35'
+                            className='text-gray-500 ml-3 w-35'
                             value={roomLocation}
                             onChange={(e) => setRoomLocation(e.target.value)}
                             placeholder="e.g. Room 101"
+                        />
+                    </div>
+
+                    {/* Optional Zoom / remote link */}
+                    <div className='flex flex-row items-center'>
+                        <label htmlFor="zoom_link">Zoom link: </label>
+                        <input
+                            type="url"
+                            id="zoom_link"
+                            className=' text-gray-500 ml-3 min-w-0 flex-1 max-w-90 overflow-x-auto'
+                            value={zoomLink}
+                            onChange={(e) => {
+                                const value = e.target.value;
+                                if (value === " " || value.startsWith("https://zoom.us/")) {
+                                    setZoomLink(e.target.value)
+                                }
+                            }}
+                            placeholder="https://zoom.us/j/… (optional)"
                         />
                     </div>
                     {/* Start / end time manual configuration */}
@@ -312,7 +364,6 @@ export const QueueManagementModal = ({
                             type="time" 
                             onChange={e => {setStartTime(e.target.value)}}
                             value={startTime}
-                            className='outline-none'
                             />
 
                         <label htmlFor="end_time">End: </label>
@@ -320,7 +371,6 @@ export const QueueManagementModal = ({
                             type="time" 
                             onChange={e => {setEndTime(e.target.value)}}
                             value={endTime}
-                            className='outline-none'
                             />
                     </div>
 

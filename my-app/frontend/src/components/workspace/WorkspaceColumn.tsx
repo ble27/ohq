@@ -28,9 +28,9 @@ export const WorkspaceColumn = ({
                     <span className="text-sm tracking-wide font-semibold tracking-tight text-slate-900">{title}</span> 
                     {title === 'Completed' && (
                     <button 
-                        className='text-xs text-red-600 font-medium px-2 py-1 rounded-full border border-red-500 hover:bg-red-500 hover:text-black tracking-wide'
+                        className='text-xs text-red-600 font-medium px-2 py-1 rounded-full border border-red-500 hover:bg-red-500 hover:text-black tracking-wide hover:text-white'
                         onClick={onClearCompletedTickets}> 
-                        Clear all 
+                        Clear tickets
                     </button>
                     )} 
                 </div> 

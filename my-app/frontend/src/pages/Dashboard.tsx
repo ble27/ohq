@@ -4,9 +4,11 @@ import { Home } from '@/components/DashboardHome';
 import { Sidebar, MOBILE_BREAKPOINT } from '../components/Sidebar'
 import { useLocation } from 'react-router-dom';
 import { QueueManager, type CreateQueueInput } from '@/components/DashboardQueueManager';
-import { VerifyTA } from '@/components/TAVerification';
+import { VerifyTA, DASHBOARD_MAIN_PANE_ID } from '@/components/TAVerification';
 import { NotificationPanel } from '@/components/notifications/NotificationPanel'
-import { LuBell, LuPanelLeft } from 'react-icons/lu'
+import { InstructionsPanel } from '@/components/notifications/InstructionsPanel'
+import { getDashboardView, VIEW_INSTRUCTIONS } from '@/data/viewInstructions'
+import { LuBell, LuPanelLeft, LuScrollText } from 'react-icons/lu'
 import type {
     ApiMessageResponse,
     Course,
@@ -23,12 +25,17 @@ import { DashboardSettings } from '@/components/DashboardSettings';
 import { toast } from 'sonner';
 import notificationAlert from '../sounds/notification_alert.mp3'
 
+const headerIconButtonClass =
+    'inline-flex size-[38px] shrink-0 items-center justify-center rounded-full text-neutral-800 transition-colors [&_svg]:block [&_svg]:shrink-0';
+
 export const Dashboard = () => {
     const location = useLocation();
     const isDashboardClass = location.pathname === '/dashboard/class';
     const isDashboardHome = location.pathname === '/dashboard' || location.pathname === '/dashboard/home';
     const isDashboardQueueManager = location.pathname === '/dashboard/queuemanager';
     const isDashboardSettings = location.pathname === '/dashboard/settings';
+    const currentView = getDashboardView(location.pathname);
+    const currentInstructions = VIEW_INSTRUCTIONS[currentView];
     // Supabase user
     const { user, prismaUser, refreshUser } = useAuth();
 
@@ -52,23 +59,28 @@ export const Dashboard = () => {
 
     // Inbox lives on Dashboard so it stays mounted across Class / Home / Queue Manager
     const [isOpenAlert, setIsOpenAlert] = useState(false);
-
+    const [isOpenScroll, setIsOpenScroll] = useState(false);
+    const [isTaVerificationPending, setIsTaVerificationPending] = useState(false);
+    
     // This include ticket.student and queue.ta from forward relations
     const [notifications, setNotifications] = useState<NotificationWithDetails[]>([]);
 
-    const liveDate = new Date();
+    // Computed fresh per call (not per render) so toasts always show the time the
+    // event actually arrived, not whatever time it was when the socket listener
+    // effect below last ran.
+    const getFormattedNotificationTime = () => {
+        const formattedDynamicDate = new Intl.DateTimeFormat('en-US', {
+            weekday: 'long',
+            month: 'long',
+            day: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true
+        }).format(new Date());
 
-    const formattedDynamicDate = new Intl.DateTimeFormat('en-US', {
-    weekday: 'long',
-    month: 'long',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true
-    }).format(liveDate);
-
-    // Inserts the word "at" naturally into the string
-    const finalDisplayString = formattedDynamicDate.replace(/,([^,]*)$/, ' at$1');
+        // Inserts the word "at" naturally into the string
+        return formattedDynamicDate.replace(/,([^,]*)$/, ' at$1');
+    };
 
     const notificationAudioRef = useRef<HTMLAudioElement | null>(null);
     const notificationSoundUnlockedRef = useRef(false);
@@ -118,19 +130,22 @@ export const Dashboard = () => {
         if (!socket) return;
         const onCreated = (n: NotificationWithDetails) => {
             setNotifications((prev) => [n, ...prev]);
+            const description = getFormattedNotificationTime();
             if (n.type === 'JOIN') {
                 toast(`student ${n.ticket?.student?.name ?? n.ticket?.student?.email ?? ''} just joined your queue.`, 
-                    { description: finalDisplayString }
+                    { description }
                 );
             }
             else if (n.type === 'LEAVE') {
                 toast(`student ${n.ticket?.student?.name ?? n.ticket?.student?.email ?? ''} just left your queue.`, 
-                    { description: finalDisplayString }
+                    { description }
                 );
             }
             else if (n.type === 'ASSIST') {
-                toast(`TA ${n.queue?.ta?.name} is ready to assist you. Please head to location ${n.queue?.location}!`, 
-                    { description: finalDisplayString }
+                const zoomHint = n.queue?.zoomLink ? ` or join Zoom` : '';
+                toast(
+                    `TA ${n.queue?.ta?.name} is ready to assist you. Please head to location ${n.queue?.location}${zoomHint}!`,
+                    { description },
                 )
             }
             else if (n.type === 'CLOSE') {
@@ -142,17 +157,36 @@ export const Dashboard = () => {
                     })
                     : 'soon';
                 toast(`TA's ${n.queue?.ta?.name ?? n.queue?.ta?.email} closes at ${closesAt}!`, 
-                    { description: finalDisplayString }
+                    { description }
                 )
             }
             playNotificationsSound();
         };
         // socket auto pass in params to onCreated
-        // Each notification is already routed to a specific id on the backend using .to().emit()
+        // Each notification is already routed to a specific id in the backend using .to().emit()
         socket.on('notification-created', onCreated);
         return () => {
             // onCreated(n);
             socket.off('notification-created', onCreated);
+        };
+    }, [socket]);
+
+    useEffect(() => {
+        if (!socket) return;
+
+        // Destructuring with type annotation
+        const onTaQueuesClosed = ({ queueIds }: { queueIds: string[] }) => {
+            const closedIds = new Set(queueIds);
+            setCreatedQueues((previousQueues) =>
+                previousQueues.map((queue) =>
+                    closedIds.has(queue.id) ? { ...queue, isOpen: false } : queue,
+                ),
+            );
+        };
+
+        socket.on('ta-queues-closed', onTaQueuesClosed);
+        return () => {
+            socket.off('ta-queues-closed', onTaQueuesClosed);
         };
     }, [socket]);
 
@@ -253,6 +287,22 @@ export const Dashboard = () => {
         return () => window.removeEventListener('resize', syncViewport);
     }, []);
 
+    // Landing/privacy use document scroll; reset so the dashboard shell starts at the top.
+    useEffect(() => {
+        window.scrollTo(0, 0);
+    }, []);
+
+    useEffect(() => {
+        setIsOpenAlert(false);
+        setIsOpenScroll(false);
+    }, [location.pathname]);
+
+    useEffect(() => {
+        if (!isTaVerificationPending) return;
+        setIsOpenAlert(false);
+        setIsOpenScroll(false);
+    }, [isTaVerificationPending]);
+
     const paneBackgroundClass = isDashboardHome || isDashboardSettings
         ? 'bg-white'
         : isDashboardClass
@@ -269,7 +319,7 @@ export const Dashboard = () => {
                 ? '#f8fafc'
                 : '';
 
-    // html/body stay max-width: 1500px; paint the xl gutters to match this view.
+    // Paint html/body gutters to match the active dashboard pane background.
     useEffect(() => {
         if (!paneBackgroundColor) return;
         const html = document.documentElement;
@@ -288,6 +338,7 @@ return (
     <div className={`flex h-dvh w-full overflow-hidden m-0 p-0 ${paneBackgroundClass}`} onPointerDown={() => playNotificationsSound(true)}>
         <Sidebar isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen}/>
         <div
+            id={DASHBOARD_MAIN_PANE_ID}
             className={`relative flex min-h-0 min-w-0 flex-1 flex-col ${paneBackgroundClass} ${
                 isSidebarOpen && !isDesktop
                     ? 'overflow-hidden'
@@ -295,36 +346,74 @@ return (
             }`}
             style={{ WebkitOverflowScrolling: 'touch' }}
         >
-            <header className={`sticky top-0 z-30 flex h-14 shrink-0 items-center px-2 sm:px-3 ${paneBackgroundClass}`}>
+            <header className={`sticky top-0 flex h-14 shrink-0 items-start overflow-visible px-2 pt-[23px] sm:px-3 ${
+                isTaVerificationPending ? 'bg-transparent z-[60]' : `${paneBackgroundClass} z-30`
+            }`}>
                 {!isDesktop && (
                     <button
                         type="button"
                         aria-label="Open menu"
                         onClick={() => setIsSidebarOpen(true)}
-                        className="rounded-full p-2 text-neutral-800 transition-colors hover:bg-black/5"
+                        className={`${headerIconButtonClass} ${
+                            isTaVerificationPending
+                                ? 'text-white hover:bg-white/10'
+                                : 'hover:bg-black/5'
+                        }`}
                     >
-                        <LuPanelLeft size={22} />
+                        <LuPanelLeft size={22} strokeWidth={2} className="translate-y-px" />
                     </button>
                 )}
-                <button
-                    type="button"
-                    aria-label="Notifications"
-                    onClick={() => setIsOpenAlert((prev) => !prev)}
-                    className="ml-auto rounded-full p-2 text-neutral-800 transition-colors hover:bg-gray-100"
-                >
-                    <LuBell size={22} />
-                </button>
+
+                {/* Icon buttons — hidden while TA verification gate is active */}
+                {!isTaVerificationPending && (
+                    <div className="relative flex flex-1 items-end justify-end h-full w-full gap-4 pr-2 mt-2">
+                        <div className="relative">
+                            <button
+                                type="button"
+                                aria-label="Instructions"
+                                aria-expanded={isOpenScroll}
+                                onClick={() => {
+                                    setIsOpenAlert(false);
+                                    setIsOpenScroll((prev) => !prev);
+                                }}
+                                className={headerIconButtonClass}
+                            >
+                                <LuScrollText size={22} />
+                            </button>
+                            {isOpenScroll && (
+                                <InstructionsPanel instruction={currentInstructions} />
+                            )}
+                        </div>
+                        <div className="relative">
+                            <button
+                                type="button"
+                                aria-label="Notifications"
+                                aria-expanded={isOpenAlert}
+                                onClick={() => {
+                                    setIsOpenScroll(false);
+                                    setIsOpenAlert((prev) => !prev);
+                                }}
+                                className={headerIconButtonClass}
+                            >
+                                <LuBell size={22} strokeWidth={2} />
+                            </button>
+                            {isOpenAlert && (
+                                <NotificationPanel
+                                    notifications={notifications}
+                                    onClearAll={clearAllNotifications}
+                                />
+                            )}
+                        </div>
+                    </div>
+                )}
+
             </header>
-            {isOpenAlert && (
-                <NotificationPanel
-                    notifications={notifications}
-                    onClearAll={clearAllNotifications}
-                />
-            )}
             {isDashboardClass && <ClassSelector Classes={Classes} selectedClass={selectedClass} setSelectedClass={setSelectedClass}/>}
             {isDashboardHome && <Home />}
             {isDashboardQueueManager && (
-                <VerifyTA>
+                <VerifyTA
+                    onPendingChange={setIsTaVerificationPending}
+                >
                     <QueueManager
                         onCreateQueue={handleCreateQueue}
                         onDeleteQueue={handleDeleteQueue}
@@ -332,6 +421,7 @@ return (
                         createdQueues={createdQueues}
                         courses={courses}
                         isLoading={isLoadingQueues}
+                        onCloseSidebar={() => setIsSidebarOpen(false)}
                     />
                 </VerifyTA>
             )}

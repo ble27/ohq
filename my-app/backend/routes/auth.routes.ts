@@ -3,6 +3,7 @@ import type { Request, Response } from 'express';
 import { supabase } from '../config/supabase.js';
 import { prisma } from '../prisma.js';
 import { parseGoogleDisplayName } from '../services/authUser.services.js';
+import { closeQueuesOnTaLeave, isQueueManagerUser } from '../services/taPresence.service.js';
 
 const router: Router = Router();
 
@@ -142,7 +143,19 @@ router.get('/socket-token', async (req: Request, res: Response) => {
 });
 
 router.post('/signout', async (req: Request, res: Response) => {
-    // console.log('Backend signout route');
+    const accessToken = req.cookies?.access_token;
+    if (accessToken) {
+        const { data } = await supabase.auth.getUser(accessToken);
+        const userId = data.user?.id;
+        if (userId && await isQueueManagerUser(userId)) {
+            try {
+                await closeQueuesOnTaLeave(userId);
+            } catch (error) {
+                console.error('[AUTH] Failed to close TA queues on sign-out:', error);
+            }
+        }
+    }
+
     res.clearCookie('access_token', authCookieOptions);
     res.clearCookie('refresh_token', authCookieOptions);
     await supabase.auth.signOut({ scope: 'local' });

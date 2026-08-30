@@ -121,7 +121,7 @@ export const DashboardSettings = ({ prismaUser, supabaseUser, onUpdateSaveChange
 
     return (
         <>
-            <div className="flex min-h-full w-full flex-col bg-white px-4 pb-10 pt-4 sm:px-8 md:px-10">
+            <div className="flex min-h-full w-full flex-col bg-white px-4 pb-210 pt-4 sm:px-6 sm:pb-230 md:px-8">
                 {/* Settings and below layout */}
                 <div className='flex flex-col gap-5 md:gap-6 lg:gap-7'>
                     <h1 className='text-xl md:text-2xl font-semibold'>Settings</h1>
@@ -133,11 +133,11 @@ export const DashboardSettings = ({ prismaUser, supabaseUser, onUpdateSaveChange
                             
                             {/* General setting tabs */}
                             <div className='flex flex-col bg-neutral-300 px-3 py-3 gap-5 rounded-sm'> 
-                                <div className='flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3 rounded-lg'>
+                                <div className='flex flex-row gap-2 items-center sm:gap-3 rounded-lg'>
                                     <label htmlFor="display_name" className='font-medium text-sm md:text-md shrink-0'>Change display name (Real Name): </label>
                                     <input 
                                         id="display_name"
-                                        className='border-1 border-neutral-400 rounded-sm px-2 py-1 text-base
+                                        className='border-1 border-neutral-400 rounded-sm px-2 py-1 text-sm
                                         md:text-sm lg:text-md w-full min-w-0 sm:w-40 focus:outline-none focus:border-blue-500 overflow-hidden'
                                         placeholder={prismaUser?.name ?? displayName ?? supabaseUser?.email}
                                         value={displayName}
@@ -152,11 +152,11 @@ export const DashboardSettings = ({ prismaUser, supabaseUser, onUpdateSaveChange
                                     </span>      
                                 </span>
                                 {/* Default queue location */}
-                                {prismaUser?.role === 'TA' &&  <div className='flex flex-col gap-2 sm:flex-row sm:items-center'>
+                                {prismaUser?.role === 'TA' &&  <div className='flex flex-row gap-2 items-center'>
                                     <label htmlFor="display_name" className='font-medium text-sm md:text-md shrink-0'>Default Queue Location: </label>
                                     <input 
                                         id="default_location"
-                                        className='border-1 border-neutral-400 rounded-sm px-2 py-1 text-base
+                                        className='border-1 border-neutral-400 rounded-sm px-2 py-1 text-sm
                                         md:text-sm lg:text-md w-full min-w-0 sm:w-40 focus:outline-none focus:border-blue-500 overflow-hidden'
                                         placeholder={prismaUser?.defaultLocation ?? 'e.g. Zach 420'}
                                         value={defaultLocation}
@@ -233,22 +233,22 @@ export const DashboardSettings = ({ prismaUser, supabaseUser, onUpdateSaveChange
 
                             <div className='flex flex-col gap-2 bg-neutral-300 px-3 py-3 rounded-sm'>
                                 {/* Sign out */}
-                                <div className='flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between'>
+                                <div className='flex flex-row gap-2 items-center justify-between'>
                                     <span className='font-medium text-sm md:text-base lg:text-md'> Sign out </span>
                                     <button 
                                         className='flex justify-center w-30 text-xs text-black md:text-sm
-                                        font-medium bg-neutral-400 hover:bg-red-700 hover:text-white px-1 py-2 rounded-lg
+                                        font-medium bg-neutral-400 hover:bg-red-700 hover:text-white px-1 py-2 rounded-sm
                                         hover:opacity-80'
                                         onClick={handleSignout}
                                     > Sign out </button>        
 
                                 </div>
-                                <div className='flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between'>
+                                <div className='flex flex-row gap-2 items-center justify-between'>
                                     <span className="font-medium text-sm md:text-base lg:text-md">Permanently delete account</span>    
                                     {/* Delete Account */}
                                     <button 
                                         className='flex justify-center w-30 text-xs md:text-sm 
-                                        font-medium bg-neutral-400 hover:bg-red-700 hover:text-white px-1 py-2 rounded-lg
+                                        font-medium bg-neutral-400 hover:bg-red-700 hover:text-white px-1 py-2 rounded-sm
                                         hover:opacity-80'
                                         onClick={() => setIsDeleteUserAccountModalOpen(true)}
                                     > Delete Account </button>                   
@@ -258,7 +258,7 @@ export const DashboardSettings = ({ prismaUser, supabaseUser, onUpdateSaveChange
                         </div>
                     </div>
                        {/* Save changes button */}
-                       <div className='flex flex-row justify-end gap-3'>
+                       <div className='mt-2 flex flex-row justify-end gap-3 sm:mt-2'>
                         <button 
                             onClick={handleSaveChanges}
                             className="bg-green-600 text-white px-3 py-1 text-sm rounded-sm

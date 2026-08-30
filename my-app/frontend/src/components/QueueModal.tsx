@@ -8,6 +8,7 @@ import type { Queue, QueueTicketsListResponse } from '../../../shared/types'
 import { QueueTicketModal } from './QueueTicketModal';
 import type { QueueTicketWithStudent } from '../../../shared/types';
 import axios from 'axios'
+import { getSafeZoomLink } from '@/lib/utils'
 import { useSocket } from '@/context/SocketProvider';
 
 interface ModalProps {
@@ -111,6 +112,19 @@ export const QueueModal = ({
                 <div className="shrink-0">
                     <h3 className="text-lg font-semibold text-gray-900">Queue</h3>
                     <p className="mt-1 text-xs text-gray-500">Location: {queue.location}</p>
+                    {getSafeZoomLink(queue.zoomLink) ? (
+                        <p className="mt-0.5 text-xs text-gray-500">
+                            Zoom:{' '}
+                            <a
+                                href={getSafeZoomLink(queue.zoomLink)!}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-600 underline-offset-2 hover:underline"
+                            >
+                                Join meeting
+                            </a>
+                        </p>
+                    ) : null}
                     {!isViewingQueue && (
                         <p className="mt-0.5 text-xs text-gray-500">
                             Your position: {curTicket ? curTicket.position ?? '—' : '—'}

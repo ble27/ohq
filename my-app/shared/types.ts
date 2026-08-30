@@ -30,6 +30,7 @@ export interface Queue {
     courseId: string;
     taId: string;
     location: string;
+    zoomLink?: string | null;
     isOpen: boolean;
     startsAt: string | Date;
     endsAt?: string | Date | null;

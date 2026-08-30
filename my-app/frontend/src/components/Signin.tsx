@@ -51,7 +51,7 @@ export const Signin = () => {
     */
 
     return (
-        <div className="fixed inset-0 z-0 flex flex-col items-center justify-center gap-3 bg-black/90 text-white">
+        <div className="fixed inset-0 z-0 flex flex-col items-center justify-center gap-3 overflow-y-auto overscroll-contain bg-black/90 text-white">
             <button
                 type="button"
                 onClick={() => navigate('/')}

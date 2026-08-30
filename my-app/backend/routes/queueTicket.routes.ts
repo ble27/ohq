@@ -18,8 +18,10 @@ import { ZodError } from 'zod';
 import { requireQueueOwnership, requireRole, requireTicketQueueOwnership, requireSelf, requireQueueViewerAccess, requireTicketReadAccess } from '../middlewares/authz.middleware.js';
 const router: Router = Router();
 
-// GET /api/queueticket — list every ticket across all queues. TA/PROFESSOR only (admin-style view).
-router.get('/', requireRole(Role.TA, Role.PROFESSOR), async (_req: Request, res: Response): Promise<void> => {
+// GET /api/queueticket — list every ticket across all queues. PROFESSOR only (admin-style view).
+// TAs only manage their own queue(s) — giving them a system-wide dump would leak every
+// other TA's/course's tickets, so this is intentionally narrower than most TA-accessible routes.
+router.get('/', requireRole(Role.PROFESSOR), async (_req: Request, res: Response): Promise<void> => {
     try {
         const tickets = await prisma.queueTicket.findMany();
         const body: QueueTicketsListResponse = { tickets, message: 'SUCCESS' };

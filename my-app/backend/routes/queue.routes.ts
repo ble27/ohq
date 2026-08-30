@@ -14,9 +14,11 @@ import {
     QueueOpenParamSchema,
     RoomLocationParamSchema,
     TimeValidationSchema,
+    ZoomLinkBodySchema,
 } from '../schemas/queue.schema.js';
 import { ZodError } from 'zod';
 import { closeExpiredQueues, isWithinQueueHours } from '../services/queue.services.js';
+import { closeQueuesOnTaLeave } from '../services/taPresence.service.js';
 import { requireQueueOwnership, requireRole } from '../middlewares/authz.middleware.js';
 import type { AuthedRequest } from '../middlewares/authz.middleware.js';
 
@@ -61,6 +63,40 @@ router.get('/mine', requireRole(Role.TA, Role.PROFESSOR), async (req: AuthedRequ
             return;
         }
         res.status(500).json({ message: 'Failed to fetch queues' });
+    }
+});
+
+// POST /api/queues/close-on-leave — immediately close all open queues for the caller (TA/PROFESSOR).
+router.post('/close-on-leave', requireRole(Role.TA, Role.PROFESSOR), async (req: AuthedRequest, res: Response): Promise<void> => {
+    try {
+        const queueIds = await closeQueuesOnTaLeave(req.user!.id);
+        res.status(200).json({ queueIds, message: 'SUCCESS' });
+    } catch (error: unknown) {
+        if (error instanceof Error) {
+            res.status(500).json({ message: error.message });
+            return;
+        }
+        res.status(500).json({ message: 'Failed to close queues on leave' });
+    }
+});
+
+// GET /api/queues/isOpen 
+// Public api routes to fetch active courses to display the number instead of the user having to manually search for the course
+router.get('/active', async (req: Request, res: Response) => {
+    try {
+        await closeExpiredQueues();
+        const activeQueues = await prisma.queue.findMany({
+            where: { isOpen: true },
+            include: { course: true },
+        });
+
+        const body: QueuesListResponse = {
+            queues: activeQueues,
+            message: 'SUCCESS',
+        };
+        res.status(200).json(body);
+    } catch (error) {
+        res.status(500).json({ message: 'Failed to fetch active queues' });
     }
 });
 
@@ -132,7 +168,7 @@ router.post('/', requireRole(Role.TA, Role.PROFESSOR), async (req: Request, res:
             })
             : null;
         if (!course) {
-            res.status(400).json({ message: 'Select or enter a valid active course' });
+            res.status(400).json({ message: 'Select a valid active course from the list' });
             return;
         }
 
@@ -238,6 +274,37 @@ router.patch('/:queueId/location/:roomLocation', requireQueueOwnership('queueId'
             return;
         }
         res.status(500).json({ message: 'Failed to update queue location' });
+    }
+});
+
+// PATCH /api/queues/:queueId/zoomlink — sets or clears the optional Zoom/Meet URL. TA-owner only.
+router.patch('/:queueId/zoomlink', requireQueueOwnership('queueId'), async (req: Request, res: Response): Promise<void> => {
+    try {
+        const queueId = req.params.queueId as string;
+        const { zoomLink } = ZoomLinkBodySchema.parse(req.body);
+
+        const result: Queue = await prisma.queue.update({
+            where: { id: queueId },
+            data: { zoomLink },
+        });
+
+        const body: QueueResponse = {
+            queue: result,
+            message: zoomLink
+                ? `SUCCESSFULLY UPDATED zoom link`
+                : `SUCCESSFULLY CLEARED zoom link`,
+        };
+        res.status(200).json(body);
+    } catch (error) {
+        if (error instanceof ZodError) {
+            res.status(400).json({ message: 'Invalid input', errors: error.issues });
+            return;
+        }
+        if (error instanceof Error) {
+            res.status(500).json({ message: error.message });
+            return;
+        }
+        res.status(500).json({ message: 'Failed to update zoom link' });
     }
 });
 

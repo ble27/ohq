@@ -15,6 +15,15 @@ export const Header = ({ featuresRef }: HeaderProps) => {
   const isMobile = windowWidth <= MOBILE_BREAKING_POINT;
 
   useEffect(() => {
+    const { documentElement, body } = document;
+    documentElement.style.overflow = '';
+    body.style.overflow = '';
+    body.style.paddingRight = '';
+    body.style.touchAction = '';
+    documentElement.style.removeProperty('--hamburger-gutter');
+  }, []);
+
+  useEffect(() => {
     const handleResize = () => {
       const currentWidth = window.innerWidth;
       setWindowWidth(currentWidth);
@@ -139,20 +148,13 @@ export const Header = ({ featuresRef }: HeaderProps) => {
         )}
       </nav>
 
-      {isMobile && (
+      {isMobile && isHamburgerMenuOpen && (
         <div
-          className={`fixed inset-x-0 top-15 bottom-0 z-[190] overflow-y-auto overscroll-contain bg-yellow-50 transition-opacity duration-300 ease-out ${
-            isHamburgerMenuOpen
-              ? 'opacity-100'
-              : 'pointer-events-none opacity-0'
-          }`}
-          aria-hidden={!isHamburgerMenuOpen}
-          inert={!isHamburgerMenuOpen}
+          className="fixed inset-x-0 top-15 bottom-0 z-[190] overflow-y-auto overscroll-contain bg-yellow-50"
         >
           <div className="flex flex-col text-2xl">
             <button
               type="button"
-              tabIndex={isHamburgerMenuOpen ? 0 : -1}
               onClick={() => {
                 setHamburgerMenuOpen(false);
                 scrollToFeatures();
@@ -163,7 +165,6 @@ export const Header = ({ featuresRef }: HeaderProps) => {
             </button>
             <Link
               to="/privacy"
-              tabIndex={isHamburgerMenuOpen ? 0 : -1}
               onClick={() => setHamburgerMenuOpen(false)}
               className={`flex min-h-20 items-center hover:bg-gray-100 pr-6 ${LOGO_INSET}`}
             >
@@ -171,7 +172,6 @@ export const Header = ({ featuresRef }: HeaderProps) => {
             </Link>
             <Link
               to="/signin"
-              tabIndex={isHamburgerMenuOpen ? 0 : -1}
               onClick={() => setHamburgerMenuOpen(false)}
               className={`flex min-h-20 items-center hover:bg-gray-100 pr-6 ${LOGO_INSET}`}
             >
@@ -179,7 +179,6 @@ export const Header = ({ featuresRef }: HeaderProps) => {
             </Link>
             <Link
               to="/signup"
-              tabIndex={isHamburgerMenuOpen ? 0 : -1}
               onClick={() => setHamburgerMenuOpen(false)}
               className={`flex min-h-20 items-center hover:bg-gray-100 pr-6 ${LOGO_INSET}`}
             >

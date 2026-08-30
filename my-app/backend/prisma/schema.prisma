@@ -24,13 +24,18 @@ model Queue {
     id          String      @id @default(uuid())
     courseId    String      // foreign key points to a Course
     taId        String      @db.Uuid // foreign key = auth.users / User.id
-    location    String      
+    location    String
+    // Optional remote meeting URL (Zoom/Meet/etc). Kept separate from
+    // physical `location` so TAs can offer in-person, remote, or both.
+    zoomLink    String?
     isOpen      Boolean     @default(false)
     createdAt   DateTime    @default(now())
     updatedAt   DateTime    @updatedAt
 
-    startsAt    DateTime
-    endsAt      DateTime?
+    // Timestamptz stores an absolute instant (UTC). Avoids the TIMESTAMP-
+    // without-TZ shift when the Node process TZ differs from Supabase UTC.
+    startsAt    DateTime    @db.Timestamptz(3)
+    endsAt      DateTime?   @db.Timestamptz(3)
 
     // Relations
     course          Course          @relation(fields: [courseId], references: [id], onDelete: Cascade)

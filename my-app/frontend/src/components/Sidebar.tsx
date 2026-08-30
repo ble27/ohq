@@ -123,14 +123,14 @@ export const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }: SideBarProps ) => {
         <button
           type="button"
           aria-label="Close menu"
-          className="fixed inset-0 z-40 bg-black/40"
+          className="fixed inset-0 z-[105] bg-black/40"
           onClick={() => setIsSidebarOpen(false)}
         />
       )}
 
       <aside
         aria-hidden={isMobileDrawer && !isSidebarOpen}
-        className={`fixed top-0 left-0 z-50 flex h-dvh flex-col bg-[#500000] text-white shadow ${
+        className={`fixed top-0 left-0 z-[110] flex h-dvh flex-col bg-[#500000] text-white shadow ${
           isMobileDrawer
             ? `w-[min(20rem,85vw)] transition-transform duration-300 ease-out ${
                 isSidebarOpen ? 'translate-x-0' : '-translate-x-full pointer-events-none'

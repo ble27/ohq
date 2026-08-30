@@ -1,17 +1,22 @@
 import { useState, useEffect, type FormEvent } from 'react'
-import { MapPin, Plus, Settings2, Trash2 } from 'lucide-react'
+import { MapPin, Plus, Settings2, Trash2, Video } from 'lucide-react'
 import type { Course, Queue, QueueTicketsListResponse, QueueTicketWithStudent } from '@shared/types'
 import { useAuth } from '@/context/AuthContextProvider'
 import { DeleteConfirmation } from './DeleteConfirmationModal'
 import { QueueManagementModal } from './QueueManagementModal'
 import axios from 'axios'
+import { getSafeZoomLink } from '@/lib/utils'
 
-// Date requires hour, min, s, ms
-function parseTimeOnToday(time: string): Date {
-    const [hours, minutes] = time.split(':').map(Number) // ['14', '30'] -> [14, 30]
+/**
+ * Bind an HH:MM wall-clock time to today in the browser's local timezone,
+ * then serialize as an absolute ISO instant (UTC). Supabase/Postgres stores
+ * this as timestamptz so display round-trips match local time.
+ */
+function parseTimeOnToday(time: string): string {
+    const [hours, minutes] = time.split(':').map(Number)
     const date = new Date()
     date.setHours(hours, minutes, 0, 0)
-    return date
+    return date.toISOString()
 }
 
 function formatQueueTime(value: string | Date | null | undefined): string {
@@ -27,14 +32,16 @@ export interface CreateQueueInput {
     courseId: string
     taId:     string
     location: string
-    startsAt: Date
-    endsAt: Date
+    zoomLink?: string | null
+    startsAt: string
+    endsAt: string
 }
 
 interface QueueManagerProps {
     createdQueues: Queue[]
     courses: Course[]
     isLoading: boolean
+    onCloseSidebar?: () => void
     // onCreateQueue is a prop for a function in the parent component
     onCreateQueue: (input: CreateQueueInput) => void | Promise<void>
     onDeleteQueue: (queueId: string) => void | Promise<void>
@@ -45,12 +52,14 @@ export const QueueManager = ({
     createdQueues,
     courses,
     isLoading,
+    onCloseSidebar,
     onCreateQueue,
     onDeleteQueue,
     onUpdateQueue
 }: QueueManagerProps) => {
     const [courseId, setCourseId] = useState('')
     const [location, setLocation] = useState('')
+    const [zoomLink, setZoomLink] = useState('')
     const [isCreating, setIsCreating] = useState(false)
     const [deletingQueueId, setDeletingQueueId] = useState<string | null>(null)
     const [error, setError] = useState<string | null>(null)
@@ -65,6 +74,7 @@ export const QueueManager = ({
     const [tickets, setTickets] = useState<QueueTicketWithStudent[]>([]);
 
     const { user } = useAuth();
+    const activeCourses = courses.filter((course) => course.isActive);
 
     const handleCreateQueue = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault()
@@ -77,15 +87,18 @@ export const QueueManager = ({
                 setError('End time cannot be before start time.')
                 return;
             }
+            const trimmedZoom = zoomLink.trim()
             await onCreateQueue({
                 courseId,
                 taId: user.id,
                 location: location.trim().toUpperCase(),
+                zoomLink: trimmedZoom || null,
                 startsAt: parseTimeOnToday(startTime),
                 endsAt: parseTimeOnToday(endTime),
             })
             setCourseId('')
             setLocation('')
+            setZoomLink('')
         } catch {
             setError('Unable to create the queue due to a limit of 1 queue per TA. Please delete the current queue and try again.')
         } finally {
@@ -119,6 +132,7 @@ export const QueueManager = ({
     const handleOpenManagementModal = async (queue: Queue) => {
         setCurrentQueue(queue);
         setIsViewingManagementModal(true);
+        onCloseSidebar?.();
     }
 
     // When queue management modal is closed
@@ -265,26 +279,26 @@ export const QueueManager = ({
                     )}
 
                     <form
-                        className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1.4fr)_minmax(0,0.9fr)_minmax(0,0.9fr)_auto] xl:items-end"
+                        className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4"
                         onSubmit={handleCreateQueue}
                     >
                         <label className="grid min-w-0 gap-1.5 text-sm font-medium text-slate-600">
                             Course
-                            <input
-                                list="active-courses"
+                            <select
                                 value={courseId}
                                 onChange={(event) => setCourseId(event.target.value)}
-                                placeholder="Select or enter a course code"
-                                className="h-11 w-full min-w-0 rounded-xl border border-slate-200 bg-white px-3.5 text-sm font-normal text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400"
-                            />
-                            {/* List of currently active seeded courses */}
-                            <datalist id="active-courses">
-                                {courses.map((course) => (
-                                    <option key={course.id} value={course.code}>
-                                        {course.semester}
+                                required
+                                className="h-11 w-full min-w-0 rounded-xl border border-slate-200 bg-white px-3.5 text-sm font-normal text-slate-900 outline-none transition focus:border-slate-400"
+                            >
+                                <option value="" disabled>
+                                    Select a course
+                                </option>
+                                {activeCourses.map((course) => (
+                                    <option key={course.id} value={course.id}>
+                                        {course.code} · {course.semester}
                                     </option>
                                 ))}
-                            </datalist>
+                            </select>
                         </label>
 
                         <label className="grid min-w-0 gap-1.5 text-sm font-medium text-slate-600">
@@ -293,6 +307,17 @@ export const QueueManager = ({
                                 value={location}
                                 onChange={(event) => setLocation(event.target.value)}
                                 placeholder="e.g. Zachary - Room 240"
+                                className="h-11 w-full min-w-0 rounded-xl border border-slate-200 bg-white px-3.5 text-sm font-normal text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400"
+                            />
+                        </label>
+
+                        <label className="grid min-w-0 gap-1.5 text-sm font-medium text-slate-600 sm:col-span-2">
+                            Zoom link <span className="font-normal text-slate-400">(optional)</span>
+                            <input
+                                type="url"
+                                value={zoomLink}
+                                onChange={(event) => setZoomLink(event.target.value)}
+                                placeholder="https://zoom.us/j/…"
                                 className="h-11 w-full min-w-0 rounded-xl border border-slate-200 bg-white px-3.5 text-sm font-normal text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400"
                             />
                         </label>
@@ -320,7 +345,8 @@ export const QueueManager = ({
                         <button
                             type="submit"
                             disabled={isCreating || !courseId || !location.trim() || !user}
-                            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50 sm:col-span-2 xl:col-span-1 xl:w-auto xl:min-w-40"
+                            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-blue-300 
+                            px-5 text-sm font-medium text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-100 sm:col-span-2"
                         >
                             <Plus className="size-4 shrink-0" />
                             <span className="truncate">{isCreating ? 'Creating…' : 'Create queue'}</span>
@@ -368,6 +394,19 @@ export const QueueManager = ({
                                                 <MapPin color='red' className="size-3.5 shrink-0 text-neutral-400" strokeWidth={1.75} aria-hidden />
                                                 <span className="truncate">Location: {queue.location}</span>
                                             </div>
+                                            {getSafeZoomLink(queue.zoomLink) ? (
+                                                <div className="mt-1 flex min-w-0 items-center gap-1.5 text-sm text-neutral-500">
+                                                    <Video className="size-3.5 shrink-0 text-neutral-400" strokeWidth={1.75} aria-hidden />
+                                                    <a
+                                                        href={getSafeZoomLink(queue.zoomLink)!}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="truncate text-blue-600 underline-offset-2 hover:underline"
+                                                    >
+                                                        Zoom meeting
+                                                    </a>
+                                                </div>
+                                            ) : null}
                                             <span className="mt-1 block text-sm text-neutral-500">
                                                 Time: {formatQueueTime(queue.startsAt)}
                                                 {queue.endsAt ? ` – ${formatQueueTime(queue.endsAt)}` : ''}

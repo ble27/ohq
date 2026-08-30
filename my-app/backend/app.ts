@@ -22,6 +22,11 @@ import { isQueueManager } from './middlewares/authz.middleware.js';
 import { startCleanupJob } from './jobs/cleanup.job.js';
 
 // Comma-separated list of allowed browser origins (both HTTP CORS and Socket.IO CORS).
+// Never fall back to a localhost default in production — a missing env var there
+// must fail loudly instead of silently locking out (or worse, misconfiguring) prod CORS.
+if (process.env.NODE_ENV === 'production' && !process.env.CORS_ORIGINS) {
+  throw new Error('CORS_ORIGINS must be set in production');
+}
 const ALLOWED_ORIGINS = (process.env.CORS_ORIGINS ?? 'http://localhost:5173,http://localhost:5174')
   .split(',')
   .map((origin) => origin.trim())
@@ -30,6 +35,11 @@ const ALLOWED_ORIGINS = (process.env.CORS_ORIGINS ?? 'http://localhost:5173,http
 // Socket Services helpers
 import { listActiveTickets, assertQueueViewer } from './services/queue.services.js';
 import { startHelping, completeTicket } from './services/queue.services.js';
+import {
+  isQueueManagerUser,
+  registerTaSocket,
+  unregisterTaSocket,
+} from './services/taPresence.service.js';
 
 /**
  * Loads the queue a ticket belongs to and confirms the caller manages it
@@ -73,6 +83,11 @@ io.on('connection', async (socket: Socket) => {
   // join the userId room 
   await socket.join(`user:${userId}`);
 
+  const tracksTaPresence = userId ? await isQueueManagerUser(userId) : false;
+  if (tracksTaPresence && userId) {
+    registerTaSocket(userId, socket.id);
+  }
+
   const reportSocketError = (event: string, error: unknown) => {
     const message = error instanceof Error ? error.message : 'Unexpected socket error';
     console.error(`[SOCKET] ${event} failed for user ${userId}:`, message);
@@ -81,8 +96,10 @@ io.on('connection', async (socket: Socket) => {
 
   // console.log(`User connected: ${userId}`);
 
-  socket.on('disconnect', (reason) => {
-    // console.log(`User ${userId} disconnected: ${reason}`);
+  socket.on('disconnect', () => {
+    if (tracksTaPresence && userId) {
+      unregisterTaSocket(userId, socket.id);
+    }
   });
 
   // Room subscriptions never create or update queue tickets, but the room does
@@ -147,6 +164,10 @@ io.on('connection', async (socket: Socket) => {
     }
   });
 });
+
+// Behind a reverse proxy (Render/Vercel), req.ip is otherwise the proxy's IP for every
+// client, which collapses express-rate-limit's per-IP buckets into one shared bucket.
+app.set('trust proxy', 1);
 
 // Security headers + explicit HTTP CORS policy (Socket.IO has its own above).
 app.use(helmet());
