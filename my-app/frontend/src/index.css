@@ -158,6 +158,17 @@ body {
   html {
     @apply font-sans;
   }
+
+  /* iOS Safari auto-zooms focused fields when font-size < 16px. Apply 16px only
+     on small screens so tablet/desktop keep component-level text-sm styling.
+     !important is required because utility classes (e.g. text-sm) otherwise win. */
+  @media (max-width: 767px) {
+    input:not([type='checkbox']):not([type='radio']):not([type='hidden']):not([type='button']):not([type='submit']):not([type='reset']):not([type='image']),
+    select,
+    textarea {
+      font-size: 16px !important;
+    }
+  }
 }
 
 /* Sonner's default toast description color is a low-contrast light grey.
