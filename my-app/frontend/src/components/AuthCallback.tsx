@@ -94,12 +94,8 @@ export const AuthCallback = () => {
 
       try {
         await establishSession(session.access_token, session.refresh_token);
-        // The app authenticates via httpOnly cookies from here on — clear the
-        // Supabase client's own copy of the tokens out of localStorage so a
-        // client-side XSS can't read/exfiltrate them. `scope: 'local'` only
-        // clears this browser's storage; it does NOT revoke the refresh token,
-        // so the cookie session just established above keeps working.
-        await supabase.auth.signOut({ scope: 'local' });
+        // Do not call signOut here: even scope='local' revokes the current
+        // Supabase Auth session that these httpOnly cookies represent.
 
         // Confirm httpOnly cookies actually stuck before leaving this page —
         // previously we navigated to /dashboard even when /me returned 401,
