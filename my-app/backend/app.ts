@@ -22,6 +22,11 @@ import { isQueueManager } from './middlewares/authz.middleware.js';
 import { startCleanupJob } from './jobs/cleanup.job.js';
 
 // Comma-separated list of allowed browser origins (both HTTP CORS and Socket.IO CORS).
+// Never fall back to a localhost default in production — a missing env var there
+// must fail loudly instead of silently locking out (or worse, misconfiguring) prod CORS.
+if (process.env.NODE_ENV === 'production' && !process.env.CORS_ORIGINS) {
+  throw new Error('CORS_ORIGINS must be set in production');
+}
 const ALLOWED_ORIGINS = (process.env.CORS_ORIGINS ?? 'http://localhost:5173,http://localhost:5174')
   .split(',')
   .map((origin) => origin.trim())
@@ -159,6 +164,10 @@ io.on('connection', async (socket: Socket) => {
     }
   });
 });
+
+// Behind a reverse proxy (Render/Vercel), req.ip is otherwise the proxy's IP for every
+// client, which collapses express-rate-limit's per-IP buckets into one shared bucket.
+app.set('trust proxy', 1);
 
 // Security headers + explicit HTTP CORS policy (Socket.IO has its own above).
 app.use(helmet());

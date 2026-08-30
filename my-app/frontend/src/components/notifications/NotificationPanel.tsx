@@ -14,11 +14,11 @@ export const NotificationPanel = ({
     // notification.ticket and notification.queue
     return (
         <div
-            className="absolute top-full right-4 z-40 mt-2 flex h-[min(280px,50dvh)] w-[min(280px,calc(100vw-1.5rem))] min-h-0 flex-col overflow-x-hidden overflow-y-auto
+            className="absolute top-full right-4 z-40 mt-2 flex h-[min(320px,60dvh)] w-[min(320px,calc(100vw-1.5rem))] min-h-0 flex-col overflow-x-hidden overflow-y-auto
                 rounded-lg border border-black/20 bg-white px-4 shadow-xl backdrop-blur-lg
-                xl:h-80 xl:w-80"
+                xl:h-96 xl:w-96"
         >
-            <div className="flex h-15 flex-row items-center justify-between">
+            <div className="sticky top-0 z-10 flex h-14 shrink-0 flex-row items-center justify-between bg-white/95 backdrop-blur-lg">
                 <span className="text-lg font-semibold">Notifications</span>
                 <button
                     type="button"
@@ -29,7 +29,7 @@ export const NotificationPanel = ({
                 </button>
             </div>
 
-            <div className="flex flex-col gap-2 pb-3">
+            <div className="flex flex-col gap-3 pb-4">
                 {notifications.length === 0 ? (
                     <p className="py-6 text-center text-xs text-slate-500">
                         No notifications yet

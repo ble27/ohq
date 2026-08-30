@@ -85,6 +85,12 @@ export const AuthCallback = () => {
 
       try {
         await establishSession(session.access_token, session.refresh_token);
+        // The app authenticates via httpOnly cookies from here on — clear the
+        // Supabase client's own copy of the tokens out of localStorage so a
+        // client-side XSS can't read/exfiltrate them. `scope: 'local'` only
+        // clears this browser's storage; it does NOT revoke the refresh token,
+        // so the cookie session just established above keeps working.
+        await supabase.auth.signOut({ scope: 'local' });
         await refreshUser();
         navigate('/dashboard/home', { replace: true });
       } catch (err: unknown) {

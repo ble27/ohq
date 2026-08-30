@@ -65,19 +65,22 @@ export const Dashboard = () => {
     // This include ticket.student and queue.ta from forward relations
     const [notifications, setNotifications] = useState<NotificationWithDetails[]>([]);
 
-    const liveDate = new Date();
+    // Computed fresh per call (not per render) so toasts always show the time the
+    // event actually arrived, not whatever time it was when the socket listener
+    // effect below last ran.
+    const getFormattedNotificationTime = () => {
+        const formattedDynamicDate = new Intl.DateTimeFormat('en-US', {
+            weekday: 'long',
+            month: 'long',
+            day: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true
+        }).format(new Date());
 
-    const formattedDynamicDate = new Intl.DateTimeFormat('en-US', {
-    weekday: 'long',
-    month: 'long',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true
-    }).format(liveDate);
-
-    // Inserts the word "at" naturally into the string
-    const finalDisplayString = formattedDynamicDate.replace(/,([^,]*)$/, ' at$1');
+        // Inserts the word "at" naturally into the string
+        return formattedDynamicDate.replace(/,([^,]*)$/, ' at$1');
+    };
 
     const notificationAudioRef = useRef<HTMLAudioElement | null>(null);
     const notificationSoundUnlockedRef = useRef(false);
@@ -127,21 +130,22 @@ export const Dashboard = () => {
         if (!socket) return;
         const onCreated = (n: NotificationWithDetails) => {
             setNotifications((prev) => [n, ...prev]);
+            const description = getFormattedNotificationTime();
             if (n.type === 'JOIN') {
                 toast(`student ${n.ticket?.student?.name ?? n.ticket?.student?.email ?? ''} just joined your queue.`, 
-                    { description: finalDisplayString }
+                    { description }
                 );
             }
             else if (n.type === 'LEAVE') {
                 toast(`student ${n.ticket?.student?.name ?? n.ticket?.student?.email ?? ''} just left your queue.`, 
-                    { description: finalDisplayString }
+                    { description }
                 );
             }
             else if (n.type === 'ASSIST') {
                 const zoomHint = n.queue?.zoomLink ? ` or join Zoom` : '';
                 toast(
                     `TA ${n.queue?.ta?.name} is ready to assist you. Please head to location ${n.queue?.location}${zoomHint}!`,
-                    { description: finalDisplayString },
+                    { description },
                 )
             }
             else if (n.type === 'CLOSE') {
@@ -153,7 +157,7 @@ export const Dashboard = () => {
                     })
                     : 'soon';
                 toast(`TA's ${n.queue?.ta?.name ?? n.queue?.ta?.email} closes at ${closesAt}!`, 
-                    { description: finalDisplayString }
+                    { description }
                 )
             }
             playNotificationsSound();
@@ -417,6 +421,7 @@ return (
                         createdQueues={createdQueues}
                         courses={courses}
                         isLoading={isLoadingQueues}
+                        onCloseSidebar={() => setIsSidebarOpen(false)}
                     />
                 </VerifyTA>
             )}

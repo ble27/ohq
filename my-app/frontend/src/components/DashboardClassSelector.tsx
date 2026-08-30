@@ -15,6 +15,7 @@ import type {
 import { useAuth } from '@/context/AuthContextProvider';
 import { InactiveQueueModal } from './InactiveQueueModal';
 import { toast } from 'sonner';
+import { getSafeZoomLink } from '@/lib/utils';
 
 const ACTIVE_TICKET_STATUSES = new Set(['WAITING', 'HELPING']);
 
@@ -422,11 +423,11 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ Classes, selectedC
                       <MapPin className="size-3.5 shrink-0 text-neutral-400" strokeWidth={2} color='red' aria-hidden />
                       <span className="truncate">Location: {q.location || '—'}</span>
                     </div>
-                    {q.zoomLink ? (
+                    {getSafeZoomLink(q.zoomLink) ? (
                       <div className="mt-1 flex items-center gap-1.5 text-sm text-neutral-600">
                         <Video className="size-3.5 shrink-0 text-neutral-400" strokeWidth={2} aria-hidden />
                         <a
-                          href={q.zoomLink}
+                          href={getSafeZoomLink(q.zoomLink)!}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="truncate text-blue-600 underline-offset-2 hover:underline"

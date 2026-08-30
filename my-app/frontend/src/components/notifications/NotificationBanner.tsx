@@ -39,16 +39,14 @@ export const NotificationBanner = ({
 
     return (
         <div
-            className={`flex w-full items-center gap-3 rounded-xl border px-3 py-3 ${accentStyles[type]}`}
+            className={`flex w-full shrink-0 items-start gap-3 rounded-xl border px-3.5 py-3.5 ${accentStyles[type]}`}
         >
-            <div className="flex min-w-0 flex-1 items-start justify-between gap-3">
-                <p className="min-w-0 text-sm font-normal text-slate-900">
-                    {message ?? defaultMessages[type]}
-                </p>
-                <span className="shrink-0 text-xs tabular-nums text-slate-500">
-                    {formatCreatedAt(time)}
-                </span>
-            </div>
+            <p className="min-w-0 flex-1 text-sm leading-snug font-normal text-slate-900">
+                {message ?? defaultMessages[type]}
+            </p>
+            <span className="shrink-0 text-xs tabular-nums text-slate-500">
+                {formatCreatedAt(time)}
+            </span>
             {action && <div className="shrink-0">{action}</div>}
         </div>
     )

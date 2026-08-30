@@ -5,6 +5,7 @@ import { useAuth } from '@/context/AuthContextProvider'
 import { DeleteConfirmation } from './DeleteConfirmationModal'
 import { QueueManagementModal } from './QueueManagementModal'
 import axios from 'axios'
+import { getSafeZoomLink } from '@/lib/utils'
 
 /**
  * Bind an HH:MM wall-clock time to today in the browser's local timezone,
@@ -40,6 +41,7 @@ interface QueueManagerProps {
     createdQueues: Queue[]
     courses: Course[]
     isLoading: boolean
+    onCloseSidebar?: () => void
     // onCreateQueue is a prop for a function in the parent component
     onCreateQueue: (input: CreateQueueInput) => void | Promise<void>
     onDeleteQueue: (queueId: string) => void | Promise<void>
@@ -50,6 +52,7 @@ export const QueueManager = ({
     createdQueues,
     courses,
     isLoading,
+    onCloseSidebar,
     onCreateQueue,
     onDeleteQueue,
     onUpdateQueue
@@ -129,6 +132,7 @@ export const QueueManager = ({
     const handleOpenManagementModal = async (queue: Queue) => {
         setCurrentQueue(queue);
         setIsViewingManagementModal(true);
+        onCloseSidebar?.();
     }
 
     // When queue management modal is closed
@@ -390,11 +394,11 @@ export const QueueManager = ({
                                                 <MapPin color='red' className="size-3.5 shrink-0 text-neutral-400" strokeWidth={1.75} aria-hidden />
                                                 <span className="truncate">Location: {queue.location}</span>
                                             </div>
-                                            {queue.zoomLink ? (
+                                            {getSafeZoomLink(queue.zoomLink) ? (
                                                 <div className="mt-1 flex min-w-0 items-center gap-1.5 text-sm text-neutral-500">
                                                     <Video className="size-3.5 shrink-0 text-neutral-400" strokeWidth={1.75} aria-hidden />
                                                     <a
-                                                        href={queue.zoomLink}
+                                                        href={getSafeZoomLink(queue.zoomLink)!}
                                                         target="_blank"
                                                         rel="noopener noreferrer"
                                                         className="truncate text-blue-600 underline-offset-2 hover:underline"

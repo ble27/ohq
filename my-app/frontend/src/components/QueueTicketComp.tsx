@@ -2,6 +2,7 @@ import { useState, useEffect, type ReactNode } from 'react'
 import type { QueueTicket } from '../../../shared/types'
 import axios from 'axios'
 import { MapPin } from 'lucide-react'
+import { getSafeZoomLink } from '@/lib/utils'
 
 interface QueueTicketProps {
     ticket: QueueTicket
@@ -203,9 +204,9 @@ export const QueueTicketComp = ({
                     <DetailRow
                         label="Zoom"
                         value={
-                            zoomLink ? (
+                            getSafeZoomLink(zoomLink) ? (
                                 <a
-                                    href={zoomLink}
+                                    href={getSafeZoomLink(zoomLink)!}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="break-all text-[#e8c97a] underline-offset-2 hover:underline"

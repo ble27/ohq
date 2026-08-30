@@ -42,3 +42,8 @@ my-app/shared/*.js
 my-app/shared/*.js.map
 my-app/shared/*.d.ts
 my-app/shared/*.d.ts.map
+
+# Playwright
+my-app/frontend/test-results/
+my-app/frontend/playwright-report/
+my-app/frontend/playwright/.cache/

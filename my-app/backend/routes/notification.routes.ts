@@ -85,6 +85,24 @@ router.post('/queues/:queueId/user/:recipientId/type/:type', async (req: Request
             return;
         }
 
+        // Recipient must actually be the intended party for this notification type —
+        // otherwise any queue participant could redirect a notification to an
+        // arbitrary recipientId (spam / harassment vector).
+        if (type === 'JOIN' || type === 'LEAVE') {
+            if (recipientId !== queue.taId) {
+                res.status(403).json({ message: 'Recipient must be the queue TA for this notification type' });
+                return;
+            }
+        } else if (type === 'ASSIST') {
+            if (!ticket || ticket.queueId !== queueId || ticket.studentId !== recipientId) {
+                res.status(403).json({ message: 'Recipient must be the ticket holder in this queue for this notification type' });
+                return;
+            }
+        } else {
+            res.status(400).json({ message: 'Unsupported notification type for this endpoint' });
+            return;
+        }
+
         const body = CreateNotificationValidationSchema.parse({
             userId: recipientId,
             type,
