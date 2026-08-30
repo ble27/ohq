@@ -1,7 +1,7 @@
 import type { Queue, QueueTicket, QueueTicketWithStudent } from '@shared/types';
 import { useState, useEffect } from 'react'
 import axios from 'axios';
-import { LuX, LuPanelLeft } from 'react-icons/lu';
+import { LuX } from 'react-icons/lu';
 import { Button } from './ui/button';
 import { QueueTicketModal } from './QueueTicketModal';
 import { QueueWorkspace } from './workspace/QueueWorkspace';
@@ -16,7 +16,6 @@ interface QueueManagementModalProps {
     // remove tickets when closed
     onQueueClosing: () => | Promise<void>
     onTimeChange: (start: string, end: string) => void | Promise<void>
-    onOpenSidebar?: () => void
 }
 
 export const QueueManagementModal = ({
@@ -27,7 +26,6 @@ export const QueueManagementModal = ({
     setIsViewingManagementModal,
     onQueueClosing, 
     onTimeChange,
-    onOpenSidebar,
 }: QueueManagementModalProps) => {
     const toTimeInput = (value: Date | string | null | undefined) => {
     if (!value || value === 'null' || value === 'undefined') {
@@ -258,23 +256,13 @@ export const QueueManagementModal = ({
     }, [queue?.id])
 
     return (
-        <div className="fixed inset-0 z-100 flex h-dvh w-screen flex-col items-center justify-center gap-3 bg-black/40 text-black max-sm:top-14 max-sm:h-[calc(100dvh-3.5rem)]">
+        <div className="fixed inset-0 z-100 flex h-dvh w-screen flex-col items-center justify-center gap-3 bg-black/40 text-black">
             <div className="relative mx-4 flex h-[684px] max-h-[min(684px,calc(100dvh-5rem))] w-full max-w-[600px] flex-col overflow-hidden rounded-lg bg-white max-sm:mx-3 max-sm:max-h-[calc(100dvh-6rem)]">
-                <nav className='relative flex h-[50px] w-full shrink-0 flex-row items-center gap-3 pt-5 pl-3 pr-3 text-lg sm:gap-5 sm:pl-5'>
-                    {onOpenSidebar && (
-                        <button
-                            type="button"
-                            aria-label="Open menu"
-                            onClick={onOpenSidebar}
-                            className="shrink-0 rounded-full p-1 hover:bg-black/5 sm:hidden"
-                        >
-                            <LuPanelLeft size={22} strokeWidth={2} />
-                        </button>
-                    )}
-                    <div className='flex min-w-0 flex-1 flex-row justify-between gap-3 sm:gap-5 sm:w-2/3'>
+                <nav className='flex h-[50px] w-full shrink-0 flex-row items-center gap-3 pt-5 pl-3 pr-3 text-lg sm:gap-5 sm:pl-5'>
+                    <div className='flex min-w-0 flex-1 flex-row items-center gap-8 sm:gap-10'>
                         {/* Settings */}
                         <button 
-                            className={`${isSettingsOpen ? 'text-black' : 'text-gray-500/70'} hover:opacity-80`}
+                            className={`${isSettingsOpen ? 'text-black' : 'text-gray-500/70'} shrink-0 hover:opacity-80`}
                             onClick={() => {
                                 setIsSettingsOpen(true);
                                 setIsQueueModalOpen(false);
@@ -286,7 +274,7 @@ export const QueueManagementModal = ({
 
                         {/* Waitlist */}
                         <button 
-                            className={`${isQueueModalOpen ? 'text-black' : 'text-gray-500/70'} hover:opacity-80`}
+                            className={`${isQueueModalOpen ? 'text-black' : 'text-gray-500/70'} shrink-0 hover:opacity-80`}
                             onClick={() => {
                                 setIsSettingsOpen(false);
                                 setIsQueueModalOpen(true);
@@ -298,7 +286,7 @@ export const QueueManagementModal = ({
 
                         {/* Workspace */}
                         <button 
-                            className={`${isWorkspaceOpen ? 'text-black' : 'text-gray-500/70'} hover:opacity-80`}
+                            className={`${isWorkspaceOpen ? 'text-black' : 'text-gray-500/70'} shrink-0 hover:opacity-80`}
                             onClick={() => {
                                 setIsSettingsOpen(false);
                                 setIsQueueModalOpen(false);
@@ -308,8 +296,8 @@ export const QueueManagementModal = ({
                             <span> Workspace </span>
                         </button>
                     </div>
-                   
-                    <LuX onClick={() => setTimeout(() => setIsViewingManagementModal(false), 100)} className='absolute right-3 flex shrink-0 items-center hover:opacity-80' color='black' size={25}/>
+
+                    <LuX onClick={() => setTimeout(() => setIsViewingManagementModal(false), 100)} className='flex shrink-0 items-center hover:opacity-80' color='black' size={25}/>
                 </nav>
 
                 {/* Settings tab */}

@@ -347,8 +347,8 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ Classes, selectedC
                           setSelectedClass(courseNum);
                           setIsClassDropdownOpen(false);
                         }}
-                        className={`flex w-full items-center justify-between gap-4 px-4 py-2.5 text-left text-sm transition hover:bg-neutral-50 ${
-                          isSelected ? 'bg-neutral-100 font-medium text-neutral-900' : 'text-neutral-800'
+                        className={`flex w-full items-center justify-between gap-4 px-4 py-2.5 text-left text-sm transition hover:bg-gray-100 ${
+                          isSelected ? 'font-medium text-neutral-900' : 'text-neutral-800'
                         }`}
                       >
                         <span className="truncate">{courseNum}</span>

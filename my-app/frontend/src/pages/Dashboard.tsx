@@ -417,7 +417,6 @@ return (
                         createdQueues={createdQueues}
                         courses={courses}
                         isLoading={isLoadingQueues}
-                        onOpenSidebar={() => setIsSidebarOpen(true)}
                     />
                 </VerifyTA>
             )}
