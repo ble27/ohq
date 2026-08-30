@@ -293,12 +293,17 @@ export const Dashboard = () => {
     }, []);
 
     useEffect(() => {
+        // Closing these popovers on navigation/verification-gate changes, not
+        // synchronizing with an external system — runs once per dependency
+        // change rather than every render, so it doesn't cascade.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setIsOpenAlert(false);
         setIsOpenScroll(false);
     }, [location.pathname]);
 
     useEffect(() => {
         if (!isTaVerificationPending) return;
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setIsOpenAlert(false);
         setIsOpenScroll(false);
     }, [isTaVerificationPending]);
