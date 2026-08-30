@@ -72,7 +72,8 @@ export function SocketProvider ({ children }: { children: ReactNode } ) {
             instance?.disconnect();
             setSocket(null);
         };
-    }, [user?.id, loading]); 
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reconnect only when user id changes, not on refreshUser reference churn
+    }, [user?.id, loading]);
 
     return (
         <SocketContext.Provider value={user ? socket : null}>

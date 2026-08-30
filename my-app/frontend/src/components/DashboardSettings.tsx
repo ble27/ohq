@@ -10,9 +10,8 @@ import { Spinner } from "./ui/spinner";
 interface DashboardSettingsProps {
     prismaUser: PrismaUser | null
     supabaseUser: SupabaseUser | null
-    onUpdateSaveChanges: () => Promise<void>     // refreshUser from Context Provider which updates both Prisma and Supabase models
 }
-export const DashboardSettings = ({ prismaUser, supabaseUser, onUpdateSaveChanges }: DashboardSettingsProps) => {
+export const DashboardSettings = ({ prismaUser, supabaseUser }: DashboardSettingsProps) => {
     // useState only use the inital prop once and doesn't refresh
     const [displayName, setDisplayName] = useState(prismaUser?.name ?? '');
     const [defaultLocation, setDefaultLocation] = useState(prismaUser?.defaultLocation ?? '')
@@ -39,7 +38,7 @@ export const DashboardSettings = ({ prismaUser, supabaseUser, onUpdateSaveChange
     }, [prismaUser])
 
     const navigate = useNavigate();
-    const { refreshUser } = useAuth();
+    const { refreshUser, updatePrismaUser } = useAuth();
 
     // Permanently delete user account
     const handleDeleteAccount = async () => {
@@ -91,7 +90,20 @@ export const DashboardSettings = ({ prismaUser, supabaseUser, onUpdateSaveChange
             if (prismaUser?.role === 'TA' && prismaUser.defaultLocation !== defaultLocation) {
                 await axios.patch(`/api/users/${id}/defaultlocation`, { defaultLocation });
             }
-            await onUpdateSaveChanges();
+            updatePrismaUser({
+                name: displayName,
+                notifyAssist: studentAlertYourTurn ?? prismaUser?.notifyAssist ?? true,
+                notifyClose: studentAlertQueueClosing ?? prismaUser?.notifyClose ?? true,
+                notifySound: notificationSoundEnabled,
+                ...(prismaUser?.role === 'TA'
+                    ? {
+                        defaultLocation,
+                        notifyJoin: taAlertStudentJoinQueue ?? prismaUser?.notifyJoin ?? true,
+                        notifyLeave: taAlertStudentLeaveQueue ?? prismaUser?.notifyLeave ?? true,
+                    }
+                    : {}),
+            });
+            await refreshUser();
         } finally {
             setPending(false);
         }

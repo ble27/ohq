@@ -73,12 +73,15 @@ export const QueueManager = ({
     const [currentQueue, setCurrentQueue] = useState<Queue | null>(null);
     const [tickets, setTickets] = useState<QueueTicketWithStudent[]>([]);
 
-    const { user } = useAuth();
+    const { user, prismaUser } = useAuth();
+    const defaultQueueLocation = prismaUser?.defaultLocation?.trim() ?? '';
+    const resolvedLocation = location || defaultQueueLocation;
     const activeCourses = courses.filter((course) => course.isActive);
 
     const handleCreateQueue = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault()
-        if (!courseId || !location.trim() || !user) return
+        const queueLocation = resolvedLocation.trim();
+        if (!courseId || !queueLocation || !user) return
 
         try {
             setIsCreating(true)
@@ -91,7 +94,7 @@ export const QueueManager = ({
             await onCreateQueue({
                 courseId,
                 taId: user.id,
-                location: location.trim().toUpperCase(),
+                location: queueLocation.toUpperCase(),
                 zoomLink: trimmedZoom || null,
                 startsAt: parseTimeOnToday(startTime),
                 endsAt: parseTimeOnToday(endTime),
@@ -304,7 +307,7 @@ export const QueueManager = ({
                         <label className="grid min-w-0 gap-1.5 text-sm font-medium text-slate-600">
                             Location
                             <input
-                                value={location}
+                                value={resolvedLocation}
                                 onChange={(event) => setLocation(event.target.value)}
                                 placeholder="e.g. Zachary - Room 240"
                                 className="h-11 w-full min-w-0 rounded-xl border border-slate-200 bg-white px-3.5 text-sm font-normal text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400"
@@ -344,7 +347,7 @@ export const QueueManager = ({
 
                         <button
                             type="submit"
-                            disabled={isCreating || !courseId || !location.trim() || !user}
+                            disabled={isCreating || !courseId || !resolvedLocation.trim() || !user}
                             className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-blue-300 
                             px-5 text-sm font-medium text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-100 sm:col-span-2"
                         >

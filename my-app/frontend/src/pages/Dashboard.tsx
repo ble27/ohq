@@ -37,7 +37,7 @@ export const Dashboard = () => {
     const currentView = getDashboardView(location.pathname);
     const currentInstructions = VIEW_INSTRUCTIONS[currentView];
     // Supabase user
-    const { user, prismaUser, refreshUser } = useAuth();
+    const { user, prismaUser } = useAuth();
 
     const userId = user?.id;
     const socket = useSocket();
@@ -431,7 +431,7 @@ return (
                 </VerifyTA>
             )}
             
-            { isDashboardSettings && <DashboardSettings prismaUser={prismaUser} supabaseUser={user} onUpdateSaveChanges={refreshUser}/>}
+            { isDashboardSettings && <DashboardSettings prismaUser={prismaUser} supabaseUser={user}/>}
         </div>
     </div>
     </>

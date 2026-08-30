@@ -10,6 +10,7 @@ interface AuthContextValue {
   role: Role | null;
   loading: boolean;
   refreshUser: () => Promise<void>;
+  updatePrismaUser: (patch: Partial<PrismaUser>) => void;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -60,6 +61,13 @@ export const AuthContextProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
+  const updatePrismaUser = useCallback((patch: Partial<PrismaUser>) => {
+    setPrismaUser((previous) => (previous ? { ...previous, ...patch } : previous));
+    if (patch.role !== undefined) {
+      setRole(patch.role);
+    }
+  }, []);
+
   // Load user from httpOnly auth cookie on mount
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -67,7 +75,7 @@ export const AuthContextProvider = ({ children }: { children: ReactNode }) => {
   }, [refreshUser]);
 
   return (
-    <AuthContext.Provider value={{ user, prismaUser, role, loading, refreshUser }}>
+    <AuthContext.Provider value={{ user, prismaUser, role, loading, refreshUser, updatePrismaUser }}>
       {children}
     </AuthContext.Provider>
   );
