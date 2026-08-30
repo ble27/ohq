@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import type { NotificationType, QueueTicketWithStudent, QueueWithTA } from '@shared/types'
+import { getSafeZoomLink } from '@/lib/utils'
 
 interface NotificationBannerProps {
     queue: QueueWithTA | null
@@ -30,10 +31,11 @@ export const NotificationBanner = ({
         CLOSE: 'border-red-500 bg-red-400',
     }
 
+    const safeZoomLink = getSafeZoomLink(queue?.zoomLink)
     const defaultMessages: Record<NotificationType, string> = {
         JOIN: `Student ${ticket?.student?.name} joined your queue`,
         LEAVE: `Student ${ticket?.student?.name} left your queue`,
-        ASSIST: `Please head to ${queue?.location}${queue?.zoomLink ? ` or join Zoom (${queue.zoomLink})` : ''}. TA ${queue?.ta?.name} is ready to assist you.`,
+        ASSIST: `Please head to ${queue?.location}${safeZoomLink ? ' or join Zoom (see queue details)' : ''}. TA ${queue?.ta?.name} is ready to assist you.`,
         CLOSE: 'Queue is closing in 5 mins.',
     }
 

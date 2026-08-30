@@ -18,6 +18,7 @@ import type {
 } from '../../shared/types.js';
 import { getIo } from '../socket.js';
 import { requireQueueOwnership, requireSelf } from '../middlewares/authz.middleware.js';
+import { notificationCreateRateLimiter } from '../middlewares/rateLimit.middleware.js';
 
 const router = Router();
 
@@ -57,7 +58,7 @@ router.get('/user/:userId', requireSelf('userId'), async (req, res) => {
 // POST /api/notifications/queues/:queueId/user/:recipientId/type/:type
 // Whenever a student joins/leaves, or TA accepts a student into a session
 // Recipient receives the notification (TA for JOIN/LEAVE, student for ASSIST)
-router.post('/queues/:queueId/user/:recipientId/type/:type', async (req: Request, res: Response) => {
+router.post('/queues/:queueId/user/:recipientId/type/:type', notificationCreateRateLimiter, async (req: Request, res: Response) => {
     try {
         const queueId = req.params.queueId as string;
         const recipientId = req.params.recipientId as string;

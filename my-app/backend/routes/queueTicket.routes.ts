@@ -16,6 +16,7 @@ import type {
 import { CreateQueueTicketValidationSchema, LeaveTicketStatusSchema } from '../schemas/queueticket.schema.js';
 import { ZodError } from 'zod';
 import { requireQueueOwnership, requireRole, requireTicketQueueOwnership, requireSelf, requireQueueViewerAccess, requireTicketReadAccess } from '../middlewares/authz.middleware.js';
+import { queueJoinRateLimiter } from '../middlewares/rateLimit.middleware.js';
 const router: Router = Router();
 
 // GET /api/queueticket — list every ticket across all queues. PROFESSOR only (admin-style view).
@@ -196,7 +197,7 @@ router.get('/:queueTicketId', requireTicketReadAccess('queueTicketId'), async (r
 });
 
 // POST /api/queueticket/:queueId — create ticket based on queue ID
-router.post('/queues/:queueId', async (req: Request, res: Response): Promise<void> => {
+router.post('/queues/:queueId', queueJoinRateLimiter, async (req: Request, res: Response): Promise<void> => {
     try {
         const queueId = req.params.queueId as string;
         const status  = req.body.status as SessionStatus;
@@ -250,7 +251,7 @@ router.post('/queues/:queueId', async (req: Request, res: Response): Promise<voi
 });
 
 // PATCH /api/queueticket/:id — leaves a queue (the only status transition this endpoint supports). Ticket owner only.
-router.patch('/:queueTicketId', async (req: Request, res: Response): Promise<void> => {
+router.patch('/:queueTicketId', queueJoinRateLimiter, async (req: Request, res: Response): Promise<void> => {
     try {
         const ticketId = req.params.queueTicketId;
         if (!ticketId) {

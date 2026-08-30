@@ -1,10 +1,23 @@
 import { z } from 'zod';
+import { normalizeZoomLink } from '../utils/zoomLink.js';
 
-/** Empty string / null → null; otherwise require an http(s) URL. */
+/** Empty string / null → null; otherwise require a https://*.zoom.us URL. */
 const optionalZoomLink = z
-    .union([z.string().url({ message: 'Zoom link must be a valid URL' }), z.literal(''), z.null()])
+    .union([z.string(), z.literal(''), z.null()])
     .optional()
-    .transform((value) => (value == null || value === '' ? null : value));
+    .superRefine((value, ctx) => {
+        if (value == null || value === '') return;
+        if (!normalizeZoomLink(String(value))) {
+            ctx.addIssue({
+                code: 'custom',
+                message: 'Zoom link must be a valid https://zoom.us URL',
+            });
+        }
+    })
+    .transform((value) => {
+        if (value == null || value === '') return null;
+        return normalizeZoomLink(String(value));
+    });
 
 // Validator
 export const QueueValidationSchema = z.object({

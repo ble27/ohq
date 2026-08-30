@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import type { Request, Response } from 'express';
-import { supabase } from '../config/supabase.js';
+import { supabase, supabaseAdmin } from '../config/supabase.js';
 import { prisma } from '../prisma.js';
 import { parseGoogleDisplayName } from '../services/authUser.services.js';
 import { closeQueuesOnTaLeave, isQueueManagerUser } from '../services/taPresence.service.js';
@@ -154,9 +154,10 @@ router.get('/socket-token', async (req: Request, res: Response) => {
 
 router.post('/signout', async (req: Request, res: Response) => {
     const accessToken = req.cookies?.access_token;
+    let userId: string | undefined;
     if (accessToken) {
         const { data } = await supabase.auth.getUser(accessToken);
-        const userId = data.user?.id;
+        userId = data.user?.id;
         if (userId && await isQueueManagerUser(userId)) {
             try {
                 await closeQueuesOnTaLeave(userId);
@@ -168,7 +169,14 @@ router.post('/signout', async (req: Request, res: Response) => {
 
     res.clearCookie('access_token', authCookieOptions);
     res.clearCookie('refresh_token', authCookieOptions);
-    await supabase.auth.signOut({ scope: 'local' });
+
+    if (accessToken) {
+        const { error } = await supabaseAdmin.auth.admin.signOut(accessToken, 'global');
+        if (error) {
+            console.error('[AUTH] Failed to revoke Supabase sessions on sign-out:', error.message);
+        }
+    }
+
     return res.status(200).json({ message: 'Signed out successfully' });
 });
 

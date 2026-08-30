@@ -80,6 +80,14 @@ Disabling `persistSession` breaks PKCE — the `code_verifier` does not survive 
 - **Prod:** Socket connects directly to `VITE_API_URL` (Render); Vercel does not proxy WebSockets.
 - Token for the handshake comes from `GET /api/auth/socket-token` (httpOnly cookie session).
 
+### Security hardening (app layer)
+
+- **RLS:** Enabled on Supabase tables with no policies — PostgREST denies by default; all data access goes through Express + Prisma.
+- **Sign-out:** Revokes all Supabase sessions globally (`admin.signOut` with `global` scope), not just browser cookies.
+- **Input validation:** Display names (1–100 chars); Zoom links must be `https://*.zoom.us` on the API.
+- **Rate limits:** Per-user caps on notification creation and queue join/leave.
+- **CSP:** Production frontend headers in `vercel.json` (`connect-src` includes Render + Supabase).
+
 ### Sign-out
 
 User-initiated sign-out (`POST /api/auth/signout` via Sidebar / Settings) clears httpOnly cookies, then clears the Supabase browser session with `signOut({ scope: 'local' })`.

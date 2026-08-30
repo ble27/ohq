@@ -170,7 +170,8 @@ io.on('connection', async (socket: Socket) => {
 app.set('trust proxy', 1);
 
 // Security headers + explicit HTTP CORS policy (Socket.IO has its own above).
-app.use(helmet());
+// API serves JSON only — CSP is set on the Vercel frontend (vercel.json).
+app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cors({ origin: ALLOWED_ORIGINS, credentials: true }));
 
 app.use(express.json());

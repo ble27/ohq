@@ -25,6 +25,14 @@ pnpm-debug.log*
 .env.*
 !.env.example
 !**/.env.example
+.envrc
+*.pem
+*.key
+*.p12
+*.pfx
+credentials.json
+credentials*.json
+.secrets
 
 # Dependencies and build output
 node_modules/

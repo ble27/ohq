@@ -13,9 +13,14 @@ export const NotificationAlertUpdateSchema = z.object({
 });
 
 export const DefaultLocationUpdateSchema = z.object({
-    defaultLocation: z.string().trim().min(2).max(50) 
-})
+    defaultLocation: z.string().trim().min(2).max(50),
+});
+
+export const DisplayNameUpdateSchema = z.object({
+    name: z.string().trim().min(1, { message: 'Name is required' }).max(100, { message: 'Name is too long' }),
+});
 
 export type UserInput = z.infer<typeof UserValidatedSchema>;
 export type NotificationAlertUpdateInput = z.infer<typeof NotificationAlertUpdateSchema>;
-export type DefaultLocationUpdateInput = z.infer<typeof DefaultLocationUpdateSchema>
+export type DefaultLocationUpdateInput = z.infer<typeof DefaultLocationUpdateSchema>;
+export type DisplayNameUpdateInput = z.infer<typeof DisplayNameUpdateSchema>;

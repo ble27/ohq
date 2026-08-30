@@ -16,8 +16,13 @@ out/
 .env.development.local
 .env.test.local
 .env.production.local
+.envrc
 *.env.json
 !.env.example
+*.pem
+*.key
+credentials.json
+credentials*.json
 
 # Logs
 logs

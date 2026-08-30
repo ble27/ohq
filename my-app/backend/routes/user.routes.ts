@@ -8,7 +8,7 @@ import type {
     UserResponse,
 } from '../../shared/types.js';
 import { ZodError } from 'zod';
-import { UserValidatedSchema, NotificationAlertUpdateSchema, DefaultLocationUpdateSchema } from '../schemas/user.schema.js';
+import { UserValidatedSchema, NotificationAlertUpdateSchema, DefaultLocationUpdateSchema, DisplayNameUpdateSchema } from '../schemas/user.schema.js';
 import { getNotifyPreferenceField } from '../services/notification.services.js';
 import { requireSelf, type AuthedRequest } from '../middlewares/authz.middleware.js';
 
@@ -99,23 +99,27 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
 router.patch('/:id/name', requireSelf('id'), async (req: Request, res: Response) => {
     try {
         const id = req.params.id as string;
-        const name = req.body.name as string;
+        const { name } = DisplayNameUpdateSchema.parse(req.body);
         const response = await prisma.user.update({
-            where: { id: id }, 
-            data: { name }
-        })
+            where: { id: id },
+            data: { name },
+        });
         const body = {
             user: response,
-            message: `Successfully updated user name to ${name}`
-        }
+            message: `Successfully updated user name to ${name}`,
+        };
         res.status(200).json(body);
     } catch (error) {
         const id = req.params.id;
+        if (error instanceof ZodError) {
+            res.status(400).json({ message: 'Invalid input', errors: error.issues });
+            return;
+        }
         if (error instanceof Error) {
             res.status(500).json({ message: error.message });
             return;
         }
-        res.status(500).json({ message: `Failed to update user name with id ${id}` });        
+        res.status(500).json({ message: `Failed to update user name with id ${id}` });
     }
 })
 
