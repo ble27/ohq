@@ -34,6 +34,17 @@ export const signIn = async (email: string, password: string) => {
 
 /** Primary auth entry — Google OAuth (any Google account; no domain restriction). */
 export const googleSignIn = async () => {
+    // The PKCE code_verifier is written to this origin's localStorage. If we
+    // kick off the flow from www but the callback lands on the apex domain
+    // (or vice versa), the verifier won't be there to exchange the code —
+    // see main.tsx for why a stale tab can still be sitting on www.
+    if (window.location.hostname === 'www.queueble.app') {
+        window.location.replace(
+            `${window.location.protocol}//queueble.app${window.location.pathname}${window.location.search}`,
+        );
+        return;
+    }
+
     const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
