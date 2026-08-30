@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { establishSession } from '../services/authService';
+import { establishSession, getMeSupabase } from '../services/authService';
 import { supabase } from '@/services/supabase';
 import { useAuth } from '@/context/AuthContextProvider';
 
@@ -72,7 +72,16 @@ export const AuthCallback = () => {
       if (!session) {
         const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
         if (exchangeError) {
-          setError(exchangeError.message);
+          const msg = exchangeError.message.toLowerCase();
+          if (msg.includes('pkce') || msg.includes('code verifier') || msg.includes('flow state')) {
+            setError(
+              'Sign-in could not be completed — the link may have expired, or you started on www.queueble.app but returned on queueble.app (or vice versa). Open Log In on queueble.app and try again.',
+            );
+          } else if (msg.includes('already been used') || msg.includes('invalid grant')) {
+            setError('This sign-in link was already used. Please start again from Log In.');
+          } else {
+            setError(exchangeError.message);
+          }
           return;
         }
         session = data.session;
@@ -91,6 +100,18 @@ export const AuthCallback = () => {
         // clears this browser's storage; it does NOT revoke the refresh token,
         // so the cookie session just established above keeps working.
         await supabase.auth.signOut({ scope: 'local' });
+
+        // Confirm httpOnly cookies actually stuck before leaving this page —
+        // previously we navigated to /dashboard even when /me returned 401,
+        // which bounced users back to /signin and felt like a failed login.
+        const me = await getMeSupabase();
+        if (!me?.user) {
+          setError(
+            'Google sign-in succeeded but the app session could not be saved. Ensure cookies are enabled for queueble.app, then try again.',
+          );
+          return;
+        }
+
         await refreshUser();
         navigate('/dashboard/home', { replace: true });
       } catch (err: unknown) {

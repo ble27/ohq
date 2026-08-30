@@ -47,6 +47,7 @@ const authCookieOptions = {
     httpOnly: true,
     secure: isProduction,
     sameSite: 'lax' as const,
+    path: '/',
 };
 
 export function setAuthCookies(

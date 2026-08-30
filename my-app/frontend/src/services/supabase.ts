@@ -7,7 +7,10 @@ export const supabase = createClient(
     supabaseUrl, 
     supabaseKey, {
         auth: {
-            flowType: 'pkce' // proof key for  code exchange // client: verifier, challenge, server: auth code, and rehash verifier to get challenge
+            flowType: 'pkce', // client stores verifier; server returns auth code; exchange rehashes verifier
+            // AuthCallback handles the code exchange manually — leaving this on lets
+            // the client race against our handler and can consume the code first.
+            detectSessionInUrl: false,
         }
     }
 )
