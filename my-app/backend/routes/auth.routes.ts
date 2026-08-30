@@ -4,6 +4,7 @@ import { supabase } from '../config/supabase.js';
 import { prisma } from '../prisma.js';
 import { parseGoogleDisplayName } from '../services/authUser.services.js';
 import { closeQueuesOnTaLeave, isQueueManagerUser } from '../services/taPresence.service.js';
+import { verifySupabaseAccessToken } from '../utils/verifyAccessToken.js';
 
 const router: Router = Router();
 
@@ -130,17 +131,25 @@ router.get('/me', async (req: Request, res: Response) => {
  * frontend domain. This endpoint returns the access token for the handshake.
  */
 router.get('/socket-token', async (req: Request, res: Response) => {
-    const accessToken = req.cookies?.access_token;
-    if (!accessToken) {
+    let accessToken = req.cookies?.access_token;
+
+    const localUser = await verifySupabaseAccessToken(accessToken);
+    if (localUser) {
+        return res.status(200).json({ token: accessToken });
+    }
+
+    const refreshToken = req.cookies?.refresh_token;
+    if (!refreshToken) {
         return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const { data, error } = await supabase.auth.getUser(accessToken);
-    if (error || !data.user) {
+    const { data, error } = await supabase.auth.refreshSession({ refresh_token: refreshToken });
+    if (error || !data.session) {
         return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    return res.status(200).json({ token: accessToken });
+    setAuthCookies(res, data.session);
+    return res.status(200).json({ token: data.session.access_token });
 });
 
 router.post('/signout', async (req: Request, res: Response) => {

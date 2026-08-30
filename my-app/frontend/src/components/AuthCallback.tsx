@@ -66,26 +66,24 @@ export const AuthCallback = () => {
 
       setStatus('Signing you in…');
 
-      const { data: existingSessionData } = await supabase.auth.getSession();
-      let session = existingSessionData.session;
-
-      if (!session) {
-        const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
-        if (exchangeError) {
-          const msg = exchangeError.message.toLowerCase();
-          if (msg.includes('pkce') || msg.includes('code verifier') || msg.includes('flow state')) {
-            setError(
-              'Sign-in could not be completed — the link may have expired, or you started on www.queueble.app but returned on queueble.app (or vice versa). Open Log In on queueble.app and try again.',
-            );
-          } else if (msg.includes('already been used') || msg.includes('invalid grant')) {
-            setError('This sign-in link was already used. Please start again from Log In.');
-          } else {
-            setError(exchangeError.message);
-          }
-          return;
+      // Always exchange the OAuth code — a stale Supabase session in localStorage
+      // must not override the Google account the user just selected.
+      const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+      if (exchangeError) {
+        const msg = exchangeError.message.toLowerCase();
+        if (msg.includes('pkce') || msg.includes('code verifier') || msg.includes('flow state')) {
+          setError(
+            'Sign-in could not be completed — the link may have expired, or you started on www.queueble.app but returned on queueble.app (or vice versa). Open Log In on queueble.app and try again.',
+          );
+        } else if (msg.includes('already been used') || msg.includes('invalid grant')) {
+          setError('This sign-in link was already used. Please start again from Log In.');
+        } else {
+          setError(exchangeError.message);
         }
-        session = data.session;
+        return;
       }
+
+      const session = data.session;
 
       if (!session) {
         setError('No session returned from OAuth');

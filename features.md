@@ -6,9 +6,32 @@
 
 1. User clicks **Log In** → `googleSignIn()` starts Supabase PKCE OAuth.
 2. Google redirects back to `{origin}/auth/callback?code=...`.
-3. `AuthCallback` exchanges the code for a Supabase session.
+3. `AuthCallback` **always** exchanges the code via `exchangeCodeForSession(code)`.
 4. `POST /api/auth/session` stores `access_token` and `refresh_token` in **httpOnly cookies**.
 5. `GET /api/auth/me` verifies the cookie session → user lands on `/dashboard/home`.
+
+### Two session stores (read this before changing auth code)
+
+Queueble keeps auth in **two places**. They serve different jobs and must not be mixed up:
+
+| Store | Where | Used for |
+|-------|--------|----------|
+| **httpOnly cookies** | Set by Express (`/api/auth/session`) | Real app session — `/me`, protected routes, API calls |
+| **Supabase browser session** | `localStorage` via supabase-js | PKCE `code_verifier` during OAuth only |
+
+After login succeeds, the **cookies** are the source of truth. A copy of the tokens may remain in `localStorage` for PKCE; that is expected and not a security issue by itself (httpOnly cookies are what the API reads).
+
+### `signOut({ scope: 'local' })` — when it is safe
+
+`scope: 'local'` clears the browser Supabase session **and revokes that session on the Auth server**. That is correct in some places and fatal in others:
+
+| Location | Call `signOut({ scope: 'local' })`? | Why |
+|----------|--------------------------------------|-----|
+| **`AuthCallback` after `establishSession()`** | **Never** | Revokes the session whose tokens were just written to httpOnly cookies → `/me` returns 401. |
+| **`signOut()` / user logs out** | **Yes** (after API clears cookies) | Drops stale `localStorage` so the next login does not reuse the old account. |
+| **`googleSignIn()` before OAuth redirect** | **Yes** | Clears stale browser session before a new account is chosen. OAuth callback then exchanges the fresh `code`. |
+
+**Rule of thumb:** only call `signOut` **before** a new login flow or **after** the user explicitly logs out — never **after** `establishSession()` in the callback.
 
 ### Architecture constraints
 
@@ -22,19 +45,41 @@
 - **Supabase dashboard:** Redirect URLs must include:
   - `http://localhost:5173/auth/callback`
   - `https://queueble.app/auth/callback`
+- **Google account picker:** `googleSignIn()` uses `prompt: 'select_account consent'` so users can switch Google accounts.
 
-### Bug fix: session revoked immediately after login (2026-08)
+### Auth pitfalls (fixed Aug 2026)
 
-**Symptom:** Google sign-in succeeded, then either:
-- *"Google sign-in succeeded but the app session could not be saved"*, or
-- Redirect back to sign-in / landing page after a brief dashboard flash.
+#### 1. Session revoked right after login
 
-**Root cause:** `AuthCallback` called `supabase.auth.signOut({ scope: 'local' })` right after `establishSession()`. Despite the name, this **revokes the current Supabase Auth session** on the server — invalidating the tokens that had just been copied into httpOnly cookies. The next `GET /api/auth/me` then failed.
+**Symptom:** *"Google sign-in succeeded but the app session could not be saved"* or bounce back to sign-in.
 
-**Fix:** Do not call `signOut()` after establishing the cookie session. The backend owns session persistence; the Supabase client's browser copy is harmless compared to revoking the live session.
+**Cause:** `signOut({ scope: 'local' })` in `AuthCallback` immediately after `establishSession()`.
 
-**Do not use as a fix:** `persistSession: false` on the Supabase client — it prevents the PKCE `code_verifier` from surviving Google's redirect and breaks the OAuth callback.
+**Fix:** Remove that call. Cookies already hold the live session.
+
+#### 2. Wrong Google account after switching emails
+
+**Symptom:** Signing in with `@tamu.edu` still shows `@gmail.com` (or vice versa).
+
+**Cause:** `AuthCallback` reused a stale `localStorage` session via `getSession()` and **skipped** `exchangeCodeForSession` even though the URL had a new `code`. Sign-out also cleared cookies but left `localStorage` intact.
+
+**Fix:**
+- Always `exchangeCodeForSession(code)` when `code` is in the callback URL.
+- Call `signOut({ scope: 'local' })` on user sign-out and at the start of `googleSignIn()`.
+
+These two fixes work together: sign-out / pre-OAuth `signOut` clears the old browser session; the callback never calls `signOut` after cookies are set.
+
+#### 3. Do not use `persistSession: false`
+
+Disabling `persistSession` breaks PKCE — the `code_verifier` does not survive Google's redirect and the callback fails with a PKCE error. Keep the default (`true`).
+
+### Real-time notifications (Socket.IO)
+
+- Toasts fire on the `notification-created` socket event in `Dashboard.tsx`.
+- **Dev:** Socket connects to `window.location.origin`; Vite proxies `/socket.io` → `localhost:3000` (same pattern as `/api`). `VITE_API_URL` pointing at Render does **not** affect local sockets.
+- **Prod:** Socket connects directly to `VITE_API_URL` (Render); Vercel does not proxy WebSockets.
+- Token for the handshake comes from `GET /api/auth/socket-token` (httpOnly cookie session).
 
 ### Sign-out
 
-User-initiated sign-out (`POST /api/auth/signout` via Sidebar / Settings) clears httpOnly cookies and is the correct place to end a session.
+User-initiated sign-out (`POST /api/auth/signout` via Sidebar / Settings) clears httpOnly cookies, then clears the Supabase browser session with `signOut({ scope: 'local' })`.

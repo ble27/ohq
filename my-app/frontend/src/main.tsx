@@ -27,7 +27,8 @@ axios.defaults.withCredentials = true;
 // - Dev: Vite proxies /api → localhost:3000 (vite.config.ts)
 // - Prod: Vercel rewrites /api → Render (vercel.json)
 // Hitting Render cross-origin breaks auth cookies on mobile Safari (ITP).
-// Socket.IO still uses VITE_API_URL directly — see SocketProvider.
+// Socket.IO: dev uses same-origin (Vite proxies /socket.io → localhost:3000);
+// prod uses VITE_API_URL (Render) — see SocketProvider.
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

@@ -44,6 +44,8 @@ export const googleSignIn = async () => {
         );
         return;
     }
+    // Drop any stale browser session so the callback must exchange the new code.
+    await supabase.auth.signOut({ scope: 'local' });
 
     const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
@@ -51,7 +53,7 @@ export const googleSignIn = async () => {
             redirectTo: `${window.location.origin}/auth/callback`,
             queryParams: {
                 access_type: 'offline',
-                prompt: 'consent',
+                prompt: 'select_account consent',
             },
         },
     });
@@ -133,6 +135,9 @@ export const signOut = async () => {
         }, {
             withCredentials: true,
         });
+        // Clear the Supabase client's browser copy so the next OAuth flow
+        // doesn't reuse the previous account's session in localStorage.
+        await supabase.auth.signOut({ scope: 'local' });
         if (response.status === 200) {
             return response.data.message;
         }

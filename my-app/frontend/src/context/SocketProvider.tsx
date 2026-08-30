@@ -5,6 +5,14 @@ import { useAuth } from './AuthContextProvider';
 
 const SocketContext = createContext<Socket | null>(null);
 
+/** Dev: same-origin (Vite proxies /socket.io). Prod: Render host (Vercel has no WS proxy). */
+function getSocketServerUrl() {
+    if (import.meta.env.DEV) {
+        return window.location.origin;
+    }
+    return import.meta.env.VITE_API_URL ?? window.location.origin;
+}
+
 export function SocketProvider ({ children }: { children: ReactNode } ) {
     const [socket, setSocket] = useState<Socket | null>(null);
     const { user, loading } = useAuth();
@@ -26,14 +34,18 @@ export function SocketProvider ({ children }: { children: ReactNode } ) {
                 });
                 if (cancelled || !data.token) return;
 
-                // WebSockets still talk to Render directly.
-                instance = io(
-                    import.meta.env.VITE_API_URL ?? "http://localhost:3000",
-                    {
-                        withCredentials: true,
-                        auth: { token: data.token },
-                    },
-                );
+                if (instance) {
+                    instance.auth = { token: data.token };
+                    if (!instance.connected) {
+                        instance.connect();
+                    }
+                    return;
+                }
+
+                instance = io(getSocketServerUrl(), {
+                    withCredentials: true,
+                    auth: { token: data.token },
+                });
                 if (cancelled) {
                     instance.disconnect();
                     return;
@@ -46,12 +58,21 @@ export function SocketProvider ({ children }: { children: ReactNode } ) {
 
         void connect();
 
+        const onVisibilityChange = () => {
+            if (document.visibilityState !== 'visible' || cancelled) return;
+            if (!instance?.connected) {
+                void connect();
+            }
+        };
+        document.addEventListener('visibilitychange', onVisibilityChange);
+
         return () => {
             cancelled = true;
+            document.removeEventListener('visibilitychange', onVisibilityChange);
             instance?.disconnect();
             setSocket(null);
         };
-    }, [user, loading]); 
+    }, [user?.id, loading]); 
 
     return (
         <SocketContext.Provider value={user ? socket : null}>
