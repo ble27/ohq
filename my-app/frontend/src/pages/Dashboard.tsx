@@ -149,14 +149,14 @@ export const Dashboard = () => {
                 )
             }
             else if (n.type === 'CLOSE') {
-                const closesAt = n.queue?.endsAt
-                    ? new Date(n.queue.endsAt).toLocaleTimeString(undefined, {
-                        hour: 'numeric',
-                        minute: '2-digit',
-                        hour12: true,
-                    })
-                    : 'soon';
-                toast(`TA's ${n.queue?.ta?.name ?? n.queue?.ta?.email} closes at ${closesAt}!`, 
+                const taName = n.queue?.ta?.name ?? n.queue?.ta?.email;
+                const minutesLeft = n.queue?.endsAt
+                    ? Math.max(0, Math.round((new Date(n.queue.endsAt).getTime() - Date.now()) / 60000))
+                    : null;
+                const closesIn = minutesLeft === null
+                    ? 'soon'
+                    : `in ${minutesLeft} ${minutesLeft === 1 ? 'min' : 'mins'}`;
+                toast(`TA ${taName}'s Queue closes ${closesIn}!`, 
                     { description }
                 )
             }
