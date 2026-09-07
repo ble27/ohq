@@ -42,7 +42,6 @@ interface QueueManagerProps {
     courses: Course[]
     isLoading: boolean
     onCloseSidebar?: () => void
-    // onCreateQueue is a prop for a function in the parent component
     onCreateQueue: (input: CreateQueueInput) => void | Promise<void>
     onDeleteQueue: (queueId: string) => void | Promise<void>
     onUpdateQueue: (updated: Queue) => void | Promise<void>
@@ -65,10 +64,8 @@ export const QueueManager = ({
     const [error, setError] = useState<string | null>(null)
     const [isViewingDeletionModal, setIsViewingDeletionModal] = useState(false);
 
-    // Queue Start and End Times
     const [startTime, setStartTime] = useState('08:00');
     const [endTime, setEndTime] = useState('09:00');
-    // TA workspace
     const [isViewingManagementModal, setIsViewingManagementModal] = useState(false);
     const [currentQueue, setCurrentQueue] = useState<Queue | null>(null);
     const [tickets, setTickets] = useState<QueueTicketWithStudent[]>([]);
@@ -116,7 +113,6 @@ export const QueueManager = ({
                 return;
             }
             setError(null)
-            // From dashboard
             await onDeleteQueue(deletingQueueId);
         } catch {
             setError('Unable to delete the queue. Please try again.')
@@ -125,38 +121,27 @@ export const QueueManager = ({
         }
     }
 
-    // Set the deleting queue id and open the confirmation modal
     const handleOpenDeleteModal = async (queueId: string) => {
         setDeletingQueueId(queueId);
         setIsViewingDeletionModal(true);
     }
 
-    // Queue Management Modal
     const handleOpenManagementModal = async (queue: Queue) => {
         setCurrentQueue(queue);
         setIsViewingManagementModal(true);
         onCloseSidebar?.();
     }
 
-    // When queue management modal is closed
-    // Remove all tickets currently waiting and in session, essentially deleting them
-    // Don't persist
+    /** Clears WAITING/HELPING tickets when the management modal closes after a queue close. */
     const removeTicketsWhenClosed = async () => {
         console.log('Calling removeTicketsWhenClosed');
         const queueId = currentQueue?.id;
-        // deleted tickets
         await axios.delete(`/api/queueticket/queues/${queueId}/status/closed`);
     }
 
-    /* QueueManager will manage all tickets for each queue
-        Fetch all current tickets for a queue based on queue ID
-      And Pass to the QueueManagementModal  
-    */
-
     useEffect(() => {
         if (!isViewingManagementModal || !currentQueue) {
-            // Resetting local ticket list to sync with the modal's open/closed state, not an external system.
-            // eslint-disable-next-line react-hooks/set-state-in-effect
+            // eslint-disable-next-line react-hooks/set-state-in-effect -- reset tickets when modal closes
             setTickets([]);
             return;
         }
@@ -196,7 +181,7 @@ export const QueueManager = ({
                 try {
                     const response = await axios.patch(`/api/queues/${queue.id}/status/false`);
                     const updated = response.data?.queue;
-                    if (updated) await onUpdateQueue(updated); // call onUpdate to update the queue opening / closing status for all created queues
+                    if (updated) await onUpdateQueue(updated);
                 } catch (err) {
                     console.error(`Failed to auto-close queue ${queue.id}`, err);
                 }

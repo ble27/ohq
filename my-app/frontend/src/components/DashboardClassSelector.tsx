@@ -19,8 +19,7 @@ import { getSafeZoomLink } from '@/lib/utils';
 
 const ACTIVE_TICKET_STATUSES = new Set(['WAITING', 'HELPING']);
 
-// Props type interface with setter
-interface ClassSelectorProps { 
+interface ClassSelectorProps {
   Classes: string[]; 
   selectedClass: string; 
   setSelectedClass: (value: string) => void; 
@@ -29,7 +28,6 @@ interface ClassSelectorProps {
 export const ClassSelector: React.FC<ClassSelectorProps> = ({ Classes, selectedClass, setSelectedClass }) => { 
     const { user } = useAuth();
     const [queue, setQueue] = useState<QueueWithTA[]>([]);
-    // Load a modal only for selected queue
     const [selectedQueue, setSelectedQueue] = useState<Queue | null>(null);
     const [isModalOpen, setModalOpen] = useState(false);
     const [ticket, setTicket] = useState<QueueTicket | null>(null);
@@ -59,7 +57,7 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ Classes, selectedC
       })
     }
   
-    // Membership must come from the server — client Set alone is lost on remount / Clear+Enter.
+    // Membership must come from the server — client Set alone is lost on remount.
     const syncJoinedQueuesFromServer = async () => {
         if (!user?.id) return;
 
@@ -71,13 +69,11 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ Classes, selectedC
             ACTIVE_TICKET_STATUSES.has(t.status),
         );
 
-        // Connect the queue id to the current ticket the user owns
         const nextMap = new Map(activeTickets.map((t) => [t.queueId, t]));
         setMyTicketsByQueueId(nextMap);
         setJoinedQueueIds(new Set(nextMap.keys()));
         setTicket((prev) => {
             if (prev) {
-                // check if prev is in the newly refreshed map
                 const refreshed = nextMap.get(prev.queueId);
                 if (refreshed) return refreshed;
             }
@@ -89,7 +85,6 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ Classes, selectedC
         const timers: number[] = [];
         for (const q of queue) {
             if (!q.isOpen || !q.endsAt) continue;
-            // each queue gets its own countdown timer
             const delay = new Date(q.endsAt).getTime() - Date.now();
             const markClosed = () => {
                 setQueue((prev) =>
@@ -104,20 +99,16 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ Classes, selectedC
         };
     }, [queue]);
 
-    // Pass in queue id of the ticket before even joining the queue
     const createTicket = async (queueId: string) =>  {
         try {
-            // res: data: payload
             console.log('Calling createTicket from ClassSelector');
             const response = await axios.post<QueueTicketResponse>(`/api/queueticket/queues/${queueId}`, { status: 'WAITING' });
             console.log('Successfully created a new ticket');
 
-            // Need to return ticket and ticket id to pass into QueueModal
             const ticket: QueueTicket = response.data.ticket;
             const ticketId: string = ticket.id;
             console.log(`My current ticket id ${ticketId}`);
 
-            // Update ticket
             setTicket(ticket);
             setMyTicketsByQueueId((prev) => new Map(prev).set(queueId, ticket));
             return {ticket, ticketId};
@@ -131,14 +122,10 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ Classes, selectedC
         }
     }
 
-    // Fetch queue based on course ID
     const fetchQueue = async () => { 
         try { 
-            // selectedClass = course code not courseId
             const courseId = (await axios.get(`/api/courses/${selectedClass}`)).data.courseId;
 
-            // Remove previously selected class's that doesn't match new courseId
-            // so that when user switches to a new class and refetches, the old class id doesn't persist
             setQueue((prev) => prev.filter((q) => q.courseId === courseId));
             
             const response = await axios.get<QueuesListResponse>(`/api/queues/course/${courseId}`); 
@@ -152,19 +139,15 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ Classes, selectedC
 
             const activeQueuesList: Queue[] = response.data.queues;
 
-            // Set only active queues from course code
             setQueue((prevQueue) => {
-                // Extract new items that do not exist in the current queue and match the new course idea
                 const uniqueNewItems = activeQueuesList.filter(
                     (newItem) =>
                         !prevQueue.some((prevItem) => prevItem.id === newItem.id)
                 );
- 
-                // Return original array if no new unique items exist
+
                 if (uniqueNewItems.length === 0) return prevQueue;
                 return [...prevQueue, ...uniqueNewItems];
             });
-            // Rebuild Join/View from DB so Enter doesn't show Join after an existing membership
             await syncJoinedQueuesFromServer();
         } 
         catch (error) { 
@@ -177,7 +160,6 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ Classes, selectedC
     };
 
     useEffect(() => {
-      // Display the number of active queues for each course as a counter
       const fetchActiveQueues = async () => {
         try {
           const response = await axios.get<QueuesListResponse>('/api/queues/active');
@@ -196,7 +178,6 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ Classes, selectedC
       };
       void fetchActiveQueues();
 
-      // Poll every 15 seconds
       const intervalID = setInterval(() => { void fetchActiveQueues(); }, 15000);
       return () => clearInterval(intervalID);
     }, []);
@@ -218,7 +199,6 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ Classes, selectedC
         setQueue([]);
     }
 
-    // Create notification
     const createNotification = async (selectedQueue: Queue, type: NotificationType, ticketId: string) => {
       const queueId = selectedQueue.id;
       const taId = selectedQueue.taId;
@@ -228,25 +208,20 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ Classes, selectedC
       return response.data.notification;
     }
 
-    // Remove Join button after a user has joined a queue
     const handleJoinQueue = async (selectedQueue: Queue) => {
-      // Already joining this (or another) queue — ignore extra clicks until it resolves.
       if (joiningQueueId) return;
 
       setJoiningQueueId(selectedQueue.id);
       try {
-        // createTicket returns ticket and ticketId from joinQueue
         const response = await createTicket(selectedQueue.id);
         if (!response) return;
 
-        // Add joined queue ids
         setJoinedQueueIds((prev) => new Set(prev).add(selectedQueue.id));
 
         setIsViewingQueue(false);
         setSelectedQueue(selectedQueue);
         setModalOpen(true);
 
-        // Create notification to TA on join
         await createNotification(selectedQueue, 'JOIN', response.ticketId);
       } finally {
         setJoiningQueueId(null);
@@ -254,7 +229,6 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ Classes, selectedC
     }
 
     const handleViewQueue = (selectedQueue: Queue) => {
-      // Restore this queue's ticket so Leave works after a refetch
       setTicket(myTicketsByQueueId.get(selectedQueue.id) ?? null);
       setIsViewingQueue(true);
       setSelectedQueue(selectedQueue);
@@ -262,10 +236,8 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ Classes, selectedC
     }
 
     const handleLeaveQueue = async (queueId: string) => {
-      // Create notification to TA on leave
       if (!selectedQueue) return;
 
-      // hmap : queueId -> ticket
       const ticketId = myTicketsByQueueId.get(queueId)?.id as string;
       
       await createNotification(selectedQueue, 'LEAVE', ticketId);

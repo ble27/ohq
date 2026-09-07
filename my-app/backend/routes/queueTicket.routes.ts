@@ -27,7 +27,6 @@ router.get('/', requireRole(Role.PROFESSOR), async (_req: Request, res: Response
         const tickets = await prisma.queueTicket.findMany();
         const body: QueueTicketsListResponse = { tickets, message: 'SUCCESS' };
 
-        // console.log(`[QUEUE TICKET] Successfully sent ticket objects: ${JSON.stringify(body.tickets, null, 2)}`)
         res.status(200).json(body);
     } catch (error: unknown) {
         if (error instanceof ZodError) {
@@ -42,8 +41,7 @@ router.get('/', requireRole(Role.PROFESSOR), async (_req: Request, res: Response
     }
 });
 
-// GET /api/queueticket/queues/:id — fetch only multiple active tickets based on a Queue ID
-// Call listActiveTickets helper (only WAITING and HELPING tickets)
+// GET /api/queueticket/queues/:queueId — active (WAITING/HELPING) tickets for a queue.
 router.get('/queues/:queueId', requireQueueViewerAccess('queueId'), async (req: Request, res: Response): Promise<void> => {
     try {
         
@@ -52,11 +50,9 @@ router.get('/queues/:queueId', requireQueueViewerAccess('queueId'), async (req: 
             res.status(400).json({ message: 'Queue ID is required' });
             return;
         }
-        // Also return students from include 
         const ticketsResponse = await listActiveTickets(queueId);
         const ticketsArray: QueueTicketWithStudent[] = ticketsResponse;
 
-        // console.log(`[QUEUE TICKET] Successfully sent ticket objects: ${JSON.stringify(ticketsArray, null, 2)}`)
 
         const body: QueueTicketsListResponse = {
             tickets: ticketsArray,
@@ -77,7 +73,7 @@ router.get('/queues/:queueId', requireQueueViewerAccess('queueId'), async (req: 
     }
 });
 
-// GET /api/queueticket/queues/:queueId/status/completed - for completed tickets to store in local completed storage
+// GET /api/queueticket/queues/:queueId/status/completed — completed tickets for a queue.
 router.get('/queues/:queueId/status/completed', requireQueueOwnership('queueId'), async (req: Request, res: Response): Promise<void> => {
     try {
         const queueId = req.params.queueId as string;
@@ -93,7 +89,6 @@ router.get('/queues/:queueId/status/completed', requireQueueOwnership('queueId')
 
         const ticketsArray: QueueTicket[] = ticketsResponse;
 
-        // console.log(`[QUEUE TICKET] Successfully sent ticket objects: ${JSON.stringify(ticketsArray, null, 2)}`)
 
         const body: QueueTicketsListResponse = {
             tickets: ticketsArray,
@@ -119,7 +114,6 @@ router.get('/queues/:queueId/status/completed', requireQueueOwnership('queueId')
 router.get('/user/:studentId', requireSelf('studentId'), async (req: Request, res: Response): Promise<void> => {
     try {
         const studentId = req.params.studentId;
-        // no id or no queue id flag
         if (!studentId) {
             res.status(404).json({ message: 'Missing required parameter'})
             return;
@@ -135,13 +129,11 @@ router.get('/user/:studentId', requireSelf('studentId'), async (req: Request, re
             return;
         }
 
-        // console.log(`[QUEUE TICKET] Successfully sent ticket objects: ${JSON.stringify(tickets, null, 2)}`)
 
         const body: QueueTicketsListResponse = {
             tickets,
             message: `Tickets successfully sent to ${studentId}`
         };
-        // console.log(`Tickets successfully sent to ${studentId}`);
         res.status(200).json(body);
     } 
     catch (error: unknown) {
@@ -162,7 +154,6 @@ router.get('/user/:studentId', requireSelf('studentId'), async (req: Request, re
 router.get('/:queueTicketId', requireTicketReadAccess('queueTicketId'), async (req: Request, res: Response): Promise<void> => {
     try {
         const queueTicketId = req.params.queueTicketId;
-        // No id or no queue id flag
         if (!queueTicketId) {
             res.status(404).json({ message: 'Missing required parameter'})
             return;
@@ -176,7 +167,6 @@ router.get('/:queueTicketId', requireTicketReadAccess('queueTicketId'), async (r
             return;
         }
 
-        // console.log(`[QUEUE TICKET] Successfully sent ticket object: ${JSON.stringify(ticket, null, 2)}`)
 
         const body: QueueTicketResponse = {
             ticket,
@@ -196,16 +186,14 @@ router.get('/:queueTicketId', requireTicketReadAccess('queueTicketId'), async (r
     }
 });
 
-// POST /api/queueticket/:queueId — create ticket based on queue ID
+// POST /api/queueticket/queues/:queueId — join a queue (create or reactivate ticket).
 router.post('/queues/:queueId', queueJoinRateLimiter, async (req: Request, res: Response): Promise<void> => {
     try {
         const queueId = req.params.queueId as string;
         const status  = req.body.status as SessionStatus;
-        // The request was attached with a user property from middleware with user
         const studentId = (req as any).user.id;
 
         const validatedTicket = CreateQueueTicketValidationSchema.parse({
-            // Only param not calculated is position. id, joinedAt, and updatedAt are auto configured
             ...req.body, status, queueId, studentId
         });
 
@@ -222,18 +210,13 @@ router.post('/queues/:queueId', queueJoinRateLimiter, async (req: Request, res: 
             res.status(409).json({ message: 'Only 1 queue can be joined at a time. Please leave your current queue before joining another one.' });
             return;
         }
-        // Ticket id, joinedAt, updatedAt are set by the server
-        // Call joinQueue service to create the ticket
         const newTicket = await joinQueue(queueId, studentId);
 
-        // console.log(`[QUEUE TICKET] Successfully created ticket object: ${JSON.stringify(newTicket, null, 2)}`)
 
         const body: QueueTicketResponse = {
             ticket: newTicket,
             message: 'SUCCESS',
         };
-        // console.log('Successfully created a new ticket');
-        // console.log(JSON.stringify(body.ticket));
 
         res.status(201).json(body);
     } catch (error: unknown) {
@@ -245,7 +228,6 @@ router.post('/queues/:queueId', queueJoinRateLimiter, async (req: Request, res: 
             res.status(500).json({ message: error.message });
             return;
         }
-        // console.log('Failed to create a new ticket');
         res.status(500).json({ message: 'Failed to create ticket' });
     }
 });
@@ -275,14 +257,12 @@ router.patch('/:queueTicketId', queueJoinRateLimiter, async (req: Request, res: 
             return;
         }
 
-        // Call queue service to leave the queue after successfully fetching the ticket
         const updatedTicket = await leaveQueue(existingTicket.queueId, studentId);
         const body: QueueTicketResponse = {
             ticket: updatedTicket,
             message: 'SUCCESS',
         };
 
-        // console.log(`[QUEUE TICKET] Successfully updated ticket status to ${updatedTicket.status}`);
         res.status(200).json(body);
     }
      catch (error: unknown) {
@@ -318,13 +298,11 @@ router.patch('/:queueTicketId/status/helping', requireTicketQueueOwnership('queu
     }
 })
 
-// PATCH /api/queueticket/:queueTicketId/status/completed -> Move ticket from helping to completed. TA who owns the queue only.
-// Do not update position since each ticket's status must be from helping (update position already)
+// PATCH /api/queueticket/:queueTicketId/status/completed — TA marks a HELPING ticket complete.
 router.patch('/:queueTicketId/status/completed', requireTicketQueueOwnership('queueTicketId'), async (req: Request, res: Response) => {
     try {
         const queueTicketId = req.params.queueTicketId as string;
 
-        // automatically update updatedAt
         const ticketResponse = await prisma.queueTicket.update({
             where: {id: queueTicketId, status: 'HELPING'},
             data: {status: 'COMPLETED'}
@@ -333,10 +311,8 @@ router.patch('/:queueTicketId/status/completed', requireTicketQueueOwnership('qu
             ticket: ticketResponse, 
             message: 'Successfully updated ticket status to "Completed"'
         }
-        // console.log(`[QUEUE TICKET] Successfully updated ticket status to ${JSON.stringify(ticketResponse, null, 2)}`);
         res.status(200).json(body);
     } catch (error) {
-        // Record not found
         if (error instanceof Prisma.PrismaClientKnownRequestError) {
             if (error.code === 'P2025') {
               res.status(404).json({ message: 'Queue ticket not found' });
@@ -372,7 +348,6 @@ router.delete('/:queueTicketId', requireTicketQueueOwnership('queueTicketId'), a
         });
 
         const body: ApiMessageResponse = { message: 'SUCCESS' };
-        // console.log(`[QUEUE TICKET] Successfully deleted ticket object: ${JSON.stringify(body, null, 2)}`)
         res.status(200).json(body);
     } 
     catch (error: unknown) {
@@ -407,7 +382,6 @@ router.delete('/queues/:queueId', requireQueueOwnership('queueId'), async (req: 
         }
 
         const body: ApiMessageResponse = { message: 'SUCCESS' };
-        // console.log(`[QUEUE TICKET] Successfully deleted all tickets from ${queueId}`);
         res.status(200).json(body);
     }
     catch (error: unknown) {
@@ -426,7 +400,6 @@ router.delete('/queues/:queueId', requireQueueOwnership('queueId'), async (req: 
 // DELETE /api/queueticket/queues/:queueId/status/completed — clears completed tickets. TA-owner only.
 router.delete(`/queues/:queueId/status/completed`, requireQueueOwnership('queueId'), async (req: Request, res: Response) => {
     try {
-        // console.log('Clear all completed tickets api');
         const queueId = req.params.queueId as string;
         const deletedTickets = await prisma.queueTicket.deleteMany({
             where: {queueId, status: 'COMPLETED'}
@@ -435,7 +408,6 @@ router.delete(`/queues/:queueId/status/completed`, requireQueueOwnership('queueI
             tickets: deletedTickets, 
             message: `Successfully deleted all completed tickets from queue ${queueId}`
         }
-        // console.log(`Successfully deleted all tickets currently from queue ${queueId}`, JSON.stringify(body, null, 2));
         res.status(200).json(body);
     } catch (error) {
         if (error instanceof Error) {
@@ -458,7 +430,6 @@ router.delete('/queues/:queueId/status/closed', requireQueueOwnership('queueId')
             tickets: deletedTickets, 
             message: `Successfully deleted all tickets currently waiting and helping from queue ${queueId}`
         }
-        // console.log(`Successfully deleted all tickets currently waiting and helping from queue ${queueId}`, JSON.stringify(body, null, 2));
         res.status(200).json(body);
     } catch (error) {
         if (error instanceof Error) {

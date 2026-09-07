@@ -15,9 +15,9 @@ function cancelOfflineTimer(userId: string) {
     offlineTimersByUser.delete(userId);
 }
 
+/** Starts the grace-period timer; when it fires, auto-closes the TA's open queues. */
 function scheduleOfflineClose(userId: string) {
     cancelOfflineTimer(userId);
-    // when the timer's up, schedule deleting from map and closing the queue
     const timer = setTimeout(() => {
         offlineTimersByUser.delete(userId);
         void closeOpenQueuesForTa(userId).catch((error) => {
@@ -27,6 +27,7 @@ function scheduleOfflineClose(userId: string) {
     offlineTimersByUser.set(userId, timer);
 }
 
+/** Returns whether the user is a TA or professor (tracks socket presence for queue auto-close). */
 export async function isQueueManagerUser(userId: string): Promise<boolean> {
     const user = await prisma.user.findUnique({
         where: { id: userId },
@@ -35,6 +36,7 @@ export async function isQueueManagerUser(userId: string): Promise<boolean> {
     return user?.role === Role.TA || user?.role === Role.PROFESSOR;
 }
 
+/** Registers a TA socket connection and cancels any pending offline-close timer. */
 export function registerTaSocket(userId: string, socketId: string) {
     let sockets = activeSocketsByUser.get(userId);
     if (!sockets) {
@@ -45,6 +47,7 @@ export function registerTaSocket(userId: string, socketId: string) {
     cancelOfflineTimer(userId);
 }
 
+/** Removes a TA socket; schedules auto-close when the last socket disconnects. */
 export function unregisterTaSocket(userId: string, socketId: string) {
     const sockets = activeSocketsByUser.get(userId);
     if (!sockets) return;
@@ -56,7 +59,7 @@ export function unregisterTaSocket(userId: string, socketId: string) {
     scheduleOfflineClose(userId);
 }
 
-/** Immediate close — used on explicit sign-out or leave beacons. */
+/** Immediately closes open queues — used on explicit sign-out or leave beacons. */
 export async function closeQueuesOnTaLeave(userId: string): Promise<string[]> {
     cancelOfflineTimer(userId);
     activeSocketsByUser.delete(userId);

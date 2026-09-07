@@ -10,10 +10,12 @@ const NOTIFY_PREF_BY_TYPE = {
 
 type NotifyPreferenceField = typeof NOTIFY_PREF_BY_TYPE[NotificationType];
 
+/** Maps a notification type to the corresponding User preference column. */
 export function getNotifyPreferenceField(type: NotificationType): NotifyPreferenceField {
     return NOTIFY_PREF_BY_TYPE[type];
 }
 
+/** Returns whether the user has alerts enabled for the given notification type. */
 export async function isNotificationEnabledForUser(
     userId: string,
     type: NotificationType,
@@ -33,6 +35,7 @@ export async function isNotificationEnabledForUser(
     return user[field];
 }
 
+/** Filters user ids to those who have alerts enabled for the given type. */
 export async function filterRecipientsByNotificationPreference(
     userIds: string[],
     type: NotificationType,
@@ -42,7 +45,6 @@ export async function filterRecipientsByNotificationPreference(
     const field = getNotifyPreferenceField(type);
     const users = await prisma.user.findMany({
         where: { id: { in: userIds } },
-        // select field returns the id + 4 preferences (it doesn't modify original status)
         select: {
             id: true,
             notifyJoin: true,
@@ -51,7 +53,5 @@ export async function filterRecipientsByNotificationPreference(
             notifyClose: true,
         },
     });
-    // user[field] = user.field
-    // filter by each object then for each user in the object return the id
     return users.filter((user) => user[field]).map((user) => user.id);
 }

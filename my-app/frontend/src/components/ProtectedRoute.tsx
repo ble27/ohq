@@ -7,9 +7,7 @@ interface ProtectedRouteProps {
     children: ReactNode;
 }
 
-// Guards /dashboard/* — without this, an unauthenticated visitor could load
-// the dashboard shell directly and see it briefly before every data call
-// fails with 401. Redirects to /signin, preserving the intended destination.
+/** Redirects unauthenticated visitors to /signin, keeping the intended destination. */
 export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     const { user, loading } = useAuth();
     const location = useLocation();

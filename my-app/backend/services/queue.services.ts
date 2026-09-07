@@ -11,7 +11,7 @@ const isUniqueConstraintViolation = (error: unknown): boolean =>
 
 const ACTIVE_STATUSES = [SessionStatus.WAITING, SessionStatus.HELPING] as const;
 
-/** Closes open queues that are outside their scheduled window. Never deletes rows. */
+/** Closes open queues outside their scheduled window (does not delete rows). */
 export const closeExpiredQueues = async (): Promise<void> => {
   const now = new Date();
   await prisma.queue.updateMany({
@@ -26,6 +26,7 @@ export const closeExpiredQueues = async (): Promise<void> => {
   });
 };
 
+/** Lists WAITING and HELPING tickets with minimal student fields (no notification prefs). */
 export const listActiveTickets = async (queueId: string): Promise<QueueTicket[]> => {
   return prisma.queueTicket.findMany({
     where: {
@@ -34,13 +35,9 @@ export const listActiveTickets = async (queueId: string): Promise<QueueTicket[]>
     },
     orderBy: [
       { position: 'asc' },
-      { joinedAt: 'asc' }, // schema has joinedAt, not createdAt
+      { joinedAt: 'asc' },
     ],
-    // Only the fields needed to display a ticket (name/email for the TA,
-    // role for icons) — never notifyJoin/notifyLeave/notifyAssist/notifyClose/
-    // notifySound/defaultLocation. This list is visible to every participant
-    // in the queue (not just the TA), so it must never carry another
-    // student's private preferences.
+    // Visible to all queue participants — omit notification prefs and other private fields.
     include: {
       student: {
         select: { id: true, name: true, email: true, role: true },
@@ -66,6 +63,7 @@ export const assertQueueViewer = async (queueId: string, userId: string): Promis
   return queue;
 };
 
+/** Joins or reactivates a student's ticket in an open queue (transaction-safe). */
 export const joinQueue = async (
   queueId: string,
   studentId: string
@@ -123,6 +121,7 @@ export const joinQueue = async (
   return refreshed;
 };
 
+/** Marks the student's active ticket as LEFT and renumbers waiting positions. */
 export const leaveQueue = async (
   queueId: string,
   studentId: string
@@ -149,7 +148,7 @@ export const leaveQueue = async (
   return ticket;
 };
 
-// Move a ticket from WAITING TO HELPING
+/** Moves a WAITING ticket to HELPING (transaction-safe against double-assignment). */
 export const startHelping = async (ticketId: string): Promise<QueueTicket> => {
   await closeExpiredQueues();
 
@@ -176,11 +175,11 @@ export const startHelping = async (ticketId: string): Promise<QueueTicket> => {
     return { ticket: updated, queueId: existing.queueId };
   });
 
-  // Auto update position of the ticket
   await updatePosition(queueId);
   return ticket;
 };
 
+/** Marks a HELPING ticket as COMPLETED; idempotent if already completed. */
 export const completeTicket = async (ticketId: string): Promise<QueueTicket> => {
   const existing = await prisma.queueTicket.findUnique({ where: { id: ticketId } });
   if (!existing) {
@@ -195,13 +194,10 @@ export const completeTicket = async (ticketId: string): Promise<QueueTicket> => 
       where: { id: ticketId } 
     });
   
-    // Return ticketCheck instead of the unassigned 'ticket' variable
     if (ticketCheck?.status === 'COMPLETED') {
-      // console.log('Ticket has already been completed');
-      return ticketCheck; 
+      return ticketCheck;
     }
-  
-    // Add 'return' so the updated ticket is assigned to your outer variable
+
     return await tx.queueTicket.update({ 
       where: { id: ticketId }, 
       data: { 
@@ -211,11 +207,11 @@ export const completeTicket = async (ticketId: string): Promise<QueueTicket> => 
     });
   });
 
-  // HELPING already had null position; safe no-op renumber for WAITING
   await updatePosition(existing.queueId);
   return ticket;
 };
 
+/** Removes an active ticket (TA action); sets status to REMOVED and renumbers. */
 export const removeFromQueue = async (ticketId: string): Promise<QueueTicket> => {
   const existing = await prisma.queueTicket.findUnique({ where: { id: ticketId } });
   if (!existing) {

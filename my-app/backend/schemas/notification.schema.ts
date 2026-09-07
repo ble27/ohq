@@ -27,7 +27,6 @@ export const NotificationValidationSchema = z.object({
     clearedAt: z.coerce.date().nullable().optional(),
 });
 
-// Main validation schema
 export const CreateNotificationValidationSchema = NotificationValidationSchema.omit({
     id: true,
     createdAt: true,

@@ -19,7 +19,6 @@ const optionalZoomLink = z
         return normalizeZoomLink(String(value));
     });
 
-// Validator
 export const QueueValidationSchema = z.object({
     id: z.uuid({ message: 'Invalid ID format' }),
 
@@ -54,13 +53,12 @@ export const CreateQueueValidationSchema = QueueValidationSchema.omit({
     { message: 'End time must be after start time', path: ['endsAt'] },
 );
 
-// passed in new Date()
 export const TimeValidationSchema = z.object({
-    startsAt: z.coerce.date(), // convert to Date object
+    startsAt: z.coerce.date(),
     endsAt: z.coerce.date()
 })
 
-// Route params are always strings; coerce/validate before use.
+// Route params are always strings.
 export const QueueOpenParamSchema = z.enum(['true', 'false'], {
     message: "isQueueOpen must be 'true' or 'false'",
 });

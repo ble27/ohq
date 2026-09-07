@@ -9,15 +9,10 @@ if (!SUPABASE_URL) {
     throw new Error('Missing SUPABASE_URL in backend/.env');
 }
 
-// Newer Supabase projects sign access tokens asymmetrically and publish the
-// verification keys here — jose caches this set and only refetches when it
-// sees an unrecognized key id, so this does NOT mean a network call per request.
-// Public key resolver to verify JWT issued by Supabase
+// Asymmetric tokens: JWKS is cached by jose (no per-request network call).
 const remoteJwks = createRemoteJWKSet(new URL(`${SUPABASE_URL}/auth/v1/.well-known/jwks.json`));
 
-// Legacy projects sign with a shared HS256 secret instead (Project Settings ->
-// API -> JWT Secret). Only used if provided, since that key can't be published
-// in a JWKS (it's symmetric).
+// Legacy HS256 projects: use shared JWT secret when configured.
 const legacySecretKey = SUPABASE_JWT_SECRET
     ? createSecretKey(Buffer.from(SUPABASE_JWT_SECRET, 'utf-8'))
     : null;
@@ -35,7 +30,6 @@ function payloadToUser(payload: JWTPayload): VerifiedSupabaseUser | null {
             ? (payload.user_metadata as Record<string, unknown>)
             : undefined;
     return {
-        // payload.sub = payload subject (who the token is written for)
         id: payload.sub,
         email: typeof payload.email === 'string' ? payload.email : null,
         ...(user_metadata ? { user_metadata } : {}),

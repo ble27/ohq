@@ -33,8 +33,6 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
         });
         const body: QueuesListResponse = { queues, message: 'SUCCESS' };
 
-        // console.log(`[QUEUE] Successfully sent queue objects: ${JSON.stringify(body.queues, null, 2)}`)
-
         res.status(200).json(body);
     } catch (error: unknown) {
         if (error instanceof Error) {
@@ -80,8 +78,7 @@ router.post('/close-on-leave', requireRole(Role.TA, Role.PROFESSOR), async (req:
     }
 });
 
-// GET /api/queues/isOpen 
-// Public api routes to fetch active courses to display the number instead of the user having to manually search for the course
+// GET /api/queues/active — open queues with course info (public landing counter).
 router.get('/active', async (req: Request, res: Response) => {
     try {
         await closeExpiredQueues();
@@ -130,7 +127,7 @@ router.get('/:id', async (req: Request, res: Response): Promise<void> => {
             return;
         }
         // Return the TA of the queue
-        const queue = await prisma.queue.findUnique({ 
+        const queue = await prisma.queue.findUnique({
             where: { id: queueId } , 
             include: { ta: true }
         });
@@ -150,8 +147,7 @@ router.get('/:id', async (req: Request, res: Response): Promise<void> => {
     }
 });
 
-// POST /api/queues — create a queue. TA/PROFESSOR only; the caller becomes the queue's TA.
-// Get requested course code and course ID
+// POST /api/queues — create a queue. TA/PROFESSOR only; caller becomes the queue's TA.
 router.post('/', requireRole(Role.TA, Role.PROFESSOR), async (req: Request, res: Response): Promise<void> => {
     try {
         const requestedCourse = req.body?.courseId;
@@ -161,7 +157,6 @@ router.post('/', requireRole(Role.TA, Role.PROFESSOR), async (req: Request, res:
                     isActive: true,
                     OR: [
                         { id: requestedCourse },
-                        // fix later: code is always text and can never equal courseId
                         { code: { equals: requestedCourse.trim(), mode: 'insensitive' } },
                     ],
                 }
@@ -180,7 +175,7 @@ router.post('/', requireRole(Role.TA, Role.PROFESSOR), async (req: Request, res:
         });
         const { taId, courseId, endsAt, isOpen: _clientIsOpen, startsAt, ...queueData } = validatedQueue;
 
-        // 1 queue for each TA for now (includes closed queues — closing never deletes)
+        // One queue per TA (includes closed queues — closing never deletes).
         const queueCheck = await prisma.queue.findFirst({
             where: { taId }
         })
@@ -200,8 +195,6 @@ router.post('/', requireRole(Role.TA, Role.PROFESSOR), async (req: Request, res:
                 ...(endsAt != null ? { endsAt } : {}),
             },
         });
-
-        // console.log(`[QUEUE] Successfully created queue object`);
 
         const body: QueueResponse = { queue: newQueue, message: 'SUCCESS' };
         res.status(201).json(body);
@@ -315,13 +308,10 @@ router.patch('/:id', requireQueueOwnership('id'), async (req: AuthedRequest, res
         const queueToToggle = req.queue!;
         const queueId = queueToToggle.id;
 
-        // Update the queue's status here
         const updatedQueue = await prisma.queue.update({
             where: { id: queueId },
             data: { isOpen: !queueToToggle.isOpen },
         });
-
-        // console.log(`[QUEUE] Successfully updated queue: ${JSON.stringify(updatedQueue, null, 2)}`)
 
         const body: QueueResponse = {
             queue: updatedQueue,
@@ -384,8 +374,7 @@ router.delete('/:id', requireQueueOwnership('id'), async (req: AuthedRequest, re
         const deletedQueue = await prisma.queue.delete({
             where: { id: queueId },
         });
-        
-        // console.log(`[QUEUE] Successfully deleted queue object: ${JSON.stringify(deletedQueue, null, 2)}`)
+
         const body: ApiMessageResponse = { message: 'SUCCESS' };
         
         res.status(200).json(body);

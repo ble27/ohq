@@ -4,9 +4,6 @@ import { useAuth } from "../context/AuthContextProvider";
 import { LuArrowLeft } from "react-icons/lu";
 import { GoogleAuthButton } from "./GoogleAuthButton";
 
-// [email/password — disabled for Google-only auth]
-// import { PENDING_CONFIRM_EMAIL_KEY, signIn } from "../services/authService";
-
 export const Signin = () => {
     const [error, setError] = useState("");
     const [info, setInfo] = useState("");
@@ -16,8 +13,7 @@ export const Signin = () => {
 
     useEffect(() => {
         const message = (location.state as { message?: string } | null)?.message;
-        // Reading router navigation state on mount, not synchronizing with an external system.
-        // eslint-disable-next-line react-hooks/set-state-in-effect
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- read navigation state on mount
         if (message) setInfo(message);
     }, [location.state]);
 
@@ -26,29 +22,6 @@ export const Signin = () => {
             navigate("/dashboard/home");
         }
     }, [user, loading, navigate]);
-
-    /*
-    // [email/password — disabled for Google-only auth]
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
-    const [submitting, setSubmitting] = useState(false);
-
-    const handleSignin = async () => {
-        setError("");
-        setSubmitting(true);
-        try {
-            await signIn(email, password);
-            sessionStorage.removeItem(PENDING_CONFIRM_EMAIL_KEY);
-            await refreshUser();
-            navigate("/dashboard/home");
-        } catch (err: unknown) {
-            const message = err instanceof Error ? err.message : "Sign in failed";
-            setError(message);
-        } finally {
-            setSubmitting(false);
-        }
-    };
-    */
 
     return (
         <div className="fixed inset-0 z-0 flex flex-col items-center justify-center gap-3 overflow-y-auto overscroll-contain bg-black/90 text-white">
@@ -75,13 +48,6 @@ export const Signin = () => {
                     />
 
                     {error && <p className="mt-4 text-red-500">{error}</p>}
-
-                    {/*
-                    // [email/password — disabled for Google-only auth]
-                    <div className="mb-5 flex flex-col">...</div>
-                    <button onClick={handleSignin}>Sign in</button>
-                    <span> or </span>
-                    */}
                 </div>
             </div>
         </div>

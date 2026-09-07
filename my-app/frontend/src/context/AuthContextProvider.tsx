@@ -31,14 +31,11 @@ export const AuthContextProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const refreshGeneration = useRef(0);
 
-  // GET /api/auth/me → { user: SupabaseUser, profile: PrismaUser | null }
-  // Update both the Prisma and Supababse user models
   const refreshUser = useCallback(async () => {
     const generation = ++refreshGeneration.current;
     try {
       const me = await getMeSupabase();
-      // Ignore stale responses — OAuth callback can finish while the mount-time
-      // /me (started with no cookies) is still in flight and would clear the user.
+      // Ignore stale /me responses during OAuth callback races.
       if (generation !== refreshGeneration.current) return;
       if (!me?.user) {
         setUser(null);
@@ -68,9 +65,8 @@ export const AuthContextProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
-  // Load user from httpOnly auth cookie on mount
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- load session from cookie on mount
     refreshUser();
   }, [refreshUser]);
 

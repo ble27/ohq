@@ -28,7 +28,7 @@ export const QueueTicketValidationSchema = z.object({
 });
 
 export const CreateQueueTicketValidationSchema = QueueTicketValidationSchema.omit({
-    id: true,   // ticket ID
+    id: true,
     joinedAt: true,
     updatedAt: true,
 });

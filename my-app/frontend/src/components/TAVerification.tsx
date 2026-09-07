@@ -21,8 +21,7 @@ export const VerifyTA = ({ children, onPendingChange }: VerifyTAProps) => {
     // Reverify status if role or user id changes
     useEffect(() => {
         if (!user?.id || role != 'TA') {
-            // Resetting local verification state to sync with the current user/role, not an external system.
-            // eslint-disable-next-line react-hooks/set-state-in-effect
+            // eslint-disable-next-line react-hooks/set-state-in-effect -- reset when user/role changes
             setIsTA(false);
             return;
         }

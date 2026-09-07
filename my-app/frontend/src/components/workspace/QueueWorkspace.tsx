@@ -17,7 +17,6 @@ interface QueueWorkspaceProps {
 }
 
 export const QueueWorkspace = ({ tickets, queue, onUpdateTickets, completedTickets, onUpdateCompleted, onNotifyInSession }: QueueWorkspaceProps) => {
-    // sort -> <0: before, =0: no change, >0: after
     const waiting = tickets.filter((t) => t.status === 'WAITING')
                             .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
     const nextTicket = waiting[0] ?? null
@@ -40,12 +39,9 @@ export const QueueWorkspace = ({ tickets, queue, onUpdateTickets, completedTicke
         try {
             // Mark ticket as helping
             await axios.patch(`/api/queueticket/${nextTicket.id}/status/helping`);
-            await onUpdateTickets() // parent setCurTickets → props update → inSession appears
+            await onUpdateTickets()
             setTimeElapsed();
 
-            // Create notification to student currently waiting ahead of line
-            // Callback function here
-            // Need ticket to be passed here to pass down to Notification Banner
             onNotifyInSession(nextTicket.studentId, 'ASSIST', nextTicket);
         } catch (error) {
             console.log('Failed to start helping', error);
@@ -94,7 +90,6 @@ export const QueueWorkspace = ({ tickets, queue, onUpdateTickets, completedTicke
     // Remove tickets from Completed Workspace
     const clearALlCompletedTickets = async () => {
         const queueId = queue?.id;
-        // console.log('Calling clearAllCompletedTickets');
         const response = await axios.delete(`/api/queueticket/queues/${queueId}/status/completed`);
         // refresh active tickets
         await onUpdateCompleted();

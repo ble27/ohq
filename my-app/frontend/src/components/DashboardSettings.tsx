@@ -12,7 +12,6 @@ interface DashboardSettingsProps {
     supabaseUser: SupabaseUser | null
 }
 export const DashboardSettings = ({ prismaUser, supabaseUser }: DashboardSettingsProps) => {
-    // useState only use the inital prop once and doesn't refresh
     const [displayName, setDisplayName] = useState(prismaUser?.name ?? '');
     const [defaultLocation, setDefaultLocation] = useState(prismaUser?.defaultLocation ?? '')
     const [studentAlertQueueClosing, setStudentAlertQueueClosing] = useState(prismaUser?.notifyClose ?? null)
@@ -23,11 +22,9 @@ export const DashboardSettings = ({ prismaUser, supabaseUser }: DashboardSetting
     const [isDeleteUserAccountModalOpen, setIsDeleteUserAccountModalOpen] = useState(false);
     const [pending, setPending] = useState(false);
 
-    // Update state every time prismaUser changes
     useEffect(() => {
         if (!prismaUser) return;
-        // Syncing local form fields from the latest prismaUser prop, not an external system.
-        // eslint-disable-next-line react-hooks/set-state-in-effect
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- sync form from prismaUser prop
         setDisplayName(prismaUser?.name ?? '');
         setStudentAlertYourTurn(prismaUser?.notifyAssist ?? null);
         setStudentAlertQueueClosing(prismaUser?.notifyClose ?? null);
@@ -40,7 +37,6 @@ export const DashboardSettings = ({ prismaUser, supabaseUser }: DashboardSetting
     const navigate = useNavigate();
     const { refreshUser, updatePrismaUser } = useAuth();
 
-    // Permanently delete user account
     const handleDeleteAccount = async () => {
         const id = prismaUser?.id ?? supabaseUser?.id;
         if (!id) {
@@ -62,19 +58,16 @@ export const DashboardSettings = ({ prismaUser, supabaseUser }: DashboardSetting
         setPending(true);
         try {
             const id = prismaUser?.id;
-            // Name
             if (displayName !== prismaUser?.name) {
                 await axios.patch(`/api/users/${id}/name`, {
                     name: displayName })
             }
-            // Student
             if (prismaUser?.notifyAssist !== studentAlertYourTurn) {
                 await axios.patch(`/api/users/${id}/notifications/type/ASSIST`, {status: studentAlertYourTurn});
             }
             if (prismaUser?.notifyClose !== studentAlertQueueClosing) {
                 await axios.patch(`/api/users/${id}/notifications/type/CLOSE`, {status: studentAlertQueueClosing});
             }
-            // TA
             if (prismaUser?.role === 'TA') {
                 if (prismaUser.notifyJoin !== taAlertStudentJoinQueue) {
                     await axios.patch(`/api/users/${id}/notifications/type/JOIN`, {status: taAlertStudentJoinQueue});
@@ -86,7 +79,6 @@ export const DashboardSettings = ({ prismaUser, supabaseUser }: DashboardSetting
             if (prismaUser?.notifySound !== notificationSoundEnabled) {
                 await axios.patch(`/api/users/${id}/notifications/sound`, { status: notificationSoundEnabled });
             }
-            // Default location (TA)
             if (prismaUser?.role === 'TA' && prismaUser.defaultLocation !== defaultLocation) {
                 await axios.patch(`/api/users/${id}/defaultlocation`, { defaultLocation });
             }

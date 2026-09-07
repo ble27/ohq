@@ -13,8 +13,7 @@ interface QueueManagementModalProps {
     setTickets: (value: QueueTicket[]) => void
     setIsViewingManagementModal: (value : boolean) => void
     onUpdateQueue: (updated: Queue) => void | Promise<void>
-    // remove tickets when closed
-    onQueueClosing: () => | Promise<void>
+    onQueueClosing: () => void | Promise<void>
     onTimeChange: (start: string, end: string) => void | Promise<void>
 }
 
@@ -43,12 +42,12 @@ export const QueueManagementModal = ({
     return `${hours}:${minutes}`;
     };
 
-    // Has 3 tabs - Settings, Waitlist (QueueTicketModal), Workspace
+    // Has 3 tabs: Settings, Waitlist, Workspace
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [isQueueModalOpen, setIsQueueModalOpen] = useState(false);
     const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(true);
 
-    // Save all these settings at once
+    // Save all settings at once
     const [isQueueOpen, setIsQueueOpen] = useState(queue?.isOpen ?? true);
     const [roomLocation, setRoomLocation] = useState(queue?.location ?? '');
     const [zoomLink, setZoomLink] = useState(queue?.zoomLink ?? '');
@@ -58,7 +57,6 @@ export const QueueManagementModal = ({
     // Every time this refreshes it doesn't sync the state
     const [completedTickets, setCompletedTickets] = useState<QueueTicket[]>([]);
 
-    // SETTINGS
     const handleQueueStatus = async (): Promise<Queue | null> => {
         if (!queue || queue.isOpen === isQueueOpen) return queue;
         try {
@@ -108,18 +106,12 @@ export const QueueManagementModal = ({
     }
 
     const handleOpenQueue = () => {
-        // Queue is already closed -> set to open
         if (!isQueueOpen) {
             setIsQueueOpen(true);
-            return;
         }
     }
 
-    // When the queue is closed, tickets in the waitlist will be removed (WAITING) 
-    // and ticket in session (HELPING)
-    // Open delete confirmation modal (later)
     const handleCloseQueue = () => {
-        // Queue is already open -> set to close
         if (isQueueOpen) {
             setIsQueueOpen(false);
             return;
@@ -127,18 +119,14 @@ export const QueueManagementModal = ({
     }
    
     const handleSaveChanges = async () => {
-        // Time update
-        // Compare only HH:MM format not Date format
         if (startTime !== toTimeInput(queue?.startsAt) || endTime !== toTimeInput(queue?.endsAt)) {
             await onTimeChange(startTime, endTime);
         }
 
-        // Location and Room update
-        const trimmedLocation = roomLocation.trim();
         let updatedQueue: Queue | null = queue;
         let didUpdate = false;
 
-        // Call only when location doesn't match new location (API)
+        const trimmedLocation = roomLocation.trim();
         if (trimmedLocation && queue?.location !== trimmedLocation) {
             try {
                 updatedQueue = await handleChangeRoomLocation();
@@ -170,7 +158,6 @@ export const QueueManagementModal = ({
             }
         }
         
-        // Change queue status only when queue's original status doesn't equal new status (API)
         if (queue?.isOpen !== isQueueOpen) {
             try {
                 updatedQueue = await handleQueueStatus();
@@ -181,11 +168,9 @@ export const QueueManagementModal = ({
                 didUpdate = true;
                 console.log('SUCCESSFULLY CHANGED queue status');
 
-                // Closing queue will delete all active tickets in the queue
                 if (!isQueueOpen) {
                     console.log('Calling onQueueClosing here');
                     onQueueClosing();
-
                 }
             } catch (error) {
                 console.log('Unable to change queue status', error);
@@ -193,7 +178,6 @@ export const QueueManagementModal = ({
             }
         }
 
-        // Sync the state call from dashboard here
         if (didUpdate && updatedQueue) {
             await onUpdateQueue(updatedQueue);
         }
@@ -209,19 +193,13 @@ export const QueueManagementModal = ({
         setIsViewingManagementModal(false);
     }
 
-    // WORKSPACE
-    // Sync live ticket every time a single ticket transitions state useful for Workspace and Waitlist
-    // For WAITING & HELPING tickets
     const refreshActive = useCallback(async () => {
         const queueId = queue?.id;
         if (!queueId) return;
-        const response = await axios.get(`/api/queueticket/queues/${queueId}`);   
-        // Sync new states includes WAIITNG & HELPING tickets
+        const response = await axios.get(`/api/queueticket/queues/${queueId}`);
         setTickets(response.data.tickets);
     }, [queue, setTickets]);
 
-    // Sync completed ticket for queue ID
-    // For COMPLETED tickets
     const refreshCompleted = useCallback(async () => {
         try {
             const queueId = queue?.id;
@@ -233,16 +211,8 @@ export const QueueManagementModal = ({
         }
     }, [queue]);
 
-    // Notification
-    /* 
-    This function creates a notification whenever the TA sets the student in session, 
-    where the status changes from WAITING to HELPING.
-    Sends an alert to the student
-    Also need to pass the ticket here
-    */
     const createNotificationForInSession = async (studentId: string, type: NotificationType, ticket: QueueTicket) => {
         const queueId = queue?.id;
-        // Ticket is optional
         const response = await axios.post(`/api/notifications/queues/${queueId}/user/${studentId}/type/${type}`, 
             { ticketId: ticket.id }
         );
@@ -250,9 +220,8 @@ export const QueueManagementModal = ({
     }
 
     useEffect(() => {
-        // Fetch-on-mount: both refresh async data and update state after the network call resolves.
         void refreshActive();
-        // eslint-disable-next-line react-hooks/set-state-in-effect
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch ticket lists on mount
         void refreshCompleted();
     }, [refreshActive, refreshCompleted]);
 

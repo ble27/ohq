@@ -136,7 +136,7 @@ function PreviewManageQueues() {
   );
 }
 
-/** Clean functional ticket — no decorative / AI-styled flourishes */
+/** Landing-page preview of a student's queue ticket card. */
 function PreviewMyTicket() {
   return (
     <div className="flex h-full flex-col bg-white p-4 text-left sm:p-5 md:p-6" aria-hidden>
@@ -264,8 +264,7 @@ function AudienceWordCycle() {
 
   useEffect(() => {
     if (prefersReducedMotion) {
-      // Syncing displayed text with the current word when animation is disabled, not an external system.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- sync label when animation is off
       setText(current.label);
       return;
     }
@@ -415,7 +414,7 @@ export const Body = ({ featuresRef }: BodyProps) => {
   const prefersReducedMotion = useReducedMotion();
 
   return (
-    <div className="flex flex-col items-center bg-yellow-50 text-black">
+    <div className="flex w-full flex-col items-center bg-yellow-50 text-black">
       <motion.section
         className="box-border flex w-full max-w-full flex-col items-center px-4 pb-20 pt-16 sm:px-6 sm:pb-28 sm:pt-20 md:px-10 md:pt-24 lg:px-12 lg:pb-40 lg:pt-28"
         initial={prefersReducedMotion ? false : { opacity: 0, y: 28 }}
@@ -475,7 +474,7 @@ export const Body = ({ featuresRef }: BodyProps) => {
         </p>
       </div>
 
-      <footer className="relative left-1/2 w-screen max-w-[100vw] -translate-x-1/2 overflow-x-clip border-t-2 border-black/15 bg-yellow-200/70">
+      <footer className="w-full overflow-x-clip border-t-2 border-black/15 bg-yellow-200/70">
         <div className="mx-auto flex w-full max-w-[1500px] flex-col px-4 pb-10 pt-14 sm:px-8 sm:pt-16 md:px-16 md:pb-12 md:pt-20 lg:px-20">
           <h2 className="text-center text-5xl font-medium tracking-tight text-black sm:text-6xl md:text-7xl lg:text-8xl xl:text-9xl">
             Queueble

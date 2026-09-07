@@ -7,8 +7,6 @@ import { AuthContextProvider } from './context/AuthContextProvider'
 import { SocketProvider } from './context/SocketProvider'
 import { Signin } from './components/Signin'
 import { Signup } from './components/Signup'
-// [email/password — disabled for Google-only auth]
-// import { EmailConfirmation } from './components/EmailConfirmation'
 import { AuthCallback } from './components/AuthCallback'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { PrivacyPage } from './pages/PrivacyPage'
@@ -17,8 +15,6 @@ import { Toaster } from '@/components/ui/sonner'
 import './index.css'
 
 function App() {
-  // Lifted to the common parent — Header and Body are siblings, so the ref
-  // Header scrolls to has to be created here and handed down to both.
   const featuresRef = useRef<HTMLDivElement>(null);
 
   return (
@@ -40,8 +36,10 @@ function App() {
           <Routes>
             <Route path='/'
               element={
-                <div className="mx-auto w-full max-w-[1500px]">
-                  <Header featuresRef={featuresRef} />
+                <div className="w-full">
+                  <div className="mx-auto w-full max-w-[1500px]">
+                    <Header featuresRef={featuresRef} />
+                  </div>
                   <Body featuresRef={featuresRef} />
                 </div>
               }
@@ -49,10 +47,7 @@ function App() {
             <Route path='/privacy' element={<PrivacyPage />} />
             <Route path='/signin' element={<Signin />} />
             <Route path='/signup' element={<Signup />} />
-            {/* [email/password — disabled for Google-only auth] */}
-            {/* <Route path='/check-email' element={<EmailConfirmation />} /> */}
             <Route path='/auth/callback' element={<AuthCallback />} />
-            {/* Dashboard routes — require auth; QueueManager is further gated by VerifyTA inside Dashboard */}
             <Route path='/dashboard' element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path='/dashboard/home' element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path='/dashboard/class' element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />

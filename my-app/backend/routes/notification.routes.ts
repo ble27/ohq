@@ -31,7 +31,7 @@ router.get('/user/:userId', requireSelf('userId'), async (req, res) => {
             return;
         }
 
-        // Nested includes: ticket alone has no student; queue alone has no ta
+        // Nested includes: ticket → student, queue → ta
         const notifications = await prisma.notification.findMany({
             where: { userId, clearedAt: null },
             orderBy: { createdAt: 'desc' },
@@ -44,7 +44,6 @@ router.get('/user/:userId', requireSelf('userId'), async (req, res) => {
             notifications,
             message: `Successfully fetched notifications for ${userId}`,
         };
-        // console.log(`Successfully fetched notifications`, JSON.stringify(body, null, 2));
         res.status(200).json(body);
     } catch (error) {
         if (error instanceof Error) {
@@ -132,11 +131,7 @@ router.post('/queues/:queueId/user/:recipientId/type/:type', notificationCreateR
             },
         });
 
-        // Send event to frontend (same nested shape as GET inbox)
-        // Notify only to recipientId 
         getIo().to(`user:${recipientId}`).emit('notification-created', response);
-        
-        // console.log(`[Socket] Sent notification to ${recipientId}`);
 
         const payload: NotificationResponse = {
             notification: response,
@@ -173,7 +168,6 @@ router.post('/queues/:queueId/type/close', requireQueueOwnership('queueId'), asy
         const tickets = await listActiveTickets(queueId);
         const recipientIds = [...tickets.map((t) => t.studentId), queue.taId];
 
-        // Check which user which type of notification enabled
         const enabledRecipientIds = await filterRecipientsByNotificationPreference(
             recipientIds,
             type,
@@ -199,12 +193,10 @@ router.post('/queues/:queueId/type/close', requireQueueOwnership('queueId'), asy
             )
         );
 
-        // Send alert to frontend
         for (const n of response) {
             getIo().to(`user:${n.userId}`).emit('notification-created', n);
         }
 
-        // Use NLRP instead of NLR due to missing queue and ticket as optional
         const payload: NotificationsCreateListResponse= {
             notifications: response,
             message: 'SUCCESS',
@@ -226,7 +218,6 @@ router.patch('/:id', async (req: Request, res: Response) => {
 
 // DELETE /api/notifications/user/:userId — clear all for recipient. Self only.
 router.delete('/user/:userId', requireSelf('userId'), async (req: Request, res: Response) => {
-    // console.log('Calling delete /api/notifications/user/:userId');
     try {
         const userId = req.params.userId as string;
         if (!userId) {
@@ -240,10 +231,6 @@ router.delete('/user/:userId', requireSelf('userId'), async (req: Request, res: 
             count: notificationResponses.count,
             message: `Successfully cleared all notifications associated with user ${userId}`,
         };
-        // console.log(
-        //     `Successfully cleared all notifications associated with user ${userId}`,
-        //     JSON.stringify(body, null, 2)
-        // );
         res.status(200).json(body);
     } catch (error) {
         if (error instanceof Error) {
@@ -281,7 +268,6 @@ router.delete('/:id', async (req: Request, res: Response) => {
             notification: notificationResponse,
             message: `Successfully deleted notification ${id}`,
         };
-        // console.log(`Successfully deleted notification`, JSON.stringify(body, null, 2));
         res.status(200).json(body);
     } catch (error) {
         if (error instanceof Error) {

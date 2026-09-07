@@ -6,9 +6,6 @@ import { useAuth } from '@/context/AuthContextProvider';
 
 /**
  * Google OAuth callback: PKCE code → Supabase session → httpOnly cookies → dashboard.
- *
- * [email/password — disabled for Google-only auth]
- * Email confirmation branches (token_hash, type=signup) are commented out below.
  */
 export const AuthCallback = () => {
   const navigate = useNavigate();
@@ -24,40 +21,6 @@ export const AuthCallback = () => {
 
     const handleAuth = async () => {
       const code = searchParams.get('code');
-      // const type = searchParams.get('type');
-      // const tokenHash = searchParams.get('token_hash');
-
-      /*
-      // [email/password — disabled for Google-only auth]
-      if (tokenHash && type) {
-        setStatus('Confirming your email…');
-        const { error: otpError } = await supabase.auth.verifyOtp({
-          token_hash: tokenHash,
-          type: type as 'signup' | 'email' | 'invite' | 'magiclink' | 'recovery' | 'email_change',
-        });
-        if (otpError) {
-          setError(otpError.message);
-          return;
-        }
-        await supabase.auth.signOut();
-        sessionStorage.removeItem(PENDING_CONFIRM_EMAIL_KEY);
-        navigate('/signin', {
-          replace: true,
-          state: { message: 'Email confirmed. Please sign in' },
-        });
-        return;
-      }
-
-      if (type === 'signup' || type === 'email') {
-        setStatus('Confirming your email…');
-        sessionStorage.removeItem(PENDING_CONFIRM_EMAIL_KEY);
-        navigate('/signin', {
-          replace: true,
-          state: { message: 'Email confirmed. Please sign in' },
-        });
-        return;
-      }
-      */
 
       if (!code) {
         setError('No code found in the callback URL');
@@ -92,12 +55,8 @@ export const AuthCallback = () => {
 
       try {
         await establishSession(session.access_token, session.refresh_token);
-        // Do not call signOut here: even scope='local' revokes the current
-        // Supabase Auth session that these httpOnly cookies represent.
+        // Do not call signOut here — it would revoke the session these cookies represent.
 
-        // Confirm httpOnly cookies actually stuck before leaving this page —
-        // previously we navigated to /dashboard even when /me returned 401,
-        // which bounced users back to /signin and felt like a failed login.
         const me = await getMeSupabase();
         if (!me?.user) {
           setError(

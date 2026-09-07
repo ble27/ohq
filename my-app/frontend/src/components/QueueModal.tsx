@@ -1,8 +1,3 @@
-// Need to pass in the queue id to know which queue to open the modal
-// Only open a queue once a user clicks on join queue
-// If a queue is closed, that queue cannot be opened
-// a Join creates a QueueTicket into the current queue
-
 import { useEffect, useState } from 'react'
 import type { Queue, QueueTicketsListResponse } from '../../../shared/types'
 import { QueueTicketModal } from './QueueTicketModal';
@@ -21,7 +16,6 @@ interface ModalProps {
     onLeaveQueue: (queueId: string) => void | Promise<void>;
 }
 
-// Local queue for each instance
 export const QueueModal = ({
     queue,
     ticket,
@@ -31,7 +25,6 @@ export const QueueModal = ({
     setModalOpen,
     onLeaveQueue,
 }: ModalProps) => {
-    // All the tickets for each queue
     const [tickets, setTickets] = useState<QueueTicketWithStudent[]>([]);
     const curTicket = ticket;
 

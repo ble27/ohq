@@ -45,8 +45,6 @@ export async function purgeClearedNotifications(): Promise<number> {
  * tickets / cleared notifications so those tables don't grow unbounded.
  */
 export function startCleanupJob(): void {
-    // minute | hour | day of the month | month | day of the week
-    // run once every 5 minutes
     cron.schedule('*/5 * * * *', async () => {
         try {
             await closeExpiredQueues();

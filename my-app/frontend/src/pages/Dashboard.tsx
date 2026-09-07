@@ -36,7 +36,6 @@ export const Dashboard = () => {
     const isDashboardSettings = location.pathname === '/dashboard/settings';
     const currentView = getDashboardView(location.pathname);
     const currentInstructions = VIEW_INSTRUCTIONS[currentView];
-    // Supabase user
     const { user, prismaUser } = useAuth();
 
     const userId = user?.id;
@@ -61,13 +60,10 @@ export const Dashboard = () => {
     const [isOpenAlert, setIsOpenAlert] = useState(false);
     const [isOpenScroll, setIsOpenScroll] = useState(false);
     const [isTaVerificationPending, setIsTaVerificationPending] = useState(false);
-    
-    // This include ticket.student and queue.ta from forward relations
+
     const [notifications, setNotifications] = useState<NotificationWithDetails[]>([]);
 
-    // Computed fresh per call (not per render) so toasts always show the time the
-    // event actually arrived, not whatever time it was when the socket listener
-    // effect below last ran.
+    // Fresh timestamp per toast so the displayed time matches when the event arrived.
     const getFormattedNotificationTime = () => {
         const formattedDynamicDate = new Intl.DateTimeFormat('en-US', {
             weekday: 'long',
@@ -78,14 +74,12 @@ export const Dashboard = () => {
             hour12: true
         }).format(new Date());
 
-        // Inserts the word "at" naturally into the string
         return formattedDynamicDate.replace(/,([^,]*)$/, ' at$1');
     };
 
     const notificationAudioRef = useRef<HTMLAudioElement | null>(null);
     const notificationSoundUnlockedRef = useRef(false);
 
-    // Load on mount, setup, and teardown
     useEffect(() => {
         const audio = new Audio(notificationAlert);
         audio.preload = 'auto';
@@ -97,13 +91,11 @@ export const Dashboard = () => {
         };
     }, []);
 
-    // First call with unlockOnly=true must happen from a user gesture (browser autoplay policy).
-    // Later calls play the alert for real.
+    /** Unlocks audio on first user gesture (browser autoplay policy). */
     const playNotificationsSound = useCallback((unlockOnly = false) => {
         const audio = notificationAudioRef.current;
         if (!audio) return;
 
-        // Browser blocks by default
         if (unlockOnly) {
             if (notificationSoundUnlockedRef.current) return;
             notificationSoundUnlockedRef.current = true;
@@ -118,7 +110,6 @@ export const Dashboard = () => {
             return;
         }
 
-        // Play the sound if unlocked already and user enabled sound in settings
         if (prismaUser?.notifySound === false) return;
         audio.currentTime = 0;
         void audio.play().catch((error) => {
@@ -162,11 +153,8 @@ export const Dashboard = () => {
             }
             playNotificationsSound();
         };
-        // socket auto pass in params to onCreated
-        // Each notification is already routed to a specific id in the backend using .to().emit()
         socket.on('notification-created', onCreated);
         return () => {
-            // onCreated(n);
             socket.off('notification-created', onCreated);
         };
     }, [socket, playNotificationsSound]);
@@ -174,7 +162,6 @@ export const Dashboard = () => {
     useEffect(() => {
         if (!socket) return;
 
-        // Destructuring with type annotation
         const onTaQueuesClosed = ({ queueIds }: { queueIds: string[] }) => {
             const closedIds = new Set(queueIds);
             setCreatedQueues((previousQueues) =>
@@ -205,9 +192,7 @@ export const Dashboard = () => {
     };
 
     useEffect(() => {
-        // Fetch-on-mount: refreshNotifications is async and updates state after
-        // awaiting the network call, not synchronously within the effect body.
-        // eslint-disable-next-line react-hooks/set-state-in-effect
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch notifications on mount
         void refreshNotifications();
     }, [refreshNotifications]);
 
@@ -269,10 +254,7 @@ export const Dashboard = () => {
         }
     }
 
-    // Replace Created queue with new instance 
-    // Need to constantly pass down createdQueues to props that need this
     const handleQueueUpdated = useCallback(async (updated: Queue) => {
-        // if queue is updated the old queue becomes updated else remaining queues
         setCreatedQueues((prev) => 
             prev.map((q) => updated.id === q.id ? updated : q)
         )
@@ -293,17 +275,14 @@ export const Dashboard = () => {
     }, []);
 
     useEffect(() => {
-        // Closing these popovers on navigation/verification-gate changes, not
-        // synchronizing with an external system — runs once per dependency
-        // change rather than every render, so it doesn't cascade.
-        // eslint-disable-next-line react-hooks/set-state-in-effect
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- close popovers on route change
         setIsOpenAlert(false);
         setIsOpenScroll(false);
     }, [location.pathname]);
 
     useEffect(() => {
         if (!isTaVerificationPending) return;
-        // eslint-disable-next-line react-hooks/set-state-in-effect
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- close popovers during TA gate
         setIsOpenAlert(false);
         setIsOpenScroll(false);
     }, [isTaVerificationPending]);

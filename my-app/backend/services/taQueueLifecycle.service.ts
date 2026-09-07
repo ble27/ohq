@@ -26,7 +26,6 @@ export async function closeOpenQueuesForTa(taId: string): Promise<string[]> {
         data: { isOpen: false },
     });
 
-    // Delete active tickets in the queue when closing the queue
     await prisma.queueTicket.deleteMany({
         where: {
             queueId: { in: queueIds },
@@ -48,7 +47,6 @@ export async function closeOpenQueuesForTa(taId: string): Promise<string[]> {
 
         if (enabledRecipientIds.length === 0) continue;
 
-        // Create a closing notification
         const notifications = await prisma.$transaction(
             enabledRecipientIds.map((userId) =>
                 prisma.notification.create({
@@ -61,7 +59,6 @@ export async function closeOpenQueuesForTa(taId: string): Promise<string[]> {
             ),
         );
 
-        // Emit to the to the user on closing notification
         for (const notification of notifications) {
             io.to(`user:${notification.userId}`).emit('notification-created', notification);
         }

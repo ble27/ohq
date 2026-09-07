@@ -1,6 +1,4 @@
-// Shared domain models + API response contracts.
-// Keep these free of Prisma/Node imports so both frontend and backend can use them.
-// DateTime fields accept Date (Prisma) or string (JSON over the wire).
+// Shared domain models + API response contracts (no Prisma/Node imports).
 
 // --- Enums ---
 
@@ -158,8 +156,7 @@ export interface QueueTicketsListResponse {
     message: string;
 }
 
-// --- Notification responses ---
-// Extension for GET method including forward relations
+// Notification responses (GET includes ticket + queue relations).
 export interface NotificationWithDetails extends Notification {
     ticket: QueueTicketWithStudent | null
     queue: QueueWithTA | null

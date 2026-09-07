@@ -126,7 +126,6 @@ router.patch('/:id/name', requireSelf('id'), async (req: Request, res: Response)
 // PATCH notification alerts based on types /api/users/:id/notifications/type/:type
 router.patch('/:id/notifications/type/:type', requireSelf('id'), async (req: Request, res: Response) => {
     try {
-        // console.log('Calling notifications update route');
         const id = req.params.id as string;
         const type = req.params.type as NotificationType;
         const { status } = NotificationAlertUpdateSchema.parse(req.body);
@@ -150,7 +149,7 @@ router.patch('/:id/notifications/type/:type', requireSelf('id'), async (req: Req
 
         const response = await prisma.user.update({
             where: { id },
-            data: { [notifyField]: status }, // use the value of notifyField as the key
+            data: { [notifyField]: status },
         });
 
         const body = {
@@ -201,7 +200,7 @@ router.patch('/:id/notifications/sound', requireSelf('id'), async (req: Request,
     }
 });
 
-// PATCH api/users/${id}/defaultlocation
+// PATCH /api/users/:id/defaultlocation — TA default queue location.
 router.patch('/:id/defaultlocation', requireSelf('id'), async (req: Request, res: Response) => {
     try {
         const id = req.params.id as string;

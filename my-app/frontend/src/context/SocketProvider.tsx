@@ -18,7 +18,6 @@ export function SocketProvider ({ children }: { children: ReactNode } ) {
     const { user, loading } = useAuth();
     
     useEffect(() => {
-        // Only connect socket if user is signed in
         if (loading || !user) {
             return;
         }
@@ -28,7 +27,6 @@ export function SocketProvider ({ children }: { children: ReactNode } ) {
 
         const connect = async () => {
             try {
-                // Same-origin /api (Vercel proxy) — cookies available here.
                 const { data } = await axios.get<{ token: string }>('/api/auth/socket-token', {
                     withCredentials: true,
                 });

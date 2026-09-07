@@ -22,7 +22,7 @@ router.get('/', async (_req: Request, res: Response): Promise<void> => {
     }
 });
 
-// Fetch course id from course code
+// GET /api/courses/:code — resolve course id from course code.
 router.get('/:code', async (req: Request, res: Response): Promise<void> => {
     try {
         const code = req.params.code as string;
@@ -31,13 +31,11 @@ router.get('/:code', async (req: Request, res: Response): Promise<void> => {
             where: { code },
         });
         const body = { courseId: course?.id, message: 'SUCCESS'};
-        // console.log('successfully retrieved course id from course code');
         res.status(200).json(body);
     } catch (error: unknown) {
         const message = error instanceof Error
             ? error.message
             : 'Failed to fetch course ID from course code';
-        // console.log('failed to retrieved course id from course code');
         res.status(500).json({ message });
     }
 });

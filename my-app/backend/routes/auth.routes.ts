@@ -66,17 +66,9 @@ export function setAuthCookies(
 }
 
 /*
-// [email/password — disabled for Google-only auth]
-import { ZodError } from 'zod';
-import { SigninSchema, SignupSchema } from '../schemas/auth.schema.js';
-
-const emailRedirectTo =
-    process.env.EMAIL_CONFIRM_REDIRECT_TO ?? 'http://localhost:5173/auth/callback?type=signup';
-
-router.post('/signup', async (req: Request, res: Response) => { ... });
-router.post('/resend-confirmation', async (req: Request, res: Response) => { ... });
-router.post('/signin', async (req: Request, res: Response) => { ... });
-*/
+ * Email/password auth is disabled — Google OAuth only.
+ * See auth.schema.ts and frontend Signin/Signup for preserved stubs.
+ */
 
 /** Establish httpOnly cookies from a client-side Supabase session (OAuth PKCE). */
 router.post('/session', async (req: Request, res: Response) => {

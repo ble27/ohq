@@ -3,12 +3,8 @@ import { prisma } from '../prisma.js';
 import { Role } from '../generated/prisma/client.js';
 import type { Queue, QueueTicket, User } from '../generated/prisma/client.js';
 
-// authMiddleware attaches the Supabase auth user (id, email, ...) to req.user.
-// These middlewares add authorization on top of that: role checks and
-// ownership checks (queue TA / ticket's queue TA), and attach the already
-// -fetched Prisma rows to the request so route handlers don't re-query them.
-// return async (req, res, next) => {} automatically returns to the API route
-// before running the validation checks when an actual request goes through
+// authMiddleware attaches the Supabase auth user to req.user. These middlewares
+// add role/ownership checks and attach fetched Prisma rows so routes don't re-query.
 export type AuthedRequest = Request & {
     user?: { id: string; email?: string | null };
     appUser?: User;
