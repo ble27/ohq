@@ -107,7 +107,7 @@ Notable service behavior:
 3. Frontend posts tokens to `POST /api/auth/session`; Express sets httpOnly cookies.
 4. `GET /api/auth/me` loads the app profile; user lands on the dashboard.
 
-Deeper auth notes (cookie vs `localStorage`, `signOut` pitfalls, Safari ITP) live in [`features.md`](features.md).
+Deeper auth notes (cookie vs `localStorage`, `signOut` pitfalls, Safari ITP) are kept in local engineering notes outside this repo.
 
 ### Realtime
 
@@ -194,7 +194,7 @@ npm run build
 
 **Proprietary — All Rights Reserved.**
 
-Copyright © 2026 Queueble contributors.
+Copyright © 2026 Bao Le.
 
 This repository is private and shared for evaluation (e.g. recruiters, interviewers) under view-only access. You may not copy, modify, distribute, sublicense, or reuse this source code or its derivatives without explicit written permission from the copyright holder.
 

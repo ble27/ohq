@@ -55,3 +55,6 @@ my-app/shared/*.d.ts.map
 my-app/frontend/test-results/
 my-app/frontend/playwright-report/
 my-app/frontend/playwright/.cache/
+
+# Features
+features.md
