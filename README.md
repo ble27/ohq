@@ -194,8 +194,14 @@ npm run build
 
 **Proprietary — All Rights Reserved.**
 
-Copyright © 2026 Bao Le.
+Copyright (c) 2026 Bao Le. All rights reserved.
 
-This repository is private and shared for evaluation (e.g. recruiters, interviewers) under view-only access. You may not copy, modify, distribute, sublicense, or reuse this source code or its derivatives without explicit written permission from the copyright holder.
+This software and associated documentation files (the "Software") are proprietary 
+to Bao Le. 
 
-**Not MIT.** MIT (and similar open-source licenses) grant broad reuse rights. That is intentionally not offered here.
+Unauthorized copying, modification, distribution, public display, or performance 
+of this Software, via any medium, is strictly prohibited. 
+
+The Software is provided "as is", without warranty of any kind, express or 
+implied. In no event shall the authors or copyright holders be liable for any 
+claim, damages, or other liability.
