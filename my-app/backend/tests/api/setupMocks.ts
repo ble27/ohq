@@ -18,6 +18,20 @@ vi.mock('../../middlewares/auth.middleware.js', () => ({
     default: testAuthMiddleware,
 }));
 
+vi.mock('../../config/supabase.js', () => ({
+    supabase: {
+        auth: {
+            getUser: vi.fn(),
+            admin: { deleteUser: vi.fn() },
+        },
+    },
+    supabaseAdmin: {
+        auth: {
+            admin: { deleteUser: vi.fn().mockResolvedValue({ data: null, error: null }) },
+        },
+    },
+}));
+
 vi.mock('../../prisma.js', () => ({
     prisma: {
         user: {
